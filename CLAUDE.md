@@ -44,6 +44,15 @@ uv lock                      # Update lock file
 
 Ruff configuration lives in `pyproject.toml` under `[tool.ruff]`.
 
+### Version Bumping
+
+When bumping the version in `pyproject.toml`, always run `uv lock` afterward to update the lock file:
+
+```bash
+# After editing version in pyproject.toml
+uv lock
+```
+
 ## Architecture
 
 ```
