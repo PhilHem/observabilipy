@@ -3,7 +3,12 @@
 import pytest
 
 from observabilipy.core.exceptions import ConfigurationError
-from observabilipy.core.models import LogEntry, MetricSample, RetentionPolicy
+from observabilipy.core.models import (
+    LevelRetentionPolicy,
+    LogEntry,
+    MetricSample,
+    RetentionPolicy,
+)
 
 
 class TestLogEntry:
@@ -134,3 +139,87 @@ class TestRetentionPolicy:
     def test_retention_policy_rejects_zero_max_count(self) -> None:
         with pytest.raises(ConfigurationError):
             RetentionPolicy(max_count=0)
+
+
+class TestLevelRetentionPolicy:
+    """Tests for LevelRetentionPolicy model."""
+
+    @pytest.mark.core
+    def test_creates_with_single_level_policy(self) -> None:
+        """Can create policy with single level configuration."""
+        error_policy = RetentionPolicy(max_age_seconds=2592000.0)  # 30 days
+        policy = LevelRetentionPolicy(policies={"ERROR": error_policy})
+
+        assert policy.policies["ERROR"] == error_policy
+
+    @pytest.mark.core
+    def test_creates_with_multiple_level_policies(self) -> None:
+        """Can create policy with multiple levels."""
+        policy = LevelRetentionPolicy(
+            policies={
+                "ERROR": RetentionPolicy(max_age_seconds=2592000.0),
+                "INFO": RetentionPolicy(max_age_seconds=604800.0),
+                "DEBUG": RetentionPolicy(max_age_seconds=86400.0),
+            }
+        )
+
+        assert len(policy.policies) == 3
+
+    @pytest.mark.core
+    def test_creates_with_default_policy(self) -> None:
+        """Can create policy with default for unspecified levels."""
+        default = RetentionPolicy(max_age_seconds=86400.0)
+        policy = LevelRetentionPolicy(policies={}, default=default)
+
+        assert policy.default == default
+
+    @pytest.mark.core
+    def test_get_policy_for_level_returns_specific_policy(self) -> None:
+        """get_policy_for_level returns level-specific policy when defined."""
+        error_policy = RetentionPolicy(max_age_seconds=2592000.0)
+        policy = LevelRetentionPolicy(
+            policies={"ERROR": error_policy},
+            default=RetentionPolicy(max_age_seconds=86400.0),
+        )
+
+        assert policy.get_policy_for_level("ERROR") == error_policy
+
+    @pytest.mark.core
+    def test_get_policy_for_level_returns_default_for_undefined_level(self) -> None:
+        """get_policy_for_level returns default when level not specified."""
+        default = RetentionPolicy(max_age_seconds=86400.0)
+        policy = LevelRetentionPolicy(policies={}, default=default)
+
+        assert policy.get_policy_for_level("WARN") == default
+
+    @pytest.mark.core
+    def test_get_policy_for_level_returns_none_when_no_default(self) -> None:
+        """get_policy_for_level returns None when no default and level undefined."""
+        policy = LevelRetentionPolicy(
+            policies={"ERROR": RetentionPolicy(max_age_seconds=100.0)}
+        )
+
+        assert policy.get_policy_for_level("DEBUG") is None
+
+    @pytest.mark.core
+    def test_is_frozen_dataclass(self) -> None:
+        """LevelRetentionPolicy is immutable."""
+        policy = LevelRetentionPolicy(policies={})
+        with pytest.raises(AttributeError):
+            policy.policies = {}  # type: ignore[misc]
+
+    @pytest.mark.core
+    def test_rejects_empty_level_name(self) -> None:
+        """Empty string level name raises ConfigurationError."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            LevelRetentionPolicy(policies={"": RetentionPolicy(max_age_seconds=100.0)})
+        assert "level name" in str(exc_info.value).lower()
+
+    @pytest.mark.core
+    def test_rejects_whitespace_only_level_name(self) -> None:
+        """Whitespace-only level name raises ConfigurationError."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            LevelRetentionPolicy(
+                policies={"   ": RetentionPolicy(max_age_seconds=100.0)}
+            )
+        assert "level name" in str(exc_info.value).lower()

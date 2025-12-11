@@ -67,3 +67,37 @@ class RetentionPolicy:
             raise ConfigurationError(
                 f"max_count must be positive, got {self.max_count}"
             )
+
+
+@dataclass(frozen=True)
+class LevelRetentionPolicy:
+    """Per-level retention policy for log data.
+
+    Allows different log levels to have different retention settings.
+    For example, keep ERROR logs for 30 days but DEBUG logs for only 1 day.
+
+    Attributes:
+        policies: Mapping of log level (e.g., "ERROR", "INFO") to RetentionPolicy.
+        default: Optional fallback policy for levels not in the policies mapping.
+    """
+
+    policies: dict[str, RetentionPolicy] = field(default_factory=dict)
+    default: RetentionPolicy | None = None
+
+    def __post_init__(self) -> None:
+        """Validate configuration values."""
+        for level_name in self.policies:
+            if not level_name or not level_name.strip():
+                raise ConfigurationError("level name cannot be empty")
+
+    def get_policy_for_level(self, level: str) -> RetentionPolicy | None:
+        """Get the retention policy for a specific log level.
+
+        Args:
+            level: The log level (e.g., "ERROR", "INFO", "DEBUG").
+
+        Returns:
+            The RetentionPolicy for this level, the default policy if no
+            level-specific policy exists, or None if neither is defined.
+        """
+        return self.policies.get(level, self.default)
