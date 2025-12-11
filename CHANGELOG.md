@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.2] - 2025-12-11
+
+### Added
+- Pre-commit hooks mirroring CI pipeline (ruff check, ruff format, mypy, pytest)
+- `pre-commit` dev dependency
+
+### Fixed
+- Ruff linting issues in tests (type parameter syntax, import sorting)
+
 ## [0.5.1] - 2025-12-11
 
 ### Added
