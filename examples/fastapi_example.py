@@ -32,10 +32,10 @@ app.include_router(create_observability_router(log_storage, metrics_storage))
 
 
 @app.get("/")
-def root() -> dict[str, str]:
+async def root() -> dict[str, str]:
     """Root endpoint that logs a message and increments a counter."""
     # Log the request
-    log_storage.write(
+    await log_storage.write(
         LogEntry(
             timestamp=time.time(),
             level="INFO",
@@ -45,7 +45,7 @@ def root() -> dict[str, str]:
     )
 
     # Record a metric
-    metrics_storage.write(
+    await metrics_storage.write(
         MetricSample(
             name="http_requests_total",
             timestamp=time.time(),
