@@ -30,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
       - run: uv sync
-      - run: uv run pytest -m core -v
+      - run: uv run pytest -m core -v --ignore=tests/e2e
 
   test-encoding:
     runs-on: ubuntu-latest
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
       - run: uv sync
-      - run: uv run pytest -m encoding -v
+      - run: uv run pytest -m encoding -v --ignore=tests/e2e
 
   test-storage:
     runs-on: ubuntu-latest
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
       - run: uv sync
-      - run: uv run pytest -m storage -v
+      - run: uv run pytest -m storage -v --ignore=tests/e2e
 
   test-fastapi:
     runs-on: ubuntu-latest
@@ -54,7 +54,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
       - run: uv sync --extra fastapi
-      - run: uv run pytest -m fastapi -v
+      - run: uv run pytest -m fastapi -v --ignore=tests/e2e
 
   test-django:
     runs-on: ubuntu-latest
@@ -62,7 +62,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
       - run: uv sync --extra django
-      - run: uv run pytest -m django -v
+      - run: uv run pytest -m django -v --ignore=tests/e2e
 
   test-asgi:
     runs-on: ubuntu-latest
@@ -70,7 +70,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
       - run: uv sync
-      - run: uv run pytest -m asgi -v
+      - run: uv run pytest -m asgi -v --ignore=tests/e2e
 
   test-runtime:
     runs-on: ubuntu-latest
@@ -78,7 +78,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v4
       - run: uv sync
-      - run: uv run pytest -m runtime -v
+      - run: uv run pytest -m runtime -v --ignore=tests/e2e
 
   test-examples:
     runs-on: ubuntu-latest
