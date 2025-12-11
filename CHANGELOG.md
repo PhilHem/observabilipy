@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.5] - 2025-12-11
+
+### Fixed
+- CI typecheck job now installs fastapi extra so mypy can properly type-check the FastAPI adapter
+
 ## [0.5.4] - 2025-12-11
 
 ### Fixed
