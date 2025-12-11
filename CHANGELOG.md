@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.9.0] - 2025-12-11
+
+### Changed
+- **BREAKING**: Renamed package directory from `observability/` to `observabilipy/` to match PyPI package name
+- Import path changed from `from observability import ...` to `from observabilipy import ...`
+
+### Added
+- Root `__init__.py` re-exports common symbols for simpler imports
+- Users can now import directly: `from observabilipy import LogEntry, InMemoryLogStorage`
+
 ## [0.8.3] - 2025-12-11
 
 ### Added
