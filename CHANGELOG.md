@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.0] - 2025-12-11
+
+### Added
+- `LevelRetentionPolicy` for per-level log retention (e.g., keep ERROR logs 30 days, DEBUG logs 1 day)
+- Level-aware methods on `LogStoragePort`: `delete_by_level_before()`, `count_by_level()`
+- Level-aware retention logic: `calculate_level_age_threshold()`, `should_delete_by_level_count()`
+- `EmbeddedRuntime` now accepts both `RetentionPolicy` and `LevelRetentionPolicy` (backward compatible)
+- SQLite composite index on `(level, timestamp)` for efficient per-level queries
+
 ## [0.9.0] - 2025-12-11
 
 ### Changed
