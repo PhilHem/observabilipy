@@ -11,13 +11,13 @@
 
 ## Phase 2: Encoding
 - [x] NDJSON encoder for logs
-- [ ] Prometheus text format encoder for metrics
-- [ ] Unit tests for encoders
+- [x] Prometheus text format encoder for metrics
+- [x] Unit tests for encoders
 
 ## Phase 3: First Framework Adapter
-- [ ] FastAPI adapter with `/metrics` and `/logs` endpoints
-- [ ] Integration tests for FastAPI endpoints
-- [ ] Example app (`examples/fastapi_example.py`)
+- [x] FastAPI adapter with `/metrics` and `/logs` endpoints
+- [x] Integration tests for FastAPI endpoints
+- [x] Example app (`examples/fastapi_example.py`)
 
 ## Phase 4: Persistent Storage
 - [ ] SQLite storage adapter
@@ -37,6 +37,6 @@
 
 ## Current Focus
 
-**Phase 2: Encoding**
+**Phase 4: Persistent Storage**
 
-Next action: Implement Prometheus text format encoder for metrics.
+Next action: Implement SQLite storage adapter.
