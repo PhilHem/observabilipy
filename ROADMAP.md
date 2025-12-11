@@ -39,8 +39,8 @@
 ## Phase 7: Runtime & Polish
 
 ### Embedded Mode
-- [ ] Add `delete_before(timestamp)` and `count()` to storage ports
-- [ ] Implement deletion methods in all storage adapters (in-memory, SQLite, ring buffer)
+- [x] Add `delete_before(timestamp)` and `count()` to storage ports
+- [x] Implement deletion methods in all storage adapters (in-memory, SQLite, ring buffer)
 - [ ] Create `RetentionPolicy` value object in core
 - [ ] Create pure retention logic functions in core
 - [ ] Build `EmbeddedRuntime` orchestrator (lifecycle, background thread)
@@ -61,4 +61,4 @@
 
 **Phase 7: Runtime & Polish**
 
-Next action: Implement embedded mode (background ingestion, retention).
+Next action: Create `RetentionPolicy` value object and retention logic in core.
