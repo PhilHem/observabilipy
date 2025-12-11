@@ -79,12 +79,16 @@ class SQLiteLogStorage:
 
     Stores log entries in a SQLite database using aiosqlite for
     non-blocking async operations. Uses WAL mode for concurrent access.
+
+    For :memory: databases, a persistent connection is maintained since
+    in-memory databases are connection-scoped in SQLite.
     """
 
     def __init__(self, db_path: str) -> None:
         self._db_path = db_path
         self._initialized = False
         self._init_lock = asyncio.Lock()
+        self._persistent_conn: aiosqlite.Connection | None = None
 
     async def _ensure_initialized(self) -> None:
         """Initialize database schema once."""
@@ -93,14 +97,22 @@ class SQLiteLogStorage:
         async with self._init_lock:
             if self._initialized:
                 return
-            async with aiosqlite.connect(self._db_path) as db:
-                await db.execute("PRAGMA journal_mode=WAL")
-                await db.executescript(_LOGS_SCHEMA)
+            if self._db_path == ":memory:":
+                # For :memory: DBs, keep a persistent connection
+                self._persistent_conn = await aiosqlite.connect(":memory:")
+                await self._persistent_conn.executescript(_LOGS_SCHEMA)
+            else:
+                async with aiosqlite.connect(self._db_path) as db:
+                    await db.execute("PRAGMA journal_mode=WAL")
+                    await db.executescript(_LOGS_SCHEMA)
             self._initialized = True
 
     async def _get_connection(self) -> aiosqlite.Connection:
         """Get a database connection."""
         await self._ensure_initialized()
+        if self._db_path == ":memory:":
+            assert self._persistent_conn is not None
+            return self._persistent_conn
         return await aiosqlite.connect(self._db_path)
 
     async def write(self, entry: LogEntry) -> None:
@@ -118,7 +130,8 @@ class SQLiteLogStorage:
             )
             await db.commit()
         finally:
-            await db.close()
+            if self._db_path != ":memory:":
+                await db.close()
 
     async def read(self, since: float = 0) -> AsyncIterable[LogEntry]:
         """Read log entries since the given timestamp."""
@@ -133,7 +146,8 @@ class SQLiteLogStorage:
                         attributes=json.loads(row[3]),
                     )
         finally:
-            await db.close()
+            if self._db_path != ":memory:":
+                await db.close()
 
     async def count(self) -> int:
         """Return total number of log entries in storage."""
@@ -143,7 +157,8 @@ class SQLiteLogStorage:
                 row = await cursor.fetchone()
                 return row[0] if row else 0
         finally:
-            await db.close()
+            if self._db_path != ":memory:":
+                await db.close()
 
     async def delete_before(self, timestamp: float) -> int:
         """Delete log entries with timestamp < given value."""
@@ -154,7 +169,8 @@ class SQLiteLogStorage:
             await db.commit()
             return deleted
         finally:
-            await db.close()
+            if self._db_path != ":memory:":
+                await db.close()
 
     async def delete_by_level_before(self, level: str, timestamp: float) -> int:
         """Delete log entries matching level with timestamp < given value."""
@@ -165,7 +181,8 @@ class SQLiteLogStorage:
             await db.commit()
             return deleted
         finally:
-            await db.close()
+            if self._db_path != ":memory:":
+                await db.close()
 
     async def count_by_level(self, level: str) -> int:
         """Return number of log entries with the specified level."""
@@ -175,7 +192,15 @@ class SQLiteLogStorage:
                 row = await cursor.fetchone()
                 return row[0] if row else 0
         finally:
-            await db.close()
+            if self._db_path != ":memory:":
+                await db.close()
+
+    async def close(self) -> None:
+        """Close persistent connection (for :memory: databases)."""
+        if self._persistent_conn is not None:
+            await self._persistent_conn.close()
+            self._persistent_conn = None
+            self._initialized = False
 
 
 class SQLiteMetricsStorage:
@@ -183,12 +208,16 @@ class SQLiteMetricsStorage:
 
     Stores metric samples in a SQLite database using aiosqlite for
     non-blocking async operations. Uses WAL mode for concurrent access.
+
+    For :memory: databases, a persistent connection is maintained since
+    in-memory databases are connection-scoped in SQLite.
     """
 
     def __init__(self, db_path: str) -> None:
         self._db_path = db_path
         self._initialized = False
         self._init_lock = asyncio.Lock()
+        self._persistent_conn: aiosqlite.Connection | None = None
 
     async def _ensure_initialized(self) -> None:
         """Initialize database schema once."""
@@ -197,14 +226,22 @@ class SQLiteMetricsStorage:
         async with self._init_lock:
             if self._initialized:
                 return
-            async with aiosqlite.connect(self._db_path) as db:
-                await db.execute("PRAGMA journal_mode=WAL")
-                await db.executescript(_METRICS_SCHEMA)
+            if self._db_path == ":memory:":
+                # For :memory: DBs, keep a persistent connection
+                self._persistent_conn = await aiosqlite.connect(":memory:")
+                await self._persistent_conn.executescript(_METRICS_SCHEMA)
+            else:
+                async with aiosqlite.connect(self._db_path) as db:
+                    await db.execute("PRAGMA journal_mode=WAL")
+                    await db.executescript(_METRICS_SCHEMA)
             self._initialized = True
 
     async def _get_connection(self) -> aiosqlite.Connection:
         """Get a database connection."""
         await self._ensure_initialized()
+        if self._db_path == ":memory:":
+            assert self._persistent_conn is not None
+            return self._persistent_conn
         return await aiosqlite.connect(self._db_path)
 
     async def write(self, sample: MetricSample) -> None:
@@ -222,7 +259,8 @@ class SQLiteMetricsStorage:
             )
             await db.commit()
         finally:
-            await db.close()
+            if self._db_path != ":memory:":
+                await db.close()
 
     async def scrape(self) -> AsyncIterable[MetricSample]:
         """Scrape all current metric samples."""
@@ -237,7 +275,8 @@ class SQLiteMetricsStorage:
                         labels=json.loads(row[3]),
                     )
         finally:
-            await db.close()
+            if self._db_path != ":memory:":
+                await db.close()
 
     async def count(self) -> int:
         """Return total number of metric samples in storage."""
@@ -247,7 +286,8 @@ class SQLiteMetricsStorage:
                 row = await cursor.fetchone()
                 return row[0] if row else 0
         finally:
-            await db.close()
+            if self._db_path != ":memory:":
+                await db.close()
 
     async def delete_before(self, timestamp: float) -> int:
         """Delete metric samples with timestamp < given value."""
@@ -258,4 +298,12 @@ class SQLiteMetricsStorage:
             await db.commit()
             return deleted
         finally:
-            await db.close()
+            if self._db_path != ":memory:":
+                await db.close()
+
+    async def close(self) -> None:
+        """Close persistent connection (for :memory: databases)."""
+        if self._persistent_conn is not None:
+            await self._persistent_conn.close()
+            self._persistent_conn = None
+            self._initialized = False
