@@ -53,6 +53,14 @@ When bumping the version in `pyproject.toml`, always run `uv lock` afterward to 
 uv lock
 ```
 
+### Release Tracking Files
+
+This project uses `CHANGELOG.md` and `ROADMAP.md` to track changes:
+- **CHANGELOG.md** - Version history with changes per release
+- **ROADMAP.md** - Development phases and progress
+
+Before releasing, check if these files need updates based on commits since last tag.
+
 ## Architecture
 
 ```
