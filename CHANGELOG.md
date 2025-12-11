@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.1] - 2025-12-11
+
+### Added
+- `embedded_runtime_example.py` - EmbeddedRuntime with SQLite and retention policies
+- `sqlite_example.py` - Persistent storage with SQLite adapter
+- `ring_buffer_example.py` - Fixed-size memory storage for constrained environments
+- `.gitignore` entries for `.db` files and `.history/`
+
 ## [0.8.0] - 2025-12-11
 
 ### Added
