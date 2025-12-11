@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.1] - 2025-12-11
+
+### Added
+- CHANGELOG.md for tracking version history
+- Release tracking files convention in CLAUDE.md
+
+### Changed
+- Updated ROADMAP.md to reflect Phase 4 async progress
+
 ## [0.4.0] - 2025-12-11
 
 ### Changed
