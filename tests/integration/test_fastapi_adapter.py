@@ -18,11 +18,11 @@ class TestFastAPIMetricsEndpoint:
     """Tests for the /metrics endpoint."""
 
     @pytest.mark.fastapi
-    def test_metrics_endpoint_returns_prometheus_format(self) -> None:
+    async def test_metrics_endpoint_returns_prometheus_format(self) -> None:
         """Metrics endpoint returns data in Prometheus text format."""
         log_storage = InMemoryLogStorage()
         metrics_storage = InMemoryMetricsStorage()
-        metrics_storage.write(
+        await metrics_storage.write(
             MetricSample(
                 name="http_requests_total",
                 timestamp=1702300000.0,
@@ -41,7 +41,7 @@ class TestFastAPIMetricsEndpoint:
         assert 'http_requests_total{method="GET",path="/api"} 42.0' in response.text
 
     @pytest.mark.fastapi
-    def test_metrics_endpoint_content_type(self) -> None:
+    async def test_metrics_endpoint_content_type(self) -> None:
         """Metrics endpoint returns correct content type for Prometheus."""
         log_storage = InMemoryLogStorage()
         metrics_storage = InMemoryMetricsStorage()
@@ -57,7 +57,7 @@ class TestFastAPIMetricsEndpoint:
         assert "version=0.0.4" in response.headers["content-type"]
 
     @pytest.mark.fastapi
-    def test_metrics_endpoint_empty_storage(self) -> None:
+    async def test_metrics_endpoint_empty_storage(self) -> None:
         """Metrics endpoint returns empty body when no metrics."""
         log_storage = InMemoryLogStorage()
         metrics_storage = InMemoryMetricsStorage()
@@ -76,11 +76,11 @@ class TestFastAPILogsEndpoint:
     """Tests for the /logs endpoint."""
 
     @pytest.mark.fastapi
-    def test_logs_endpoint_returns_ndjson(self) -> None:
+    async def test_logs_endpoint_returns_ndjson(self) -> None:
         """Logs endpoint returns data in NDJSON format."""
         log_storage = InMemoryLogStorage()
         metrics_storage = InMemoryMetricsStorage()
-        log_storage.write(
+        await log_storage.write(
             LogEntry(
                 timestamp=1702300000.0,
                 level="INFO",
@@ -100,7 +100,7 @@ class TestFastAPILogsEndpoint:
         assert parsed["message"] == "Application started"
 
     @pytest.mark.fastapi
-    def test_logs_endpoint_content_type(self) -> None:
+    async def test_logs_endpoint_content_type(self) -> None:
         """Logs endpoint returns correct content type for NDJSON."""
         log_storage = InMemoryLogStorage()
         metrics_storage = InMemoryMetricsStorage()
@@ -115,7 +115,7 @@ class TestFastAPILogsEndpoint:
         assert "application/x-ndjson" in response.headers["content-type"]
 
     @pytest.mark.fastapi
-    def test_logs_endpoint_empty_storage(self) -> None:
+    async def test_logs_endpoint_empty_storage(self) -> None:
         """Logs endpoint returns empty body when no logs."""
         log_storage = InMemoryLogStorage()
         metrics_storage = InMemoryMetricsStorage()
@@ -130,14 +130,14 @@ class TestFastAPILogsEndpoint:
         assert response.text == ""
 
     @pytest.mark.fastapi
-    def test_logs_endpoint_since_parameter(self) -> None:
+    async def test_logs_endpoint_since_parameter(self) -> None:
         """Logs endpoint filters by since parameter."""
         log_storage = InMemoryLogStorage()
         metrics_storage = InMemoryMetricsStorage()
-        log_storage.write(
+        await log_storage.write(
             LogEntry(timestamp=1702300000.0, level="INFO", message="Old log")
         )
-        log_storage.write(
+        await log_storage.write(
             LogEntry(timestamp=1702300002.0, level="INFO", message="New log")
         )
 

@@ -1,6 +1,7 @@
 """Tests for port interfaces."""
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable
+from typing import AsyncGenerator
 
 import pytest
 
@@ -18,19 +19,22 @@ class TestLogStoragePort:
 
     @pytest.mark.core
     def test_protocol_has_read_method(self) -> None:
-        """LogStoragePort must define read(since: float) -> Iterable[LogEntry]."""
+        """LogStoragePort must define read(since: float) -> AsyncIterable[LogEntry]."""
         assert hasattr(LogStoragePort, "read")
 
     @pytest.mark.core
     def test_class_implementing_protocol_is_recognized(self) -> None:
-        """A class with write and read methods should satisfy LogStoragePort."""
+        """A class with async write and read methods should satisfy LogStoragePort."""
 
         class FakeLogStorage:
-            def write(self, entry: LogEntry) -> None:
+            async def write(self, entry: LogEntry) -> None:
                 pass
 
-            def read(self, since: float = 0) -> Iterable[LogEntry]:
-                return []
+            async def read(
+                self, since: float = 0
+            ) -> AsyncGenerator[LogEntry, None]:
+                return
+                yield  # Make this an async generator
 
         storage: LogStoragePort = FakeLogStorage()
         assert isinstance(storage, LogStoragePort)
@@ -46,19 +50,20 @@ class TestMetricsStoragePort:
 
     @pytest.mark.core
     def test_protocol_has_scrape_method(self) -> None:
-        """MetricsStoragePort must define scrape() -> Iterable[MetricSample]."""
+        """MetricsStoragePort must define scrape() -> AsyncIterable[MetricSample]."""
         assert hasattr(MetricsStoragePort, "scrape")
 
     @pytest.mark.core
     def test_class_implementing_protocol_is_recognized(self) -> None:
-        """A class with write and scrape methods should satisfy MetricsStoragePort."""
+        """A class with async write and scrape methods should satisfy MetricsStoragePort."""
 
         class FakeMetricsStorage:
-            def write(self, sample: MetricSample) -> None:
+            async def write(self, sample: MetricSample) -> None:
                 pass
 
-            def scrape(self) -> Iterable[MetricSample]:
-                return []
+            async def scrape(self) -> AsyncGenerator[MetricSample, None]:
+                return
+                yield  # Make this an async generator
 
         storage: MetricsStoragePort = FakeMetricsStorage()
         assert isinstance(storage, MetricsStoragePort)
