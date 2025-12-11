@@ -46,6 +46,33 @@ app.include_router(create_observability_router(log_storage, metrics_storage))
 
 Run with `uvicorn` and visit `/metrics` and `/logs`.
 
+## Recording Metrics and Logs
+
+```python
+import time
+from observability.core.models import LogEntry, MetricSample
+
+# Record a log entry
+await log_storage.write(
+    LogEntry(
+        timestamp=time.time(),
+        level="INFO",
+        message="User logged in",
+        attributes={"user_id": 123, "ip": "192.168.1.1"},
+    )
+)
+
+# Record a metric sample
+await metrics_storage.write(
+    MetricSample(
+        name="http_requests_total",
+        timestamp=time.time(),
+        value=1.0,
+        labels={"method": "GET", "path": "/api/users"},
+    )
+)
+```
+
 ## Storage Backends
 
 | Backend | Use Case |
