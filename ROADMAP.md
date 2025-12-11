@@ -37,7 +37,18 @@
 - [x] Ring buffer storage adapter
 
 ## Phase 7: Runtime & Polish
-- [ ] Embedded mode (background ingestion, retention)
+
+### Embedded Mode
+- [ ] Add `delete_before(timestamp)` and `count()` to storage ports
+- [ ] Implement deletion methods in all storage adapters (in-memory, SQLite, ring buffer)
+- [ ] Create `RetentionPolicy` value object in core
+- [ ] Create pure retention logic functions in core
+- [ ] Build `EmbeddedRuntime` orchestrator (lifecycle, background thread)
+- [ ] Unit tests for retention logic (pure, no threads)
+- [ ] Integration tests for `EmbeddedRuntime` (with in-memory storage)
+- [ ] Example usage in `examples/`
+
+### Other
 - [ ] E2E tests
 - [ ] Documentation and README
 
