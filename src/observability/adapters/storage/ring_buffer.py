@@ -38,6 +38,18 @@ class RingBufferLogStorage:
         for entry in sorted(filtered, key=lambda e: e.timestamp):
             yield entry
 
+    async def count(self) -> int:
+        """Return total number of log entries in storage."""
+        return len(self._buffer)
+
+    async def delete_before(self, timestamp: float) -> int:
+        """Delete log entries with timestamp < given value."""
+        original_count = len(self._buffer)
+        # Rebuild deque with filtered entries, preserving maxlen
+        filtered = [e for e in self._buffer if e.timestamp >= timestamp]
+        self._buffer = deque(filtered, maxlen=self._buffer.maxlen)
+        return original_count - len(self._buffer)
+
 
 class RingBufferMetricsStorage:
     """Ring buffer implementation of MetricsStoragePort.
@@ -61,3 +73,15 @@ class RingBufferMetricsStorage:
         """Scrape all current metric samples."""
         for sample in self._buffer:
             yield sample
+
+    async def count(self) -> int:
+        """Return total number of metric samples in storage."""
+        return len(self._buffer)
+
+    async def delete_before(self, timestamp: float) -> int:
+        """Delete metric samples with timestamp < given value."""
+        original_count = len(self._buffer)
+        # Rebuild deque with filtered samples, preserving maxlen
+        filtered = [s for s in self._buffer if s.timestamp >= timestamp]
+        self._buffer = deque(filtered, maxlen=self._buffer.maxlen)
+        return original_count - len(self._buffer)

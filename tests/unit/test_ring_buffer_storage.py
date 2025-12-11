@@ -99,6 +99,79 @@ class TestRingBufferLogStorage:
         # Only last 3 should remain (entries[2], entries[3], entries[4])
         assert result == entries[2:]
 
+    @pytest.mark.storage
+    async def test_count_returns_zero_when_empty(self) -> None:
+        """Count returns 0 for empty storage."""
+        storage = RingBufferLogStorage(max_size=100)
+
+        count = await storage.count()
+
+        assert count == 0
+
+    @pytest.mark.storage
+    async def test_count_returns_correct_count_after_writes(self) -> None:
+        """Count returns correct number of entries after writes."""
+        storage = RingBufferLogStorage(max_size=100)
+        for i in range(5):
+            await storage.write(
+                LogEntry(timestamp=1000.0 + i, level="INFO", message=f"msg {i}")
+            )
+
+        count = await storage.count()
+
+        assert count == 5
+
+    @pytest.mark.storage
+    async def test_delete_before_removes_old_entries(self) -> None:
+        """delete_before removes entries with timestamp < given value."""
+        storage = RingBufferLogStorage(max_size=100)
+        old_entry = LogEntry(timestamp=1000.0, level="INFO", message="old")
+        new_entry = LogEntry(timestamp=2000.0, level="INFO", message="new")
+        await storage.write(old_entry)
+        await storage.write(new_entry)
+
+        await storage.delete_before(1500.0)
+
+        result = [e async for e in storage.read()]
+        assert result == [new_entry]
+
+    @pytest.mark.storage
+    async def test_delete_before_keeps_entries_at_or_after_timestamp(self) -> None:
+        """delete_before keeps entries with timestamp >= given value."""
+        storage = RingBufferLogStorage(max_size=100)
+        entry_at = LogEntry(timestamp=1500.0, level="INFO", message="at boundary")
+        entry_after = LogEntry(timestamp=2000.0, level="INFO", message="after")
+        await storage.write(entry_at)
+        await storage.write(entry_after)
+
+        await storage.delete_before(1500.0)
+
+        result = [e async for e in storage.read()]
+        assert entry_at in result
+        assert entry_after in result
+
+    @pytest.mark.storage
+    async def test_delete_before_returns_deleted_count(self) -> None:
+        """delete_before returns the number of entries deleted."""
+        storage = RingBufferLogStorage(max_size=100)
+        for i in range(5):
+            await storage.write(
+                LogEntry(timestamp=1000.0 + i, level="INFO", message=f"msg {i}")
+            )
+
+        deleted = await storage.delete_before(1003.0)
+
+        assert deleted == 3
+
+    @pytest.mark.storage
+    async def test_delete_before_empty_storage(self) -> None:
+        """delete_before on empty storage returns 0."""
+        storage = RingBufferLogStorage(max_size=100)
+
+        deleted = await storage.delete_before(1000.0)
+
+        assert deleted == 0
+
 
 class TestRingBufferMetricsStorage:
     """Tests for RingBufferMetricsStorage adapter."""
@@ -184,3 +257,76 @@ class TestRingBufferMetricsStorage:
 
         # Only last 3 should remain
         assert result == samples[2:]
+
+    @pytest.mark.storage
+    async def test_count_returns_zero_when_empty(self) -> None:
+        """Count returns 0 for empty storage."""
+        storage = RingBufferMetricsStorage(max_size=100)
+
+        count = await storage.count()
+
+        assert count == 0
+
+    @pytest.mark.storage
+    async def test_count_returns_correct_count_after_writes(self) -> None:
+        """Count returns correct number of samples after writes."""
+        storage = RingBufferMetricsStorage(max_size=100)
+        for i in range(5):
+            await storage.write(
+                MetricSample(name=f"metric_{i}", timestamp=1000.0 + i, value=float(i))
+            )
+
+        count = await storage.count()
+
+        assert count == 5
+
+    @pytest.mark.storage
+    async def test_delete_before_removes_old_samples(self) -> None:
+        """delete_before removes samples with timestamp < given value."""
+        storage = RingBufferMetricsStorage(max_size=100)
+        old_sample = MetricSample(name="metric", timestamp=1000.0, value=1.0)
+        new_sample = MetricSample(name="metric", timestamp=2000.0, value=2.0)
+        await storage.write(old_sample)
+        await storage.write(new_sample)
+
+        await storage.delete_before(1500.0)
+
+        result = [s async for s in storage.scrape()]
+        assert result == [new_sample]
+
+    @pytest.mark.storage
+    async def test_delete_before_keeps_samples_at_or_after_timestamp(self) -> None:
+        """delete_before keeps samples with timestamp >= given value."""
+        storage = RingBufferMetricsStorage(max_size=100)
+        sample_at = MetricSample(name="metric", timestamp=1500.0, value=1.0)
+        sample_after = MetricSample(name="metric", timestamp=2000.0, value=2.0)
+        await storage.write(sample_at)
+        await storage.write(sample_after)
+
+        await storage.delete_before(1500.0)
+
+        result = [s async for s in storage.scrape()]
+        assert sample_at in result
+        assert sample_after in result
+
+    @pytest.mark.storage
+    async def test_delete_before_returns_deleted_count(self) -> None:
+        """delete_before returns the number of samples deleted."""
+        storage = RingBufferMetricsStorage(max_size=100)
+        for i in range(5):
+            await storage.write(
+                MetricSample(name=f"metric_{i}", timestamp=1000.0 + i, value=float(i))
+            )
+
+        deleted = await storage.delete_before(1003.0)
+
+        assert deleted == 3
+
+    @pytest.mark.storage
+    async def test_delete_before_empty_storage(self) -> None:
+        """delete_before on empty storage returns 0."""
+        storage = RingBufferMetricsStorage(max_size=100)
+
+        deleted = await storage.delete_before(1000.0)
+
+        assert deleted == 0
