@@ -7,8 +7,19 @@ import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from observabilipy.core.models import LogEntry, MetricSample, RetentionPolicy
-from observabilipy.core.retention import calculate_age_threshold, should_delete_by_count
+from observabilipy.core.exceptions import ConfigurationError
+from observabilipy.core.models import (
+    LevelRetentionPolicy,
+    LogEntry,
+    MetricSample,
+    RetentionPolicy,
+)
+from observabilipy.core.retention import (
+    calculate_age_threshold,
+    calculate_level_age_threshold,
+    should_delete_by_count,
+    should_delete_by_level_count,
+)
 
 if TYPE_CHECKING:
     from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
@@ -33,7 +44,7 @@ class EmbeddedRuntime:
     def __init__(
         self,
         log_storage: LogStoragePort | None = None,
-        log_retention: RetentionPolicy | None = None,
+        log_retention: RetentionPolicy | LevelRetentionPolicy | None = None,
         metrics_storage: MetricsStoragePort | None = None,
         metrics_retention: RetentionPolicy | None = None,
         cleanup_interval_seconds: float = 60.0,
@@ -49,6 +60,11 @@ class EmbeddedRuntime:
             cleanup_interval_seconds: How often to run cleanup (default 60s).
             time_func: Function returning current time as float (for testing).
         """
+        if cleanup_interval_seconds <= 0:
+            raise ConfigurationError(
+                f"cleanup_interval_seconds must be positive, "
+                f"got {cleanup_interval_seconds}"
+            )
         self._log_storage = log_storage
         self._log_retention = log_retention
         self._metrics_storage = metrics_storage
@@ -98,13 +114,29 @@ class EmbeddedRuntime:
     async def _apply_retention(
         self,
         storage: LogStoragePort | MetricsStoragePort | None,
-        policy: RetentionPolicy | None,
+        policy: RetentionPolicy | LevelRetentionPolicy | None,
         is_logs: bool,
     ) -> None:
         """Apply retention policy to a storage adapter."""
         if storage is None or policy is None:
             return
 
+        # Dispatch to level-aware retention for LevelRetentionPolicy on logs
+        if is_logs and isinstance(policy, LevelRetentionPolicy):
+            await self._apply_level_retention(storage, policy)  # type: ignore[arg-type]
+            return
+
+        # Standard retention for RetentionPolicy
+        if isinstance(policy, RetentionPolicy):
+            await self._apply_simple_retention(storage, policy, is_logs)
+
+    async def _apply_simple_retention(
+        self,
+        storage: LogStoragePort | MetricsStoragePort,
+        policy: RetentionPolicy,
+        is_logs: bool,
+    ) -> None:
+        """Apply simple (non-level-aware) retention policy."""
         # Age-based retention
         threshold = calculate_age_threshold(policy, self._time_func())
         if threshold is not None:
@@ -123,6 +155,54 @@ class EmbeddedRuntime:
                 oldest_to_keep = entries[policy.max_count - 1].timestamp
                 # Delete everything older than the oldest we keep
                 await storage.delete_before(oldest_to_keep)
+
+    async def _apply_level_retention(
+        self,
+        storage: LogStoragePort,
+        policy: LevelRetentionPolicy,
+    ) -> None:
+        """Apply per-level retention policy to log storage."""
+        current_time = self._time_func()
+
+        # Get all unique levels that need processing
+        levels_to_process: set[str] = set(policy.policies.keys())
+
+        # If there's a default, we also need to process levels in storage
+        if policy.default is not None:
+            entries = [e async for e in storage.read()]
+            levels_to_process.update(e.level for e in entries)
+
+        for level in levels_to_process:
+            level_policy = policy.get_policy_for_level(level)
+            if level_policy is None:
+                continue
+
+            # Age-based retention for this level
+            threshold = calculate_level_age_threshold(policy, level, current_time)
+            if threshold is not None:
+                await storage.delete_by_level_before(level, threshold)
+
+            # Count-based retention for this level
+            current_count = await storage.count_by_level(level)
+            if should_delete_by_level_count(policy, level, current_count):
+                if level_policy.max_count is not None:
+                    await self._delete_oldest_by_level(
+                        storage, level, level_policy.max_count
+                    )
+
+    async def _delete_oldest_by_level(
+        self,
+        storage: LogStoragePort,
+        level: str,
+        max_count: int,
+    ) -> None:
+        """Delete oldest entries for a level to maintain max_count."""
+        entries = [e async for e in storage.read() if e.level == level]
+        if len(entries) <= max_count:
+            return
+        entries.sort(key=lambda e: e.timestamp, reverse=True)
+        oldest_to_keep = entries[max_count - 1].timestamp
+        await storage.delete_by_level_before(level, oldest_to_keep)
 
     async def _collect_entries(
         self,
