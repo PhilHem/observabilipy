@@ -2,6 +2,8 @@
 
 Framework-agnostic metrics and structured log collection with hexagonal architecture.
 
+Develop observability features decoupled from your infrastructure. Use embedded storage (SQLite, in-memory) during development, then optionally expose endpoints for scraping by Prometheus, Grafana Alloy, or other observability platforms when you're ready.
+
 ## Features
 
 - **Prometheus-style metrics** - `/metrics` endpoint in text format
