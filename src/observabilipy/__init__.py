@@ -21,12 +21,18 @@ from observabilipy.adapters.storage import (
     SQLiteMetricsStorage,
 )
 from observabilipy.core.exceptions import ConfigurationError, ObservabilityError
-from observabilipy.core.models import LogEntry, MetricSample, RetentionPolicy
+from observabilipy.core.models import (
+    LevelRetentionPolicy,
+    LogEntry,
+    MetricSample,
+    RetentionPolicy,
+)
 from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 from observabilipy.runtime import EmbeddedRuntime
 
 __all__ = [
     # Models
+    "LevelRetentionPolicy",
     "LogEntry",
     "MetricSample",
     "RetentionPolicy",

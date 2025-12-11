@@ -73,7 +73,7 @@
 
 ### Configuration
 - [x] Configuration validation (retention policies, buffer sizes)
-- [ ] Per-level retention policies (optional overrides per log level)
+- [x] Per-level retention policies (optional overrides per log level)
 
 ### Framework Adapters
 - [ ] Log level filtering on `/logs` endpoint (`?level=error`)
