@@ -99,7 +99,7 @@ wheels = [
 
 [[package]]
 name = "observabilipy"
-version = "0.1.1"
+version = "0.1.0"
 source = { editable = "." }
 
 [package.dev-dependencies]
