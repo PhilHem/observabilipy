@@ -1,23 +1,23 @@
 """NDJSON encoder for log entries."""
 
 import json
-from collections.abc import Iterable
+from collections.abc import AsyncIterable
 
 from observability.core.models import LogEntry
 
 
-def encode_logs(entries: Iterable[LogEntry]) -> str:
+async def encode_logs(entries: AsyncIterable[LogEntry]) -> str:
     """Encode log entries to newline-delimited JSON.
 
     Args:
-        entries: An iterable of LogEntry objects.
+        entries: An async iterable of LogEntry objects.
 
     Returns:
         NDJSON string with one JSON object per line.
         Empty string if no entries.
     """
     lines = []
-    for entry in entries:
+    async for entry in entries:
         obj = {
             "timestamp": entry.timestamp,
             "level": entry.level,

@@ -22,7 +22,7 @@
 ## Phase 4: Async Foundation
 - [x] Convert ports to async (`async def read`, `async def write`, etc.)
 - [x] Convert in-memory storage adapters to async
-- [ ] Convert encoders to accept `AsyncIterable`
+- [x] Convert encoders to accept `AsyncIterable`
 - [x] Update FastAPI adapter to async endpoints
 - [x] Add `pytest-asyncio`, update all tests to async
 - [x] Update example app

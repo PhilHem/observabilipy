@@ -1,6 +1,6 @@
 """Prometheus text format encoder for metric samples."""
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable
 
 from observability.core.models import MetricSample
 
@@ -13,18 +13,18 @@ def _escape_label_value(value: str) -> str:
     return value.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
 
 
-def encode_metrics(samples: Iterable[MetricSample]) -> str:
+async def encode_metrics(samples: AsyncIterable[MetricSample]) -> str:
     """Encode metric samples to Prometheus text format.
 
     Args:
-        samples: An iterable of MetricSample objects.
+        samples: An async iterable of MetricSample objects.
 
     Returns:
         Prometheus text format string with one metric per line.
         Empty string if no samples.
     """
     lines = []
-    for sample in samples:
+    async for sample in samples:
         # Build label string if labels exist
         if sample.labels:
             label_pairs = [
