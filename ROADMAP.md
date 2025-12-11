@@ -19,16 +19,24 @@
 - [x] Integration tests for FastAPI endpoints
 - [x] Example app (`examples/fastapi_example.py`)
 
-## Phase 4: Persistent Storage
-- [ ] SQLite storage adapter
+## Phase 4: Async Foundation
+- [ ] Convert ports to async (`async def read`, `async def write`, etc.)
+- [ ] Convert in-memory storage adapters to async
+- [ ] Convert encoders to accept `AsyncIterable`
+- [ ] Update FastAPI adapter to async endpoints
+- [ ] Add `pytest-asyncio`, update all tests to async
+- [ ] Update example app
+
+## Phase 5: Persistent Storage
+- [ ] SQLite storage adapter (async with `aiosqlite`)
 - [ ] Integration tests for SQLite adapter
 
-## Phase 5: Additional Adapters
+## Phase 6: Additional Adapters
 - [ ] Django adapter
 - [ ] ASGI generic adapter
 - [ ] Ring buffer storage adapter
 
-## Phase 6: Runtime & Polish
+## Phase 7: Runtime & Polish
 - [ ] Embedded mode (background ingestion, retention)
 - [ ] E2E tests
 - [ ] Documentation and README
@@ -37,6 +45,6 @@
 
 ## Current Focus
 
-**Phase 4: Persistent Storage**
+**Phase 4: Async Foundation**
 
-Next action: Implement SQLite storage adapter.
+Next action: Convert ports to async interfaces.
