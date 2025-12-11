@@ -48,6 +48,7 @@ markers = [
     "storage: Storage adapters (sqlite, in_memory, ring_buffer)",
     "fastapi: FastAPI framework adapter",
     "django: Django framework adapter",
+    "asgi: ASGI generic adapter",
     "e2e: End-to-end tests",
 ]
 
