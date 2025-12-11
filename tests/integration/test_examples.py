@@ -10,10 +10,10 @@ fastapi = pytest.importorskip("fastapi", reason="fastapi not installed")
 from fastapi.testclient import TestClient
 
 
+@pytest.mark.examples
 class TestFastAPIExample:
     """Tests for fastapi_example.py."""
 
-    @pytest.mark.fastapi
     def test_app_creation(self) -> None:
         """Example app can be created and has observability endpoints."""
         from examples.fastapi_example import app
@@ -24,7 +24,6 @@ class TestFastAPIExample:
         assert client.get("/metrics").status_code == 200
         assert client.get("/logs").status_code == 200
 
-    @pytest.mark.fastapi
     def test_root_endpoint_records_data(self) -> None:
         """Root endpoint records metrics and logs."""
         from examples.fastapi_example import app, log_storage, metrics_storage
@@ -44,10 +43,10 @@ class TestFastAPIExample:
         assert client.get("/metrics").text != ""
 
 
+@pytest.mark.examples
 class TestMinimalExample:
     """Tests for minimal_example.py."""
 
-    @pytest.mark.fastapi
     def test_app_creation(self) -> None:
         """Example app can be created and has observability endpoints."""
         from examples.minimal_example import app
@@ -59,10 +58,10 @@ class TestMinimalExample:
         assert client.get("/logs").status_code == 200
 
 
+@pytest.mark.examples
 class TestCgroupsExample:
     """Tests for cgroups_example.py."""
 
-    @pytest.mark.fastapi
     def test_app_creation(self) -> None:
         """Example app can be created and has observability endpoints."""
         from examples.cgroups_example import app
@@ -73,7 +72,6 @@ class TestCgroupsExample:
         assert client.get("/metrics").status_code == 200
         assert client.get("/logs").status_code == 200
 
-    @pytest.mark.fastapi
     def test_cpu_tracker(self) -> None:
         """CpuTracker calculates CPU percentage."""
         from examples.cgroups_example import CpuTracker
@@ -86,11 +84,10 @@ class TestCgroupsExample:
         assert result is None or result == 0.0
 
 
+@pytest.mark.examples
 class TestSqliteExample:
     """Tests for sqlite_example.py."""
 
-    @pytest.mark.fastapi
-    @pytest.mark.storage
     def test_imports(self) -> None:
         """Example imports work correctly."""
         from examples.sqlite_example import (
@@ -106,11 +103,10 @@ class TestSqliteExample:
         assert app is not None
 
 
+@pytest.mark.examples
 class TestRingBufferExample:
     """Tests for ring_buffer_example.py."""
 
-    @pytest.mark.fastapi
-    @pytest.mark.storage
     def test_app_creation(self) -> None:
         """Example app can be created and has observability endpoints."""
         from examples.ring_buffer_example import app
@@ -121,8 +117,6 @@ class TestRingBufferExample:
         assert client.get("/metrics").status_code == 200
         assert client.get("/logs").status_code == 200
 
-    @pytest.mark.fastapi
-    @pytest.mark.storage
     def test_storage_has_max_size(self) -> None:
         """Storage backends are configured with max_size."""
         from examples.ring_buffer_example import log_storage, metrics_storage
@@ -131,10 +125,10 @@ class TestRingBufferExample:
         assert metrics_storage._buffer.maxlen == 1000
 
 
+@pytest.mark.examples
 class TestAsgiExample:
     """Tests for asgi_example.py."""
 
-    @pytest.mark.asgi
     def test_app_creation(self) -> None:
         """Example ASGI app can be created."""
         from examples.asgi_example import app, create_asgi_app
@@ -142,7 +136,6 @@ class TestAsgiExample:
         assert app is not None
         assert callable(create_asgi_app)
 
-    @pytest.mark.asgi
     async def test_demo_data_function(self) -> None:
         """Demo data function works."""
         from examples.asgi_example import demo_data, log_storage, metrics_storage
@@ -160,11 +153,10 @@ class TestAsgiExample:
         assert len(samples) == 1
 
 
+@pytest.mark.examples
 class TestEmbeddedRuntimeExample:
     """Tests for embedded_runtime_example.py."""
 
-    @pytest.mark.fastapi
-    @pytest.mark.runtime
     def test_imports(self) -> None:
         """Example imports work correctly."""
         from examples.embedded_runtime_example import (
@@ -187,8 +179,6 @@ class TestEmbeddedRuntimeExample:
         assert isinstance(runtime, EmbeddedRuntime)
         assert app is not None
 
-    @pytest.mark.fastapi
-    @pytest.mark.runtime
     def test_retention_policy_values(self) -> None:
         """Retention policies are configured correctly."""
         from examples.embedded_runtime_example import log_retention, metrics_retention

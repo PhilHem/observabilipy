@@ -51,6 +51,7 @@ markers = [
     "django: Django framework adapter",
     "asgi: ASGI generic adapter",
     "runtime: EmbeddedRuntime orchestrator",
+    "examples: Example file validation",
     "e2e: End-to-end tests",
 ]
 
