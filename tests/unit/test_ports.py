@@ -39,6 +39,12 @@ class TestLogStoragePort:
             async def delete_before(self, timestamp: float) -> int:
                 return 0
 
+            async def delete_by_level_before(self, level: str, timestamp: float) -> int:
+                return 0
+
+            async def count_by_level(self, level: str) -> int:
+                return 0
+
         storage: LogStoragePort = FakeLogStorage()
         assert isinstance(storage, LogStoragePort)
 

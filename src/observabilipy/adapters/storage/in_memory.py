@@ -38,6 +38,20 @@ class InMemoryLogStorage:
         self._entries = [e for e in self._entries if e.timestamp >= timestamp]
         return original_count - len(self._entries)
 
+    async def delete_by_level_before(self, level: str, timestamp: float) -> int:
+        """Delete log entries matching level with timestamp < given value."""
+        original_count = len(self._entries)
+        self._entries = [
+            e
+            for e in self._entries
+            if not (e.level == level and e.timestamp < timestamp)
+        ]
+        return original_count - len(self._entries)
+
+    async def count_by_level(self, level: str) -> int:
+        """Return number of log entries with the specified level."""
+        return sum(1 for e in self._entries if e.level == level)
+
 
 class InMemoryMetricsStorage:
     """In-memory implementation of MetricsStoragePort.

@@ -50,6 +50,30 @@ class LogStoragePort(Protocol):
         """
         ...
 
+    async def delete_by_level_before(self, level: str, timestamp: float) -> int:
+        """Delete log entries matching level with timestamp < given value.
+
+        Args:
+            level: Log level to match (e.g., "ERROR", "INFO").
+            timestamp: Unix timestamp. Entries with this level and
+                       timestamp < this value will be deleted.
+
+        Returns:
+            Number of entries deleted.
+        """
+        ...
+
+    async def count_by_level(self, level: str) -> int:
+        """Return number of log entries with the specified level.
+
+        Args:
+            level: Log level to count (e.g., "ERROR", "INFO").
+
+        Returns:
+            Number of entries with this level.
+        """
+        ...
+
 
 @runtime_checkable
 class MetricsStoragePort(Protocol):
