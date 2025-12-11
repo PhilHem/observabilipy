@@ -1,6 +1,6 @@
 """In-memory storage adapters for logs and metrics."""
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable
 
 from observability.core.models import LogEntry, MetricSample
 
@@ -15,17 +15,18 @@ class InMemoryLogStorage:
     def __init__(self) -> None:
         self._entries: list[LogEntry] = []
 
-    def write(self, entry: LogEntry) -> None:
+    async def write(self, entry: LogEntry) -> None:
         """Write a log entry to storage."""
         self._entries.append(entry)
 
-    def read(self, since: float = 0) -> Iterable[LogEntry]:
+    async def read(self, since: float = 0) -> AsyncIterable[LogEntry]:
         """Read log entries since the given timestamp.
 
         Returns entries with timestamp > since, ordered by timestamp ascending.
         """
         filtered = [e for e in self._entries if e.timestamp > since]
-        return sorted(filtered, key=lambda e: e.timestamp)
+        for entry in sorted(filtered, key=lambda e: e.timestamp):
+            yield entry
 
 
 class InMemoryMetricsStorage:
@@ -38,10 +39,11 @@ class InMemoryMetricsStorage:
     def __init__(self) -> None:
         self._samples: list[MetricSample] = []
 
-    def write(self, sample: MetricSample) -> None:
+    async def write(self, sample: MetricSample) -> None:
         """Write a metric sample to storage."""
         self._samples.append(sample)
 
-    def scrape(self) -> Iterable[MetricSample]:
+    async def scrape(self) -> AsyncIterable[MetricSample]:
         """Scrape all current metric samples."""
-        return list(self._samples)
+        for sample in self._samples:
+            yield sample
