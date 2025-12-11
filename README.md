@@ -90,6 +90,7 @@ See the [examples/](examples/) directory:
 | Example | Description |
 |---------|-------------|
 | [minimal_example.py](examples/minimal_example.py) | Dummy metrics and logs generator for testing |
+| [cgroups_example.py](examples/cgroups_example.py) | Container CPU and memory metrics from cgroups v2 |
 | [fastapi_example.py](examples/fastapi_example.py) | Basic FastAPI setup with in-memory storage |
 | [django_example.py](examples/django_example.py) | Django integration |
 | [asgi_example.py](examples/asgi_example.py) | Generic ASGI middleware |
