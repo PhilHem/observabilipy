@@ -41,6 +41,9 @@
 - [ ] E2E tests
 - [ ] Documentation and README
 
+## Phase 8: Developer Experience
+- [x] Pre-commit hooks mirroring CI pipeline (ruff check, ruff format, mypy, pytest)
+
 ---
 
 ## Current Focus
