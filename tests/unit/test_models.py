@@ -2,7 +2,7 @@
 
 import pytest
 
-from observability.core.models import LogEntry, MetricSample
+from observability.core.models import LogEntry, MetricSample, RetentionPolicy
 
 
 class TestLogEntry:
@@ -75,3 +75,37 @@ class TestMetricSample:
         )
         with pytest.raises(AttributeError):
             sample.value = 100.0  # type: ignore[misc]
+
+
+class TestRetentionPolicy:
+    """Tests for RetentionPolicy model."""
+
+    @pytest.mark.core
+    def test_create_retention_policy_with_max_age(self) -> None:
+        policy = RetentionPolicy(max_age_seconds=3600.0)
+        assert policy.max_age_seconds == 3600.0
+        assert policy.max_count is None
+
+    @pytest.mark.core
+    def test_create_retention_policy_with_max_count(self) -> None:
+        policy = RetentionPolicy(max_count=1000)
+        assert policy.max_age_seconds is None
+        assert policy.max_count == 1000
+
+    @pytest.mark.core
+    def test_create_retention_policy_with_both(self) -> None:
+        policy = RetentionPolicy(max_age_seconds=86400.0, max_count=10000)
+        assert policy.max_age_seconds == 86400.0
+        assert policy.max_count == 10000
+
+    @pytest.mark.core
+    def test_retention_policy_defaults_to_no_limits(self) -> None:
+        policy = RetentionPolicy()
+        assert policy.max_age_seconds is None
+        assert policy.max_count is None
+
+    @pytest.mark.core
+    def test_retention_policy_is_immutable(self) -> None:
+        policy = RetentionPolicy(max_age_seconds=3600.0)
+        with pytest.raises(AttributeError):
+            policy.max_age_seconds = 7200.0  # type: ignore[misc]

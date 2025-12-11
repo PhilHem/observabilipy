@@ -35,3 +35,22 @@ class MetricSample:
     timestamp: float
     value: float
     labels: dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class RetentionPolicy:
+    """Retention policy for log and metric data.
+
+    Defines when data should be automatically cleaned up. Either or both
+    constraints can be set. When both are set, data is deleted when either
+    limit is exceeded.
+
+    Attributes:
+        max_age_seconds: Maximum age in seconds before deletion.
+                        None means no age limit.
+        max_count: Maximum number of entries to keep.
+                  None means no count limit.
+    """
+
+    max_age_seconds: float | None = None
+    max_count: int | None = None
