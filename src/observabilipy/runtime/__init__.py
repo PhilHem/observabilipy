@@ -1,5 +1,5 @@
 """Runtime components for observability."""
 
-from observability.runtime.embedded import EmbeddedRuntime
+from observabilipy.runtime.embedded import EmbeddedRuntime
 
 __all__ = ["EmbeddedRuntime"]

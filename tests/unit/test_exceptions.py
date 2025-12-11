@@ -2,7 +2,7 @@
 
 import pytest
 
-from observability.core.exceptions import ConfigurationError, ObservabilityError
+from observabilipy.core.exceptions import ConfigurationError, ObservabilityError
 
 
 class TestObservabilityError:

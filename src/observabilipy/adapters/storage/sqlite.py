@@ -6,7 +6,7 @@ from collections.abc import AsyncIterable
 
 import aiosqlite
 
-from observability.core.models import LogEntry, MetricSample
+from observabilipy.core.models import LogEntry, MetricSample
 
 _LOGS_SCHEMA = """
 CREATE TABLE IF NOT EXISTS logs (

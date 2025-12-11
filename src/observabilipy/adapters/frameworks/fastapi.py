@@ -2,9 +2,9 @@
 
 from fastapi import APIRouter, Query, Response
 
-from observability.core.encoding.ndjson import encode_logs
-from observability.core.encoding.prometheus import encode_metrics
-from observability.core.ports import LogStoragePort, MetricsStoragePort
+from observabilipy.core.encoding.ndjson import encode_logs
+from observabilipy.core.encoding.prometheus import encode_metrics
+from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
 
 def create_observability_router(

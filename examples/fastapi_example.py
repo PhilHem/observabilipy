@@ -13,12 +13,12 @@ import time
 
 from fastapi import FastAPI
 
-from observability.adapters.frameworks.fastapi import create_observability_router
-from observability.adapters.storage.in_memory import (
+from observabilipy.adapters.frameworks.fastapi import create_observability_router
+from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
 )
-from observability.core.models import LogEntry, MetricSample
+from observabilipy.core.models import LogEntry, MetricSample
 
 # Create storage instances
 log_storage = InMemoryLogStorage()

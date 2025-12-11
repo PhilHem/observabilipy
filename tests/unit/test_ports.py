@@ -4,8 +4,8 @@ from collections.abc import AsyncGenerator
 
 import pytest
 
-from observability.core.models import LogEntry, MetricSample
-from observability.core.ports import LogStoragePort, MetricsStoragePort
+from observabilipy.core.models import LogEntry, MetricSample
+from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
 
 class TestLogStoragePort:

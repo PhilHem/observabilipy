@@ -4,9 +4,9 @@ import asyncio
 
 import pytest
 
-from observability.adapters.storage.in_memory import InMemoryLogStorage
-from observability.core.models import LogEntry, RetentionPolicy
-from observability.runtime.embedded import EmbeddedRuntime
+from observabilipy.adapters.storage.in_memory import InMemoryLogStorage
+from observabilipy.core.models import LogEntry, RetentionPolicy
+from observabilipy.runtime.embedded import EmbeddedRuntime
 
 
 @pytest.mark.runtime

@@ -29,12 +29,12 @@ if not settings.configured:
 
 from django.urls import path
 
-from observability.adapters.frameworks.django import create_observability_urlpatterns
-from observability.adapters.storage.in_memory import (
+from observabilipy.adapters.frameworks.django import create_observability_urlpatterns
+from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
 )
-from observability.core.models import LogEntry, MetricSample
+from observabilipy.core.models import LogEntry, MetricSample
 
 # Create storage instances
 log_storage = InMemoryLogStorage()

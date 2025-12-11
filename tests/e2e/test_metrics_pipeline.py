@@ -6,8 +6,8 @@ Tests the full flow: HTTP request → framework adapter → storage → encoding
 import httpx
 import pytest
 
-from observability.adapters.storage.in_memory import InMemoryMetricsStorage
-from observability.core.models import MetricSample
+from observabilipy.adapters.storage.in_memory import InMemoryMetricsStorage
+from observabilipy.core.models import MetricSample
 
 
 @pytest.mark.e2e

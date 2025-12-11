@@ -9,12 +9,12 @@ django = pytest.importorskip("django", reason="django not installed")
 from django.conf import settings
 from django.test import AsyncClient
 
-from observability.adapters.frameworks.django import create_observability_urlpatterns
-from observability.adapters.storage.in_memory import (
+from observabilipy.adapters.frameworks.django import create_observability_urlpatterns
+from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
 )
-from observability.core.models import LogEntry, MetricSample
+from observabilipy.core.models import LogEntry, MetricSample
 
 # Configure Django settings for testing
 if not settings.configured:

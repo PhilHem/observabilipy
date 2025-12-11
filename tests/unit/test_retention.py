@@ -2,8 +2,8 @@
 
 import pytest
 
-from observability.core.models import RetentionPolicy
-from observability.core.retention import calculate_age_threshold, should_delete_by_count
+from observabilipy.core.models import RetentionPolicy
+from observabilipy.core.retention import calculate_age_threshold, should_delete_by_count
 
 
 class TestCalculateAgeThreshold:

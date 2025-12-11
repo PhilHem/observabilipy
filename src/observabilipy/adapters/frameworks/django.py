@@ -7,9 +7,9 @@ For WSGI deployments, use the core components directly with async_to_sync wrappe
 from django.http import HttpRequest, HttpResponse
 from django.urls import URLPattern, path
 
-from observability.core.encoding.ndjson import encode_logs
-from observability.core.encoding.prometheus import encode_metrics
-from observability.core.ports import LogStoragePort, MetricsStoragePort
+from observabilipy.core.encoding.ndjson import encode_logs
+from observabilipy.core.encoding.prometheus import encode_metrics
+from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
 
 def create_observability_urlpatterns(

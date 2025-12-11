@@ -16,12 +16,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
-from observability.adapters.frameworks.fastapi import create_observability_router
-from observability.adapters.storage.in_memory import (
+from observabilipy.adapters.frameworks.fastapi import create_observability_router
+from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
 )
-from observability.core.models import LogEntry, MetricSample
+from observabilipy.core.models import LogEntry, MetricSample
 
 log_storage = InMemoryLogStorage()
 metrics_storage = InMemoryMetricsStorage()

@@ -2,12 +2,12 @@
 
 import pytest
 
-from observability.adapters.storage.in_memory import (
+from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
 )
-from observability.core.models import LogEntry, MetricSample, RetentionPolicy
-from observability.runtime.embedded import EmbeddedRuntime
+from observabilipy.core.models import LogEntry, MetricSample, RetentionPolicy
+from observabilipy.runtime.embedded import EmbeddedRuntime
 
 
 @pytest.mark.runtime

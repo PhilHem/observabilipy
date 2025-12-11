@@ -2,7 +2,7 @@
 
 from collections.abc import AsyncIterable
 
-from observability.core.models import MetricSample
+from observabilipy.core.models import MetricSample
 
 
 def _escape_label_value(value: str) -> str:

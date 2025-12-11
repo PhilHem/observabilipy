@@ -9,9 +9,9 @@ from collections.abc import Callable, Coroutine
 from typing import Any
 from urllib.parse import parse_qs
 
-from observability.core.encoding.ndjson import encode_logs
-from observability.core.encoding.prometheus import encode_metrics
-from observability.core.ports import LogStoragePort, MetricsStoragePort
+from observabilipy.core.encoding.ndjson import encode_logs
+from observabilipy.core.encoding.prometheus import encode_metrics
+from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
 # ASGI type aliases
 Scope = dict[str, Any]

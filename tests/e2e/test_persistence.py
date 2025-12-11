@@ -9,10 +9,10 @@ import httpx
 import pytest
 from fastapi import FastAPI
 
-from observability.adapters.frameworks.fastapi import create_observability_router
-from observability.adapters.storage.sqlite import SQLiteLogStorage, SQLiteMetricsStorage
-from observability.core.models import LogEntry, MetricSample, RetentionPolicy
-from observability.runtime.embedded import EmbeddedRuntime
+from observabilipy.adapters.frameworks.fastapi import create_observability_router
+from observabilipy.adapters.storage.sqlite import SQLiteLogStorage, SQLiteMetricsStorage
+from observabilipy.core.models import LogEntry, MetricSample, RetentionPolicy
+from observabilipy.runtime.embedded import EmbeddedRuntime
 
 
 @pytest.mark.e2e

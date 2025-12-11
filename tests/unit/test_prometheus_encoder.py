@@ -4,8 +4,8 @@ from collections.abc import AsyncIterator
 
 import pytest
 
-from observability.core.encoding.prometheus import encode_metrics
-from observability.core.models import MetricSample
+from observabilipy.core.encoding.prometheus import encode_metrics
+from observabilipy.core.models import MetricSample
 
 
 async def to_async_iter[T](items: list[T]) -> AsyncIterator[T]:

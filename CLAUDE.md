@@ -24,11 +24,11 @@ uv run pytest
 uv run pytest tests/unit/test_models.py::test_log_entry -v
 
 # Type checking
-uv run mypy observability/
+uv run mypy src/observabilipy/
 
 # Linting
-uv run ruff check observability/
-uv run ruff format observability/
+uv run ruff check src/observabilipy/
+uv run ruff format src/observabilipy/
 ```
 
 ### Package Management (uv only)
@@ -82,12 +82,12 @@ Before releasing, check if these files need updates based on commits since last 
               +-----------------------+
 ```
 
-### Core (`observability/core/`)
+### Core (`observabilipy/core/`)
 - **Pure Python only** - no framework imports, no I/O, no SQLite/file/network access
 - Contains: data models, ports (Protocol interfaces), domain services, encoding logic
 - Models: `LogEntry` (timestamp, level, message, attributes) and `MetricSample` (name, timestamp, value, labels)
 
-### Ports (`observability/core/ports.py`)
+### Ports (`observabilipy/core/ports.py`)
 ```python
 class LogStoragePort(Protocol):
     def write(self, entry: LogEntry) -> None: ...
@@ -98,22 +98,23 @@ class MetricsStoragePort(Protocol):
     def scrape(self) -> Iterable[MetricSample]: ...
 ```
 
-### Adapters (`observability/adapters/`)
+### Adapters (`observabilipy/adapters/`)
 - **Storage**: `sqlite.py`, `in_memory.py`, `ring_buffer.py`
 - **Frameworks**: `fastapi.py`, `django.py`, `asgi.py`
 - **Exporters**: `prometheus.py` (text format), `alloy.py` (NDJSON)
 
-### Encoding (`observability/core/encoding/`)
+### Encoding (`observabilipy/core/encoding/`)
 - `ndjson.py` - Encode logs to newline-delimited JSON
 - `prometheus.py` - Encode metrics to Prometheus text format
 
-### Runtime (`observability/runtime/`)
+### Runtime (`observabilipy/runtime/`)
 - `embedded_mode.py` - Background ingestion, retention policies for standalone operation
 
 ## Folder Structure
 
 ```
-observability/
+src/observabilipy/
+├── __init__.py          # Re-exports common symbols for convenient imports
 ├── core/
 │   ├── models.py
 │   ├── services.py
@@ -133,11 +134,11 @@ observability/
 │   └── exporters/
 │       ├── prometheus.py
 │       └── alloy.py
-├── runtime/
-│   └── embedded_mode.py
-└── examples/
-    ├── fastapi_example.py
-    └── django_example.py
+└── runtime/
+    └── embedded_mode.py
+examples/
+├── fastapi_example.py
+└── django_example.py
 tests/
 ├── unit/
 ├── integration/

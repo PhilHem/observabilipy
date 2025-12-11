@@ -4,7 +4,7 @@ These functions calculate retention decisions without performing I/O.
 Used by EmbeddedRuntime to determine what data to delete.
 """
 
-from observability.core.models import RetentionPolicy
+from observabilipy.core.models import RetentionPolicy
 
 
 def calculate_age_threshold(

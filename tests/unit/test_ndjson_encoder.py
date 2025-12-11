@@ -5,8 +5,8 @@ from collections.abc import AsyncIterator
 
 import pytest
 
-from observability.core.encoding.ndjson import encode_logs
-from observability.core.models import LogEntry
+from observabilipy.core.encoding.ndjson import encode_logs
+from observabilipy.core.models import LogEntry
 
 
 async def to_async_iter[T](items: list[T]) -> AsyncIterator[T]:

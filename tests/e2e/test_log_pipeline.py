@@ -8,10 +8,10 @@ import json
 import httpx
 import pytest
 
-from observability.adapters.storage.in_memory import (
+from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
 )
-from observability.core.models import LogEntry
+from observabilipy.core.models import LogEntry
 
 
 @pytest.mark.e2e

@@ -82,11 +82,13 @@
 
 ### API Ergonomics
 - [ ] Metric helper functions (`counter()`, `gauge()`, `histogram()`)
+- [x] Re-export common symbols from root `__init__.py` for simpler imports
+- [x] Rename package directory from `observability/` to `observabilipy/` (match PyPI name)
 
 ---
 
 ## Current Focus
 
-**Phase 9: Distribution**
+**Phase 10: Ergonomics & Polish**
 
-Next action: Configure trusted publishing on TestPyPI/PyPI and test release.
+Next action: Add metric helper functions or framework improvements.

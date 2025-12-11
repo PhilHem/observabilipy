@@ -3,7 +3,7 @@
 import json
 from collections.abc import AsyncIterable
 
-from observability.core.models import LogEntry
+from observabilipy.core.models import LogEntry
 
 
 async def encode_logs(entries: AsyncIterable[LogEntry]) -> str:

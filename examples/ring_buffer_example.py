@@ -19,12 +19,12 @@ import time
 
 from fastapi import FastAPI
 
-from observability.adapters.frameworks.fastapi import create_observability_router
-from observability.adapters.storage.ring_buffer import (
+from observabilipy.adapters.frameworks.fastapi import create_observability_router
+from observabilipy.adapters.storage.ring_buffer import (
     RingBufferLogStorage,
     RingBufferMetricsStorage,
 )
-from observability.core.models import LogEntry, MetricSample
+from observabilipy.core.models import LogEntry, MetricSample
 
 # Ring buffer storage (fixed size, oldest entries evicted when full)
 log_storage = RingBufferLogStorage(max_size=1000)

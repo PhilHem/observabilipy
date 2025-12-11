@@ -4,9 +4,9 @@ from pathlib import Path
 
 import pytest
 
-from observability.adapters.storage.sqlite import SQLiteLogStorage, SQLiteMetricsStorage
-from observability.core.models import LogEntry, MetricSample
-from observability.core.ports import LogStoragePort, MetricsStoragePort
+from observabilipy.adapters.storage.sqlite import SQLiteLogStorage, SQLiteMetricsStorage
+from observabilipy.core.models import LogEntry, MetricSample
+from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
 
 @pytest.fixture

@@ -7,11 +7,11 @@ import time
 from collections.abc import Callable
 from typing import TYPE_CHECKING
 
-from observability.core.models import LogEntry, MetricSample, RetentionPolicy
-from observability.core.retention import calculate_age_threshold, should_delete_by_count
+from observabilipy.core.models import LogEntry, MetricSample, RetentionPolicy
+from observabilipy.core.retention import calculate_age_threshold, should_delete_by_count
 
 if TYPE_CHECKING:
-    from observability.core.ports import LogStoragePort, MetricsStoragePort
+    from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
 
 class EmbeddedRuntime:

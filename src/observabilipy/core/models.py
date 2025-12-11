@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 
-from observability.core.exceptions import ConfigurationError
+from observabilipy.core.exceptions import ConfigurationError
 
 
 @dataclass(frozen=True)

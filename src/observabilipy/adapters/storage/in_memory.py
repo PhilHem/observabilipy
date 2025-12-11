@@ -2,7 +2,7 @@
 
 from collections.abc import AsyncIterable
 
-from observability.core.models import LogEntry, MetricSample
+from observabilipy.core.models import LogEntry, MetricSample
 
 
 class InMemoryLogStorage:

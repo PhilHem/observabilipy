@@ -3,12 +3,12 @@
 import httpx
 import pytest
 
-from observability.adapters.frameworks.asgi import create_asgi_app
-from observability.adapters.storage.in_memory import (
+from observabilipy.adapters.frameworks.asgi import create_asgi_app
+from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
 )
-from observability.core.models import LogEntry, MetricSample
+from observabilipy.core.models import LogEntry, MetricSample
 
 
 class TestASGIMetricsEndpoint:

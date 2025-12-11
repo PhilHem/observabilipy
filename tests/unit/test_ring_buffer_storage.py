@@ -2,12 +2,12 @@
 
 import pytest
 
-from observability.adapters.storage.ring_buffer import (
+from observabilipy.adapters.storage.ring_buffer import (
     RingBufferLogStorage,
     RingBufferMetricsStorage,
 )
-from observability.core.models import LogEntry, MetricSample
-from observability.core.ports import LogStoragePort, MetricsStoragePort
+from observabilipy.core.models import LogEntry, MetricSample
+from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
 
 class TestRingBufferLogStorage:

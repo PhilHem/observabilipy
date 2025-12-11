@@ -11,18 +11,18 @@ try:
     import httpx
     from fastapi import FastAPI
 
-    from observability.adapters.frameworks.fastapi import create_observability_router
+    from observabilipy.adapters.frameworks.fastapi import create_observability_router
 
     HAS_FASTAPI = True
 except ImportError:
     HAS_FASTAPI = False
 
-from observability.adapters.storage.in_memory import (
+from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
 )
-from observability.adapters.storage.sqlite import SQLiteLogStorage, SQLiteMetricsStorage
-from observability.core.models import RetentionPolicy
+from observabilipy.adapters.storage.sqlite import SQLiteLogStorage, SQLiteMetricsStorage
+from observabilipy.core.models import RetentionPolicy
 
 
 @pytest.fixture

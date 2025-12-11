@@ -1,5 +1,5 @@
 """Core domain models and ports."""
 
-from observability.core.exceptions import ConfigurationError, ObservabilityError
+from observabilipy.core.exceptions import ConfigurationError, ObservabilityError
 
 __all__ = ["ConfigurationError", "ObservabilityError"]

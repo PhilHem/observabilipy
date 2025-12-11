@@ -7,7 +7,7 @@ The core domain depends only on these interfaces, not concrete implementations.
 from collections.abc import AsyncIterable
 from typing import Protocol, runtime_checkable
 
-from observability.core.models import LogEntry, MetricSample
+from observabilipy.core.models import LogEntry, MetricSample
 
 
 @runtime_checkable

@@ -2,8 +2,8 @@
 
 import pytest
 
-from observability.core.exceptions import ConfigurationError
-from observability.core.models import LogEntry, MetricSample, RetentionPolicy
+from observabilipy.core.exceptions import ConfigurationError
+from observabilipy.core.models import LogEntry, MetricSample, RetentionPolicy
 
 
 class TestLogEntry:
