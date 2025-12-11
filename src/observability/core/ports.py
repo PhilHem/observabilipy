@@ -4,7 +4,7 @@ These protocols define the contracts that storage adapters must implement.
 The core domain depends only on these interfaces, not concrete implementations.
 """
 
-from collections.abc import Iterable
+from collections.abc import AsyncIterable
 from typing import Protocol, runtime_checkable
 
 from observability.core.models import LogEntry, MetricSample
@@ -18,11 +18,11 @@ class LogStoragePort(Protocol):
     Examples: InMemoryLogStorage, SQLiteLogStorage, RingBufferLogStorage.
     """
 
-    def write(self, entry: LogEntry) -> None:
+    async def write(self, entry: LogEntry) -> None:
         """Write a log entry to storage."""
         ...
 
-    def read(self, since: float = 0) -> Iterable[LogEntry]:
+    def read(self, since: float = 0) -> AsyncIterable[LogEntry]:
         """Read log entries since the given timestamp.
 
         Args:
@@ -30,7 +30,7 @@ class LogStoragePort(Protocol):
                    Default 0 returns all entries.
 
         Returns:
-            Iterable of LogEntry objects, ordered by timestamp ascending.
+            AsyncIterable of LogEntry objects, ordered by timestamp ascending.
         """
         ...
 
@@ -43,14 +43,14 @@ class MetricsStoragePort(Protocol):
     Examples: InMemoryMetricsStorage, SQLiteMetricsStorage.
     """
 
-    def write(self, sample: MetricSample) -> None:
+    async def write(self, sample: MetricSample) -> None:
         """Write a metric sample to storage."""
         ...
 
-    def scrape(self) -> Iterable[MetricSample]:
+    def scrape(self) -> AsyncIterable[MetricSample]:
         """Scrape all current metric samples.
 
         Returns:
-            Iterable of MetricSample objects representing current state.
+            AsyncIterable of MetricSample objects representing current state.
         """
         ...
