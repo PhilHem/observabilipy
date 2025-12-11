@@ -3,7 +3,7 @@
 ## Phase 1: Core Foundation
 - [x] Project setup (`pyproject.toml`, dev dependencies)
 - [x] Pytest configuration with marks in `pyproject.toml`
-- [ ] GitHub Actions CI with separate jobs per mark
+- [x] GitHub Actions CI with separate jobs per mark
 - [x] Core models (`LogEntry`, `MetricSample`)
 - [ ] Port interfaces (`LogStoragePort`, `MetricsStoragePort`)
 - [ ] In-memory storage adapters

@@ -196,6 +196,13 @@ pytest -m fastapi
 
 CI runs each mark as a separate job for clear failure isolation.
 
+### CI Parity
+
+**CI must use identical commands to local development.** No separate CI-specific scripts or logic. The GitHub Actions workflow uses `uv sync` and `uv run` exactly as developers do locally. This ensures:
+- What passes locally passes in CI
+- No "works on my machine" issues
+- Single source of truth for how to run tests
+
 ## Extending the System
 
 ### Adding a Storage Backend
