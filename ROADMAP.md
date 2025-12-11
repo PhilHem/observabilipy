@@ -63,7 +63,25 @@
 ## Phase 9: Distribution
 - [x] PyPI publishing setup (build configuration, classifiers)
 - [x] GitHub Actions release workflow (publish on tag)
-- [ ] Test on TestPyPI first
+- [x] Test on TestPyPI first
+
+## Phase 10: Ergonomics & Polish
+
+### Type Safety
+- [ ] Add `py.typed` marker for type checker support
+- [ ] Custom exceptions with actionable error messages
+
+### Configuration
+- [ ] Configuration validation (retention policies, buffer sizes)
+- [ ] Per-level retention policies (optional overrides per log level)
+
+### Framework Adapters
+- [ ] Health check endpoint (`/health`) in all framework adapters
+- [ ] Log level filtering on `/logs` endpoint (`?level=error`)
+- [ ] WSGI adapter (Flask, Bottle, etc.)
+
+### API Ergonomics
+- [ ] Metric helper functions (`counter()`, `gauge()`, `histogram()`)
 
 ---
 
