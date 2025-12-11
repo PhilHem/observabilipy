@@ -5,9 +5,9 @@
 - [x] Pytest configuration with marks in `pyproject.toml`
 - [x] GitHub Actions CI with separate jobs per mark
 - [x] Core models (`LogEntry`, `MetricSample`)
-- [ ] Port interfaces (`LogStoragePort`, `MetricsStoragePort`)
-- [ ] In-memory storage adapters
-- [ ] Unit tests for models and in-memory storage
+- [x] Port interfaces (`LogStoragePort`, `MetricsStoragePort`)
+- [x] In-memory storage adapters
+- [x] Unit tests for models and in-memory storage
 
 ## Phase 2: Encoding
 - [ ] NDJSON encoder for logs
@@ -37,6 +37,6 @@
 
 ## Current Focus
 
-**Phase 1: Core Foundation**
+**Phase 2: Encoding**
 
-Next action: Create GitHub Actions CI, then core models with tests.
+Next action: Implement NDJSON encoder for logs.
