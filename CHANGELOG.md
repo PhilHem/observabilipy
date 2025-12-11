@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.3] - 2025-12-11
+
+### Added
+- Custom exceptions (`ObservabilityError`, `ConfigurationError`) with actionable error messages
+- `py.typed` marker for type checker support
+- Validation for `RetentionPolicy` (rejects non-positive `max_age_seconds` and `max_count`)
+
 ## [0.8.2] - 2025-12-11
 
 ### Added
