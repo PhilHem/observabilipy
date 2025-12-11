@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.2] - 2025-12-11
+
+### Added
+- PyPI publishing setup (classifiers, keywords, license, project URLs)
+- MIT LICENSE file
+- GitHub Actions release workflow for publishing to TestPyPI and PyPI
+- `build` dev dependency
+
+### Fixed
+- CI e2e tests when fastapi not installed
+
 ## [0.8.1] - 2025-12-11
 
 ### Added
