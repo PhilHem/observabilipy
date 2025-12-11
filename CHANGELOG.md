@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.3] - 2025-12-11
+
+### Fixed
+- CI failures when running marker-filtered tests (e.g., `pytest -m storage`) by using `pytest.importorskip()` for optional framework dependencies
+- Added ruff per-file-ignores for E402 in tests to support the importorskip pattern
+
 ## [0.5.2] - 2025-12-11
 
 ### Added
