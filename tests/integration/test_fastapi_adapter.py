@@ -3,6 +3,8 @@
 import json
 
 import pytest
+
+fastapi = pytest.importorskip("fastapi", reason="fastapi not installed")
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 

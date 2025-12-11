@@ -3,8 +3,9 @@
 import json
 import sys
 
-import django
 import pytest
+
+django = pytest.importorskip("django", reason="django not installed")
 from django.conf import settings
 from django.test import AsyncClient
 
