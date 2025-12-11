@@ -15,6 +15,9 @@ dependencies = [
 fastapi = [
     "fastapi>=0.124.2",
 ]
+django = [
+    "django>=4.2",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -25,6 +28,8 @@ packages = ["src/observability"]
 
 [dependency-groups]
 dev = [
+    "django>=6.0",
+    "django-stubs>=5.2.8",
     "httpx>=0.28.1",
     "mypy>=1.19.0",
     "pytest>=9.0.2",
