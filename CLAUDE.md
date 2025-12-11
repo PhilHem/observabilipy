@@ -220,6 +220,26 @@ CI runs each mark as a separate job for clear failure isolation.
 - No "works on my machine" issues
 - Single source of truth for how to run tests
 
+### Pre-commit Hooks
+
+Pre-commit hooks mirror the CI pipeline to catch issues before they reach CI. The hooks run:
+1. `ruff check` - Linting
+2. `ruff format --check` - Format verification
+3. `mypy` - Type checking
+4. `pytest` - Tests
+
+Install hooks with:
+```bash
+uv run pre-commit install
+```
+
+Run manually:
+```bash
+uv run pre-commit run --all-files
+```
+
+The hooks use the same commands as CI, maintaining parity between local development, pre-commit, and CI.
+
 ## Extending the System
 
 ### Adding a Storage Backend
