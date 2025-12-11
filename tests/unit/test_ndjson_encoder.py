@@ -2,17 +2,14 @@
 
 import json
 from collections.abc import AsyncIterator
-from typing import TypeVar
 
 import pytest
 
 from observability.core.encoding.ndjson import encode_logs
 from observability.core.models import LogEntry
 
-T = TypeVar("T")
 
-
-async def to_async_iter(items: list[T]) -> AsyncIterator[T]:
+async def to_async_iter[T](items: list[T]) -> AsyncIterator[T]:
     """Convert a list to an async iterator for testing."""
     for item in items:
         yield item

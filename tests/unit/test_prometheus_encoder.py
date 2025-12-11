@@ -1,17 +1,14 @@
 """Tests for Prometheus text format encoder."""
 
 from collections.abc import AsyncIterator
-from typing import TypeVar
 
 import pytest
 
 from observability.core.encoding.prometheus import encode_metrics
 from observability.core.models import MetricSample
 
-T = TypeVar("T")
 
-
-async def to_async_iter(items: list[T]) -> AsyncIterator[T]:
+async def to_async_iter[T](items: list[T]) -> AsyncIterator[T]:
     """Convert a list to an async iterator for testing."""
     for item in items:
         yield item
@@ -90,7 +87,11 @@ class TestPrometheusEncoder:
             name="test_metric",
             timestamp=1702300000.0,
             value=1.0,
-            labels={"path": '/api/"test"', "note": "line1\nline2", "escape": "back\\slash"},
+            labels={
+                "path": '/api/"test"',
+                "note": "line1\nline2",
+                "escape": "back\\slash",
+            },
         )
 
         result = await encode_metrics(to_async_iter([sample]))

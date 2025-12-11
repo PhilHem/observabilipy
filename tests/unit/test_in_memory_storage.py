@@ -2,12 +2,12 @@
 
 import pytest
 
-from observability.core.models import LogEntry, MetricSample
-from observability.core.ports import LogStoragePort, MetricsStoragePort
 from observability.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
 )
+from observability.core.models import LogEntry, MetricSample
+from observability.core.ports import LogStoragePort, MetricsStoragePort
 
 
 class TestInMemoryLogStorage:
