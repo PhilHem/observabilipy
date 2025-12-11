@@ -45,6 +45,6 @@
 
 ## Current Focus
 
-**Phase 4: Async Foundation**
+**Phase 5: Persistent Storage**
 
-Next action: Convert encoders to accept `AsyncIterable`.
+Next action: Implement SQLite storage adapter with `aiosqlite`.
