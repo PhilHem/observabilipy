@@ -32,43 +32,43 @@ jobs:
       - run: uv sync
       - run: uv run pytest -m core -v
 
-  # Uncomment as tests are added:
-  # test-encoding:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: astral-sh/setup-uv@v4
-  #     - run: uv sync
-  #     - run: uv run pytest -m encoding -v
+  test-encoding:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+      - run: uv run pytest -m encoding -v
 
-  # test-storage:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: astral-sh/setup-uv@v4
-  #     - run: uv sync
-  #     - run: uv run pytest -m storage -v
+  test-storage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync
+      - run: uv run pytest -m storage -v
 
-  # test-fastapi:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: astral-sh/setup-uv@v4
-  #     - run: uv sync
-  #     - run: uv run pytest -m fastapi -v
+  test-fastapi:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --extra fastapi
+      - run: uv run pytest -m fastapi -v
 
-  # test-django:
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: astral-sh/setup-uv@v4
-  #     - run: uv sync
-  #     - run: uv run pytest -m django -v
+  test-django:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v4
+      - run: uv sync --extra django
+      - run: uv run pytest -m django -v
 
+  # Uncomment when e2e tests are added:
   # test-e2e:
   #   runs-on: ubuntu-latest
   #   steps:
   #     - uses: actions/checkout@v4
   #     - uses: astral-sh/setup-uv@v4
-  #     - run: uv sync
+  #     - run: uv sync --all-extras
   #     - run: uv run pytest -m e2e -v
