@@ -1,7 +1,6 @@
 """Tests for port interfaces."""
 
-from collections.abc import AsyncIterable
-from typing import AsyncGenerator
+from collections.abc import AsyncGenerator
 
 import pytest
 
@@ -30,9 +29,7 @@ class TestLogStoragePort:
             async def write(self, entry: LogEntry) -> None:
                 pass
 
-            async def read(
-                self, since: float = 0
-            ) -> AsyncGenerator[LogEntry, None]:
+            async def read(self, since: float = 0) -> AsyncGenerator[LogEntry]:
                 return
                 yield  # Make this an async generator
 
@@ -55,13 +52,13 @@ class TestMetricsStoragePort:
 
     @pytest.mark.core
     def test_class_implementing_protocol_is_recognized(self) -> None:
-        """A class with async write and scrape methods should satisfy MetricsStoragePort."""
+        """A class with write and scrape methods should satisfy MetricsStoragePort."""
 
         class FakeMetricsStorage:
             async def write(self, sample: MetricSample) -> None:
                 pass
 
-            async def scrape(self) -> AsyncGenerator[MetricSample, None]:
+            async def scrape(self) -> AsyncGenerator[MetricSample]:
                 return
                 yield  # Make this an async generator
 

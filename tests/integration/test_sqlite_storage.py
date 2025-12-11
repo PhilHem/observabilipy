@@ -64,7 +64,9 @@ class TestSQLiteLogStorage:
         assert result == [new_entry]
 
     @pytest.mark.storage
-    async def test_read_returns_entries_ordered_by_timestamp(self, log_db_path: str) -> None:
+    async def test_read_returns_entries_ordered_by_timestamp(
+        self, log_db_path: str
+    ) -> None:
         """Read returns entries ordered by timestamp ascending."""
         storage = SQLiteLogStorage(log_db_path)
         entry_3 = LogEntry(timestamp=3000.0, level="INFO", message="third")
@@ -132,7 +134,9 @@ class TestSQLiteMetricsStorage:
         assert result == [sample]
 
     @pytest.mark.storage
-    async def test_scrape_returns_empty_when_no_samples(self, metrics_db_path: str) -> None:
+    async def test_scrape_returns_empty_when_no_samples(
+        self, metrics_db_path: str
+    ) -> None:
         """Scrape returns empty iterable when storage is empty."""
         storage = SQLiteMetricsStorage(metrics_db_path)
 
@@ -141,7 +145,9 @@ class TestSQLiteMetricsStorage:
         assert result == []
 
     @pytest.mark.storage
-    async def test_write_and_scrape_sample_with_labels(self, metrics_db_path: str) -> None:
+    async def test_write_and_scrape_sample_with_labels(
+        self, metrics_db_path: str
+    ) -> None:
         """Labels are correctly serialized and deserialized."""
         storage = SQLiteMetricsStorage(metrics_db_path)
         sample = MetricSample(
@@ -172,7 +178,9 @@ class TestSQLiteMetricsStorage:
         assert result == samples
 
     @pytest.mark.storage
-    async def test_samples_with_different_labels_are_distinct(self, metrics_db_path: str) -> None:
+    async def test_samples_with_different_labels_are_distinct(
+        self, metrics_db_path: str
+    ) -> None:
         """Samples with same name but different labels are stored separately."""
         storage = SQLiteMetricsStorage(metrics_db_path)
         sample_a = MetricSample(
