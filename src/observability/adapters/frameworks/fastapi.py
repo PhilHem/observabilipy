@@ -23,9 +23,9 @@ def create_observability_router(
     router = APIRouter()
 
     @router.get("/metrics")
-    def get_metrics() -> Response:
+    async def get_metrics() -> Response:
         """Return metrics in Prometheus text format."""
-        samples = metrics_storage.scrape()
+        samples = [s async for s in metrics_storage.scrape()]
         body = encode_metrics(samples)
         return Response(
             content=body,
@@ -33,13 +33,13 @@ def create_observability_router(
         )
 
     @router.get("/logs")
-    def get_logs(since: float = Query(default=0)) -> Response:
+    async def get_logs(since: float = Query(default=0)) -> Response:
         """Return logs in NDJSON format.
 
         Args:
             since: Unix timestamp. Returns entries with timestamp > since.
         """
-        entries = log_storage.read(since=since)
+        entries = [e async for e in log_storage.read(since=since)]
         body = encode_logs(entries)
         return Response(
             content=body,
