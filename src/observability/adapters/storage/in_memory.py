@@ -28,6 +28,16 @@ class InMemoryLogStorage:
         for entry in sorted(filtered, key=lambda e: e.timestamp):
             yield entry
 
+    async def count(self) -> int:
+        """Return total number of log entries in storage."""
+        return len(self._entries)
+
+    async def delete_before(self, timestamp: float) -> int:
+        """Delete log entries with timestamp < given value."""
+        original_count = len(self._entries)
+        self._entries = [e for e in self._entries if e.timestamp >= timestamp]
+        return original_count - len(self._entries)
+
 
 class InMemoryMetricsStorage:
     """In-memory implementation of MetricsStoragePort.
@@ -47,3 +57,13 @@ class InMemoryMetricsStorage:
         """Scrape all current metric samples."""
         for sample in self._samples:
             yield sample
+
+    async def count(self) -> int:
+        """Return total number of metric samples in storage."""
+        return len(self._samples)
+
+    async def delete_before(self, timestamp: float) -> int:
+        """Delete metric samples with timestamp < given value."""
+        original_count = len(self._samples)
+        self._samples = [s for s in self._samples if s.timestamp >= timestamp]
+        return original_count - len(self._samples)
