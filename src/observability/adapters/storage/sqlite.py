@@ -47,6 +47,22 @@ _SELECT_METRICS = """
 SELECT name, timestamp, value, labels FROM metrics
 """
 
+_COUNT_LOGS = """
+SELECT COUNT(*) FROM logs
+"""
+
+_DELETE_LOGS_BEFORE = """
+DELETE FROM logs WHERE timestamp < ?
+"""
+
+_COUNT_METRICS = """
+SELECT COUNT(*) FROM metrics
+"""
+
+_DELETE_METRICS_BEFORE = """
+DELETE FROM metrics WHERE timestamp < ?
+"""
+
 
 class SQLiteLogStorage:
     """SQLite implementation of LogStoragePort.
@@ -96,6 +112,27 @@ class SQLiteLogStorage:
         finally:
             await db.close()
 
+    async def count(self) -> int:
+        """Return total number of log entries in storage."""
+        db = await self._get_connection()
+        try:
+            async with db.execute(_COUNT_LOGS) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
+        finally:
+            await db.close()
+
+    async def delete_before(self, timestamp: float) -> int:
+        """Delete log entries with timestamp < given value."""
+        db = await self._get_connection()
+        try:
+            cursor = await db.execute(_DELETE_LOGS_BEFORE, (timestamp,))
+            deleted = cursor.rowcount
+            await db.commit()
+            return deleted
+        finally:
+            await db.close()
+
 
 class SQLiteMetricsStorage:
     """SQLite implementation of MetricsStoragePort.
@@ -142,5 +179,26 @@ class SQLiteMetricsStorage:
                         value=row[2],
                         labels=json.loads(row[3]),
                     )
+        finally:
+            await db.close()
+
+    async def count(self) -> int:
+        """Return total number of metric samples in storage."""
+        db = await self._get_connection()
+        try:
+            async with db.execute(_COUNT_METRICS) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
+        finally:
+            await db.close()
+
+    async def delete_before(self, timestamp: float) -> int:
+        """Delete metric samples with timestamp < given value."""
+        db = await self._get_connection()
+        try:
+            cursor = await db.execute(_DELETE_METRICS_BEFORE, (timestamp,))
+            deleted = cursor.rowcount
+            await db.commit()
+            return deleted
         finally:
             await db.close()
