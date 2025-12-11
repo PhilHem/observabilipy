@@ -16,6 +16,8 @@ Falls back to dummy values if cgroups are unavailable.
 
 import asyncio
 import time
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -31,9 +33,6 @@ CGROUP_PATH = Path("/sys/fs/cgroup")
 
 log_storage = InMemoryLogStorage()
 metrics_storage = InMemoryMetricsStorage()
-
-app = FastAPI(title="Container Metrics Example")
-app.include_router(create_observability_router(log_storage, metrics_storage))
 
 
 def read_cgroup_file(filename: str) -> str | None:
@@ -178,7 +177,12 @@ async def collect_container_metrics() -> None:
         await asyncio.sleep(1)
 
 
-@app.on_event("startup")
-async def startup() -> None:
-    """Start background metrics collection."""
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+    """Start background metrics collection on startup."""
     asyncio.create_task(collect_container_metrics())
+    yield
+
+
+app = FastAPI(title="Container Metrics Example", lifespan=lifespan)
+app.include_router(create_observability_router(log_storage, metrics_storage))

@@ -11,6 +11,8 @@ Then visit:
 import asyncio
 import random
 import time
+from collections.abc import AsyncGenerator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 
@@ -23,9 +25,6 @@ from observability.core.models import LogEntry, MetricSample
 
 log_storage = InMemoryLogStorage()
 metrics_storage = InMemoryMetricsStorage()
-
-app = FastAPI(title="Minimal Observability Example")
-app.include_router(create_observability_router(log_storage, metrics_storage))
 
 
 async def generate_dummy_data() -> None:
@@ -103,7 +102,12 @@ async def generate_dummy_data() -> None:
         await asyncio.sleep(1)
 
 
-@app.on_event("startup")
-async def startup() -> None:
-    """Start background data generation."""
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+    """Start background data generation on startup."""
     asyncio.create_task(generate_dummy_data())
+    yield
+
+
+app = FastAPI(title="Minimal Observability Example", lifespan=lifespan)
+app.include_router(create_observability_router(log_storage, metrics_storage))
