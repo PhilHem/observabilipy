@@ -32,7 +32,7 @@
 - [x] Integration tests for SQLite adapter
 
 ## Phase 6: Additional Adapters
-- [ ] Django adapter
+- [x] Django adapter
 - [ ] ASGI generic adapter
 - [ ] Ring buffer storage adapter
 
@@ -47,4 +47,4 @@
 
 **Phase 6: Additional Adapters**
 
-Next action: Implement Django adapter or ASGI generic adapter.
+Next action: Implement ASGI generic adapter or ring buffer storage adapter.
