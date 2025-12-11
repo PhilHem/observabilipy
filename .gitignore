@@ -8,3 +8,9 @@ wheels/
 
 # Virtual environments
 .venv
+
+# SQLite databases (from examples)
+*.db
+
+# IDE/editor history
+.history/

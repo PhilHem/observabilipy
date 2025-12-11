@@ -48,9 +48,9 @@
 - [x] Integration tests for `EmbeddedRuntime` (with in-memory storage)
 
 ### Examples
-- [ ] `embedded_runtime_example.py` - EmbeddedRuntime with retention policies and SQLite
-- [ ] `sqlite_example.py` - Persistent storage with SQLite adapter
-- [ ] `ring_buffer_example.py` - Fixed-size memory storage for constrained environments
+- [x] `embedded_runtime_example.py` - EmbeddedRuntime with retention policies and SQLite
+- [x] `sqlite_example.py` - Persistent storage with SQLite adapter
+- [x] `ring_buffer_example.py` - Fixed-size memory storage for constrained environments
 
 ### Other
 - [ ] E2E tests
