@@ -34,7 +34,7 @@
 ## Phase 6: Additional Adapters
 - [x] Django adapter
 - [x] ASGI generic adapter
-- [ ] Ring buffer storage adapter
+- [x] Ring buffer storage adapter
 
 ## Phase 7: Runtime & Polish
 - [ ] Embedded mode (background ingestion, retention)
@@ -48,6 +48,6 @@
 
 ## Current Focus
 
-**Phase 6: Additional Adapters**
+**Phase 7: Runtime & Polish**
 
-Next action: Implement ring buffer storage adapter.
+Next action: Implement embedded mode (background ingestion, retention).
