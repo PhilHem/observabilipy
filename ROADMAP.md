@@ -53,7 +53,8 @@
 - [x] `ring_buffer_example.py` - Fixed-size memory storage for constrained environments
 
 ### Other
-- [ ] E2E tests
+- [x] E2E tests (log pipeline, metrics pipeline, persistence, concurrency)
+- [x] SQLite WAL mode for concurrent access
 - [ ] Documentation and README
 
 ## Phase 8: Developer Experience
@@ -65,4 +66,4 @@
 
 **Phase 7: Runtime & Polish**
 
-Next action: Create `embedded_runtime_example.py` demonstrating EmbeddedRuntime with SQLite and retention policies.
+Next action: Documentation and README.

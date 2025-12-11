@@ -1,5 +1,6 @@
 """SQLite storage adapters for logs and metrics."""
 
+import asyncio
 import json
 from collections.abc import AsyncIterable
 
@@ -68,17 +69,30 @@ class SQLiteLogStorage:
     """SQLite implementation of LogStoragePort.
 
     Stores log entries in a SQLite database using aiosqlite for
-    non-blocking async operations.
+    non-blocking async operations. Uses WAL mode for concurrent access.
     """
 
     def __init__(self, db_path: str) -> None:
         self._db_path = db_path
+        self._initialized = False
+        self._init_lock = asyncio.Lock()
+
+    async def _ensure_initialized(self) -> None:
+        """Initialize database schema once."""
+        if self._initialized:
+            return
+        async with self._init_lock:
+            if self._initialized:
+                return
+            async with aiosqlite.connect(self._db_path) as db:
+                await db.execute("PRAGMA journal_mode=WAL")
+                await db.executescript(_LOGS_SCHEMA)
+            self._initialized = True
 
     async def _get_connection(self) -> aiosqlite.Connection:
-        """Get a database connection, creating tables if needed."""
-        db = await aiosqlite.connect(self._db_path)
-        await db.executescript(_LOGS_SCHEMA)
-        return db
+        """Get a database connection."""
+        await self._ensure_initialized()
+        return await aiosqlite.connect(self._db_path)
 
     async def write(self, entry: LogEntry) -> None:
         """Write a log entry to storage."""
@@ -138,17 +152,30 @@ class SQLiteMetricsStorage:
     """SQLite implementation of MetricsStoragePort.
 
     Stores metric samples in a SQLite database using aiosqlite for
-    non-blocking async operations.
+    non-blocking async operations. Uses WAL mode for concurrent access.
     """
 
     def __init__(self, db_path: str) -> None:
         self._db_path = db_path
+        self._initialized = False
+        self._init_lock = asyncio.Lock()
+
+    async def _ensure_initialized(self) -> None:
+        """Initialize database schema once."""
+        if self._initialized:
+            return
+        async with self._init_lock:
+            if self._initialized:
+                return
+            async with aiosqlite.connect(self._db_path) as db:
+                await db.execute("PRAGMA journal_mode=WAL")
+                await db.executescript(_METRICS_SCHEMA)
+            self._initialized = True
 
     async def _get_connection(self) -> aiosqlite.Connection:
-        """Get a database connection, creating tables if needed."""
-        db = await aiosqlite.connect(self._db_path)
-        await db.executescript(_METRICS_SCHEMA)
-        return db
+        """Get a database connection."""
+        await self._ensure_initialized()
+        return await aiosqlite.connect(self._db_path)
 
     async def write(self, sample: MetricSample) -> None:
         """Write a metric sample to storage."""
