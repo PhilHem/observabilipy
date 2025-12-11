@@ -33,7 +33,7 @@
 
 ## Phase 6: Additional Adapters
 - [x] Django adapter
-- [ ] ASGI generic adapter
+- [x] ASGI generic adapter
 - [ ] Ring buffer storage adapter
 
 ## Phase 7: Runtime & Polish
@@ -50,4 +50,4 @@
 
 **Phase 6: Additional Adapters**
 
-Next action: Implement ASGI generic adapter or ring buffer storage adapter.
+Next action: Implement ring buffer storage adapter.
