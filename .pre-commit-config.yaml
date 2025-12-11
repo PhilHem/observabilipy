@@ -1,0 +1,41 @@
+# Pre-commit hooks mirroring CI pipeline
+# Install: uv run pre-commit install
+# Run manually: uv run pre-commit run --all-files
+
+repos:
+  # Ruff for linting and formatting (mirrors CI lint job)
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check
+        entry: uv run ruff check src/ tests/
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format --check src/ tests/
+        language: system
+        types: [python]
+        pass_filenames: false
+
+  # Mypy for type checking (mirrors CI typecheck job)
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        entry: uv run mypy src/
+        language: system
+        types: [python]
+        pass_filenames: false
+
+  # Pytest for tests (mirrors CI test jobs)
+  - repo: local
+    hooks:
+      - id: pytest
+        name: pytest
+        entry: uv run pytest
+        language: system
+        types: [python]
+        pass_filenames: false
+        stages: [pre-push]  # Only run on push, not every commit
