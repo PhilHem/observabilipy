@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.4] - 2025-12-11
+
+### Fixed
+- Mypy errors for FastAPI adapter by adding `ignore_missing_imports` override for optional fastapi dependency
+
 ## [0.5.3] - 2025-12-11
 
 ### Fixed
