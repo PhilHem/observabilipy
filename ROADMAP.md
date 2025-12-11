@@ -72,11 +72,10 @@
 - [x] Custom exceptions with actionable error messages
 
 ### Configuration
-- [ ] Configuration validation (retention policies, buffer sizes)
+- [x] Configuration validation (retention policies, buffer sizes)
 - [ ] Per-level retention policies (optional overrides per log level)
 
 ### Framework Adapters
-- [ ] Health check endpoint (`/health`) in all framework adapters
 - [ ] Log level filtering on `/logs` endpoint (`?level=error`)
 - [ ] WSGI adapter (Flask, Bottle, etc.)
 
