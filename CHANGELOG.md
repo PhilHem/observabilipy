@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.7.1] - 2025-12-11
+
+### Changed
+- Enable CI test jobs for encoding, storage, fastapi, and django (previously commented out)
+
 ## [0.7.0] - 2025-12-11
 
 ### Added
