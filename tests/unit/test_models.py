@@ -2,6 +2,7 @@
 
 import pytest
 
+from observability.core.exceptions import ConfigurationError
 from observability.core.models import LogEntry, MetricSample, RetentionPolicy
 
 
@@ -109,3 +110,27 @@ class TestRetentionPolicy:
         policy = RetentionPolicy(max_age_seconds=3600.0)
         with pytest.raises(AttributeError):
             policy.max_age_seconds = 7200.0  # type: ignore[misc]
+
+    @pytest.mark.core
+    def test_retention_policy_rejects_negative_max_age(self) -> None:
+        with pytest.raises(ConfigurationError) as exc_info:
+            RetentionPolicy(max_age_seconds=-1.0)
+        assert "max_age_seconds" in str(exc_info.value)
+        assert "positive" in str(exc_info.value)
+
+    @pytest.mark.core
+    def test_retention_policy_rejects_zero_max_age(self) -> None:
+        with pytest.raises(ConfigurationError):
+            RetentionPolicy(max_age_seconds=0.0)
+
+    @pytest.mark.core
+    def test_retention_policy_rejects_negative_max_count(self) -> None:
+        with pytest.raises(ConfigurationError) as exc_info:
+            RetentionPolicy(max_count=-1)
+        assert "max_count" in str(exc_info.value)
+        assert "positive" in str(exc_info.value)
+
+    @pytest.mark.core
+    def test_retention_policy_rejects_zero_max_count(self) -> None:
+        with pytest.raises(ConfigurationError):
+            RetentionPolicy(max_count=0)

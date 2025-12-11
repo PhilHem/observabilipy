@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass, field
 
+from observability.core.exceptions import ConfigurationError
+
 
 @dataclass(frozen=True)
 class LogEntry:
@@ -54,3 +56,14 @@ class RetentionPolicy:
 
     max_age_seconds: float | None = None
     max_count: int | None = None
+
+    def __post_init__(self) -> None:
+        """Validate configuration values."""
+        if self.max_age_seconds is not None and self.max_age_seconds <= 0:
+            raise ConfigurationError(
+                f"max_age_seconds must be positive, got {self.max_age_seconds}"
+            )
+        if self.max_count is not None and self.max_count <= 0:
+            raise ConfigurationError(
+                f"max_count must be positive, got {self.max_count}"
+            )

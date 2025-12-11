@@ -68,8 +68,8 @@
 ## Phase 10: Ergonomics & Polish
 
 ### Type Safety
-- [ ] Add `py.typed` marker for type checker support
-- [ ] Custom exceptions with actionable error messages
+- [x] Add `py.typed` marker for type checker support
+- [x] Custom exceptions with actionable error messages
 
 ### Configuration
 - [ ] Configuration validation (retention policies, buffer sizes)
