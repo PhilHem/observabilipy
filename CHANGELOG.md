@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.4.2] - 2025-12-11
+
+### Changed
+- Convert encoders (`encode_logs`, `encode_metrics`) to async functions accepting `AsyncIterable`
+- Simplify FastAPI adapter to pass async iterables directly to encoders
+
 ## [0.4.1] - 2025-12-11
 
 ### Added
