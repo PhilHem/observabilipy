@@ -1,0 +1,55 @@
+[project]
+name = "observabilipy"
+version = "0.1.1"
+description = "Framework-agnostic metrics and structured log collection with hexagonal architecture"
+readme = "README.md"
+authors = [
+    { name = "PhilHem", email = "34508934+PhilHem@users.noreply.github.com" }
+]
+requires-python = ">=3.13"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/observability"]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.0",
+    "pytest>=9.0.2",
+    "ruff>=0.14.8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "core: Core models, ports, services",
+    "encoding: NDJSON, Prometheus encoders",
+    "storage: Storage adapters (sqlite, in_memory, ring_buffer)",
+    "fastapi: FastAPI framework adapter",
+    "django: Django framework adapter",
+    "e2e: End-to-end tests",
+]
+
+[tool.ruff]
+src = ["src"]
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+warn_return_any = true
+warn_unused_ignores = true
