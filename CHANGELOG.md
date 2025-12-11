@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.8.0] - 2025-12-11
+
+### Added
+- `EmbeddedRuntime` orchestrator for background retention cleanup
+- `RetentionPolicy` value object supporting age-based and count-based retention
+- Pure retention logic functions (`calculate_age_threshold`, `should_delete_by_count`)
+- `count()` and `delete_before(timestamp)` methods to storage ports
+- Retention methods implemented in all storage adapters (in-memory, SQLite, ring buffer)
+
 ## [0.7.2] - 2025-12-11
 
 ### Changed
