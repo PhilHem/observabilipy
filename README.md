@@ -44,6 +44,16 @@ app.include_router(create_observability_router(log_storage, metrics_storage))
 
 Run with `uvicorn` and visit `/metrics` and `/logs`.
 
+## Storage Backends
+
+| Backend | Use Case |
+|---------|----------|
+| `InMemoryLogStorage` / `InMemoryMetricsStorage` | Development and testing |
+| `SQLiteLogStorage` / `SQLiteMetricsStorage` | Persistent storage with WAL mode for concurrent access |
+| `RingBufferLogStorage` / `RingBufferMetricsStorage` | Fixed-size buffer for memory-constrained environments |
+
+All backends implement the same port interfaces and are interchangeable.
+
 ## Examples
 
 See the [examples/](examples/) directory:
