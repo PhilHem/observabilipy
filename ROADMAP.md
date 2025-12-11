@@ -55,15 +55,20 @@
 ### Other
 - [x] E2E tests (log pipeline, metrics pipeline, persistence, concurrency)
 - [x] SQLite WAL mode for concurrent access
-- [ ] Documentation and README
+- [x] Documentation and README
 
 ## Phase 8: Developer Experience
 - [x] Pre-commit hooks mirroring CI pipeline (ruff check, ruff format, mypy, pytest)
+
+## Phase 9: Distribution
+- [x] PyPI publishing setup (build configuration, classifiers)
+- [x] GitHub Actions release workflow (publish on tag)
+- [ ] Test on TestPyPI first
 
 ---
 
 ## Current Focus
 
-**Phase 7: Runtime & Polish**
+**Phase 9: Distribution**
 
-Next action: Documentation and README.
+Next action: Configure trusted publishing on TestPyPI/PyPI and test release.
