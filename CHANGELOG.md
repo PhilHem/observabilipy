@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.6.1] - 2025-12-11
+
+### Added
+- Ring buffer storage adapters (`RingBufferLogStorage`, `RingBufferMetricsStorage`)
+- Bounded in-memory storage with automatic eviction of oldest entries
+- Uses `collections.deque(maxlen=...)` for O(1) writes with fixed memory footprint
+- Unit tests for ring buffer adapters (13 tests)
+
 ## [0.5.5] - 2025-12-11
 
 ### Fixed
