@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.0] - 2025-12-11
+
+### Added
+- SQLite storage adapters (`SQLiteLogStorage`, `SQLiteMetricsStorage`) using `aiosqlite`
+- Integration tests for SQLite adapters (15 tests)
+- `aiosqlite` dependency
+
 ## [0.4.2] - 2025-12-11
 
 ### Changed

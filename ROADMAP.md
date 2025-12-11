@@ -28,8 +28,8 @@
 - [x] Update example app
 
 ## Phase 5: Persistent Storage
-- [ ] SQLite storage adapter (async with `aiosqlite`)
-- [ ] Integration tests for SQLite adapter
+- [x] SQLite storage adapter (async with `aiosqlite`)
+- [x] Integration tests for SQLite adapter
 
 ## Phase 6: Additional Adapters
 - [ ] Django adapter
@@ -45,6 +45,6 @@
 
 ## Current Focus
 
-**Phase 5: Persistent Storage**
+**Phase 6: Additional Adapters**
 
-Next action: Implement SQLite storage adapter with `aiosqlite`.
+Next action: Implement Django adapter or ASGI generic adapter.
