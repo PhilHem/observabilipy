@@ -84,10 +84,29 @@
 - [x] Re-export common symbols from root `__init__.py` for simpler imports
 - [x] Rename package directory from `observability/` to `observabilipy/` (match PyPI name)
 
+## Phase 11: API Redesign
+
+Unify storage and HTTP API design for consistency and clarity.
+
+### Storage Port Interface
+- [ ] Add `read(since: float = 0)` to `MetricsStoragePort` (match `LogStoragePort`)
+- [ ] Rename `scrape()` to `read()` or remove in favor of unified interface
+- [ ] Move "latest per metric" logic to encoding layer (`encode_current()`)
+
+### HTTP API
+- [ ] `GET /logs?since=` → NDJSON stream of log entries
+- [ ] `GET /metrics?since=` → NDJSON stream of metric samples
+- [ ] `GET /metrics/prometheus` → Prometheus text format (latest per metric, for scrapers)
+- [ ] Update all framework adapters (FastAPI, Django, ASGI)
+
+### Cleanup
+- [ ] Update dashboard example to use new endpoints
+- [ ] Update documentation
+
 ---
 
 ## Current Focus
 
-**Phase 10: Ergonomics & Polish**
+**Phase 11: API Redesign**
 
-Next action: Add metric helper functions or framework improvements.
+Next action: Add `read(since)` to `MetricsStoragePort` and implement in storage adapters.
