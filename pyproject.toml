@@ -1,6 +1,6 @@
 [project]
 name = "observabilipy"
-version = "0.5.5"
+version = "0.6.0"
 description = "Framework-agnostic metrics and structured log collection with hexagonal architecture"
 readme = "README.md"
 authors = [
