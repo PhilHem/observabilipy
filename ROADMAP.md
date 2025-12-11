@@ -41,8 +41,8 @@
 ### Embedded Mode
 - [x] Add `delete_before(timestamp)` and `count()` to storage ports
 - [x] Implement deletion methods in all storage adapters (in-memory, SQLite, ring buffer)
-- [ ] Create `RetentionPolicy` value object in core
-- [ ] Create pure retention logic functions in core
+- [x] Create `RetentionPolicy` value object in core
+- [x] Create pure retention logic functions in core
 - [ ] Build `EmbeddedRuntime` orchestrator (lifecycle, background thread)
 - [ ] Unit tests for retention logic (pure, no threads)
 - [ ] Integration tests for `EmbeddedRuntime` (with in-memory storage)
