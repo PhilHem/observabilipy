@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.5.1] - 2025-12-11
+
+### Added
+- Django adapter (`create_observability_urlpatterns`) for ASGI deployments
+- Django example app (`examples/django_example.py`)
+- Integration tests for Django adapter (7 tests)
+- `django` optional dependency
+
 ## [0.5.0] - 2025-12-11
 
 ### Added
