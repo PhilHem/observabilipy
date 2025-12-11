@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.1] - 2025-12-11
+
+### Fixed
+- SQLite storage adapters now work with `:memory:` databases by maintaining a persistent connection
+
 ## [0.10.0] - 2025-12-11
 
 ### Added
