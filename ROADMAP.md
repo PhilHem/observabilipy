@@ -10,7 +10,7 @@
 - [x] Unit tests for models and in-memory storage
 
 ## Phase 2: Encoding
-- [ ] NDJSON encoder for logs
+- [x] NDJSON encoder for logs
 - [ ] Prometheus text format encoder for metrics
 - [ ] Unit tests for encoders
 
@@ -39,4 +39,4 @@
 
 **Phase 2: Encoding**
 
-Next action: Implement NDJSON encoder for logs.
+Next action: Implement Prometheus text format encoder for metrics.
