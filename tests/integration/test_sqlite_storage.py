@@ -31,6 +31,42 @@ class TestSQLiteLogStorage:
         assert isinstance(storage, LogStoragePort)
 
     @pytest.mark.storage
+    async def test_memory_database_write_and_read(self) -> None:
+        """In-memory database should persist data within same instance."""
+        storage = SQLiteLogStorage(":memory:")
+        entry = LogEntry(timestamp=1000.0, level="INFO", message="test", attributes={})
+        await storage.write(entry)
+        result = [e async for e in storage.read()]
+        assert len(result) == 1
+        assert result[0].message == "test"
+
+    @pytest.mark.storage
+    async def test_memory_database_multiple_operations(self) -> None:
+        """Multiple writes and reads should work on in-memory database."""
+        storage = SQLiteLogStorage(":memory:")
+        for i in range(3):
+            entry = LogEntry(
+                timestamp=1000.0 + i, level="INFO", message=f"msg{i}", attributes={}
+            )
+            await storage.write(entry)
+        assert await storage.count() == 3
+
+    @pytest.mark.storage
+    async def test_memory_database_close(self) -> None:
+        """Storage should have a close method for cleanup."""
+        storage = SQLiteLogStorage(":memory:")
+        await storage.write(
+            LogEntry(timestamp=1000.0, level="INFO", message="test", attributes={})
+        )
+        await storage.close()
+        # After close, storage can be reinitialized
+        await storage.write(
+            LogEntry(timestamp=2000.0, level="INFO", message="test2", attributes={})
+        )
+        result = [e async for e in storage.read()]
+        assert len(result) == 1  # Only new entry, old DB was closed
+
+    @pytest.mark.storage
     async def test_write_and_read_single_entry(self, log_db_path: str) -> None:
         """Can write a log entry and read it back."""
         storage = SQLiteLogStorage(log_db_path)
@@ -293,6 +329,44 @@ class TestSQLiteMetricsStorage:
         """SQLiteMetricsStorage must satisfy MetricsStoragePort protocol."""
         storage = SQLiteMetricsStorage(":memory:")
         assert isinstance(storage, MetricsStoragePort)
+
+    @pytest.mark.storage
+    async def test_memory_database_write_and_scrape(self) -> None:
+        """In-memory database should persist data within same instance."""
+        storage = SQLiteMetricsStorage(":memory:")
+        sample = MetricSample(
+            name="test_metric", timestamp=1000.0, value=42.0, labels={}
+        )
+        await storage.write(sample)
+        result = [s async for s in storage.scrape()]
+        assert len(result) == 1
+        assert result[0].value == 42.0
+
+    @pytest.mark.storage
+    async def test_memory_database_multiple_operations(self) -> None:
+        """Multiple writes and scrapes should work on in-memory database."""
+        storage = SQLiteMetricsStorage(":memory:")
+        for i in range(3):
+            sample = MetricSample(
+                name=f"metric_{i}", timestamp=1000.0 + i, value=float(i), labels={}
+            )
+            await storage.write(sample)
+        assert await storage.count() == 3
+
+    @pytest.mark.storage
+    async def test_memory_database_close(self) -> None:
+        """Storage should have a close method for cleanup."""
+        storage = SQLiteMetricsStorage(":memory:")
+        await storage.write(
+            MetricSample(name="metric", timestamp=1000.0, value=1.0, labels={})
+        )
+        await storage.close()
+        # After close, storage can be reinitialized
+        await storage.write(
+            MetricSample(name="metric", timestamp=2000.0, value=2.0, labels={})
+        )
+        result = [s async for s in storage.scrape()]
+        assert len(result) == 1  # Only new entry, old DB was closed
 
     @pytest.mark.storage
     async def test_write_and_scrape_single_sample(self, metrics_db_path: str) -> None:
