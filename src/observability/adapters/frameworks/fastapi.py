@@ -25,8 +25,7 @@ def create_observability_router(
     @router.get("/metrics")
     async def get_metrics() -> Response:
         """Return metrics in Prometheus text format."""
-        samples = [s async for s in metrics_storage.scrape()]
-        body = encode_metrics(samples)
+        body = await encode_metrics(metrics_storage.scrape())
         return Response(
             content=body,
             media_type="text/plain; version=0.0.4; charset=utf-8",
@@ -39,8 +38,7 @@ def create_observability_router(
         Args:
             since: Unix timestamp. Returns entries with timestamp > since.
         """
-        entries = [e async for e in log_storage.read(since=since)]
-        body = encode_logs(entries)
+        body = await encode_logs(log_storage.read(since=since))
         return Response(
             content=body,
             media_type="application/x-ndjson",
