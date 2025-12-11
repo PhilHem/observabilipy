@@ -1,0 +1,42 @@
+# Roadmap
+
+## Phase 1: Core Foundation
+- [x] Project setup (`pyproject.toml`, dev dependencies)
+- [x] Pytest configuration with marks in `pyproject.toml`
+- [ ] GitHub Actions CI with separate jobs per mark
+- [x] Core models (`LogEntry`, `MetricSample`)
+- [ ] Port interfaces (`LogStoragePort`, `MetricsStoragePort`)
+- [ ] In-memory storage adapters
+- [ ] Unit tests for models and in-memory storage
+
+## Phase 2: Encoding
+- [ ] NDJSON encoder for logs
+- [ ] Prometheus text format encoder for metrics
+- [ ] Unit tests for encoders
+
+## Phase 3: First Framework Adapter
+- [ ] FastAPI adapter with `/metrics` and `/logs` endpoints
+- [ ] Integration tests for FastAPI endpoints
+- [ ] Example app (`examples/fastapi_example.py`)
+
+## Phase 4: Persistent Storage
+- [ ] SQLite storage adapter
+- [ ] Integration tests for SQLite adapter
+
+## Phase 5: Additional Adapters
+- [ ] Django adapter
+- [ ] ASGI generic adapter
+- [ ] Ring buffer storage adapter
+
+## Phase 6: Runtime & Polish
+- [ ] Embedded mode (background ingestion, retention)
+- [ ] E2E tests
+- [ ] Documentation and README
+
+---
+
+## Current Focus
+
+**Phase 1: Core Foundation**
+
+Next action: Create GitHub Actions CI, then core models with tests.
