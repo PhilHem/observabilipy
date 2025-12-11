@@ -6,12 +6,27 @@ from observabilipy.adapters.storage.ring_buffer import (
     RingBufferLogStorage,
     RingBufferMetricsStorage,
 )
+from observabilipy.core.exceptions import ConfigurationError
 from observabilipy.core.models import LogEntry, MetricSample
 from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
 
 class TestRingBufferLogStorage:
     """Tests for RingBufferLogStorage adapter."""
+
+    @pytest.mark.storage
+    def test_rejects_zero_max_size(self) -> None:
+        """max_size=0 raises ConfigurationError."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            RingBufferLogStorage(max_size=0)
+        assert "max_size" in str(exc_info.value)
+        assert "positive" in str(exc_info.value)
+
+    @pytest.mark.storage
+    def test_rejects_negative_max_size(self) -> None:
+        """Negative max_size raises ConfigurationError."""
+        with pytest.raises(ConfigurationError):
+            RingBufferLogStorage(max_size=-1)
 
     @pytest.mark.storage
     def test_implements_log_storage_port(self) -> None:
@@ -172,9 +187,108 @@ class TestRingBufferLogStorage:
 
         assert deleted == 0
 
+    @pytest.mark.storage
+    async def test_delete_by_level_before_removes_matching_entries(self) -> None:
+        """delete_by_level_before removes entries matching level and timestamp."""
+        storage = RingBufferLogStorage(max_size=100)
+        await storage.write(
+            LogEntry(timestamp=100.0, level="ERROR", message="old error")
+        )
+        await storage.write(LogEntry(timestamp=100.0, level="INFO", message="old info"))
+        await storage.write(
+            LogEntry(timestamp=200.0, level="ERROR", message="new error")
+        )
+
+        deleted = await storage.delete_by_level_before("ERROR", 150.0)
+
+        assert deleted == 1
+        entries = [e async for e in storage.read()]
+        assert len(entries) == 2
+        assert all(e.message != "old error" for e in entries)
+
+    @pytest.mark.storage
+    async def test_delete_by_level_before_preserves_other_levels(self) -> None:
+        """delete_by_level_before does not affect other log levels."""
+        storage = RingBufferLogStorage(max_size=100)
+        await storage.write(LogEntry(timestamp=100.0, level="ERROR", message="error"))
+        await storage.write(LogEntry(timestamp=100.0, level="INFO", message="info"))
+
+        await storage.delete_by_level_before("ERROR", 150.0)
+
+        entries = [e async for e in storage.read()]
+        assert len(entries) == 1
+        assert entries[0].level == "INFO"
+
+    @pytest.mark.storage
+    async def test_delete_by_level_before_returns_deleted_count(self) -> None:
+        """delete_by_level_before returns number of entries deleted."""
+        storage = RingBufferLogStorage(max_size=100)
+        for i in range(5):
+            await storage.write(
+                LogEntry(timestamp=100.0 + i, level="DEBUG", message=f"msg {i}")
+            )
+
+        deleted = await storage.delete_by_level_before("DEBUG", 103.0)
+
+        assert deleted == 3
+
+    @pytest.mark.storage
+    async def test_delete_by_level_before_empty_storage(self) -> None:
+        """delete_by_level_before on empty storage returns 0."""
+        storage = RingBufferLogStorage(max_size=100)
+
+        deleted = await storage.delete_by_level_before("ERROR", 1000.0)
+
+        assert deleted == 0
+
+    @pytest.mark.storage
+    async def test_count_by_level_returns_count_for_specific_level(self) -> None:
+        """count_by_level returns count only for specified level."""
+        storage = RingBufferLogStorage(max_size=100)
+        await storage.write(LogEntry(timestamp=100.0, level="ERROR", message="error 1"))
+        await storage.write(LogEntry(timestamp=100.0, level="ERROR", message="error 2"))
+        await storage.write(LogEntry(timestamp=100.0, level="INFO", message="info"))
+
+        count = await storage.count_by_level("ERROR")
+
+        assert count == 2
+
+    @pytest.mark.storage
+    async def test_count_by_level_returns_zero_for_absent_level(self) -> None:
+        """count_by_level returns 0 when no entries match level."""
+        storage = RingBufferLogStorage(max_size=100)
+        await storage.write(LogEntry(timestamp=100.0, level="INFO", message="info"))
+
+        count = await storage.count_by_level("ERROR")
+
+        assert count == 0
+
+    @pytest.mark.storage
+    async def test_count_by_level_empty_storage(self) -> None:
+        """count_by_level on empty storage returns 0."""
+        storage = RingBufferLogStorage(max_size=100)
+
+        count = await storage.count_by_level("ERROR")
+
+        assert count == 0
+
 
 class TestRingBufferMetricsStorage:
     """Tests for RingBufferMetricsStorage adapter."""
+
+    @pytest.mark.storage
+    def test_rejects_zero_max_size(self) -> None:
+        """max_size=0 raises ConfigurationError."""
+        with pytest.raises(ConfigurationError) as exc_info:
+            RingBufferMetricsStorage(max_size=0)
+        assert "max_size" in str(exc_info.value)
+        assert "positive" in str(exc_info.value)
+
+    @pytest.mark.storage
+    def test_rejects_negative_max_size(self) -> None:
+        """Negative max_size raises ConfigurationError."""
+        with pytest.raises(ConfigurationError):
+            RingBufferMetricsStorage(max_size=-1)
 
     @pytest.mark.storage
     def test_implements_metrics_storage_port(self) -> None:

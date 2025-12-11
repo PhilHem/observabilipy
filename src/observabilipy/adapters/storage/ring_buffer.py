@@ -8,6 +8,7 @@ need predictable memory usage.
 from collections import deque
 from collections.abc import AsyncIterable
 
+from observabilipy.core.exceptions import ConfigurationError
 from observabilipy.core.models import LogEntry, MetricSample
 
 
@@ -23,6 +24,8 @@ class RingBufferLogStorage:
     """
 
     def __init__(self, max_size: int) -> None:
+        if max_size <= 0:
+            raise ConfigurationError(f"max_size must be positive, got {max_size}")
         self._buffer: deque[LogEntry] = deque(maxlen=max_size)
 
     async def write(self, entry: LogEntry) -> None:
@@ -50,6 +53,21 @@ class RingBufferLogStorage:
         self._buffer = deque(filtered, maxlen=self._buffer.maxlen)
         return original_count - len(self._buffer)
 
+    async def delete_by_level_before(self, level: str, timestamp: float) -> int:
+        """Delete log entries matching level with timestamp < given value."""
+        original_count = len(self._buffer)
+        filtered = [
+            e
+            for e in self._buffer
+            if not (e.level == level and e.timestamp < timestamp)
+        ]
+        self._buffer = deque(filtered, maxlen=self._buffer.maxlen)
+        return original_count - len(self._buffer)
+
+    async def count_by_level(self, level: str) -> int:
+        """Return number of log entries with the specified level."""
+        return sum(1 for e in self._buffer if e.level == level)
+
 
 class RingBufferMetricsStorage:
     """Ring buffer implementation of MetricsStoragePort.
@@ -63,6 +81,8 @@ class RingBufferMetricsStorage:
     """
 
     def __init__(self, max_size: int) -> None:
+        if max_size <= 0:
+            raise ConfigurationError(f"max_size must be positive, got {max_size}")
         self._buffer: deque[MetricSample] = deque(maxlen=max_size)
 
     async def write(self, sample: MetricSample) -> None:

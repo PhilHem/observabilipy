@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS logs (
     attributes TEXT NOT NULL DEFAULT '{}'
 );
 CREATE INDEX IF NOT EXISTS idx_logs_timestamp ON logs(timestamp);
+CREATE INDEX IF NOT EXISTS idx_logs_level_timestamp ON logs(level, timestamp);
 """
 
 _METRICS_SCHEMA = """
@@ -54,6 +55,14 @@ SELECT COUNT(*) FROM logs
 
 _DELETE_LOGS_BEFORE = """
 DELETE FROM logs WHERE timestamp < ?
+"""
+
+_DELETE_LOGS_BY_LEVEL_BEFORE = """
+DELETE FROM logs WHERE level = ? AND timestamp < ?
+"""
+
+_COUNT_LOGS_BY_LEVEL = """
+SELECT COUNT(*) FROM logs WHERE level = ?
 """
 
 _COUNT_METRICS = """
@@ -144,6 +153,27 @@ class SQLiteLogStorage:
             deleted = cursor.rowcount
             await db.commit()
             return deleted
+        finally:
+            await db.close()
+
+    async def delete_by_level_before(self, level: str, timestamp: float) -> int:
+        """Delete log entries matching level with timestamp < given value."""
+        db = await self._get_connection()
+        try:
+            cursor = await db.execute(_DELETE_LOGS_BY_LEVEL_BEFORE, (level, timestamp))
+            deleted = cursor.rowcount
+            await db.commit()
+            return deleted
+        finally:
+            await db.close()
+
+    async def count_by_level(self, level: str) -> int:
+        """Return number of log entries with the specified level."""
+        db = await self._get_connection()
+        try:
+            async with db.execute(_COUNT_LOGS_BY_LEVEL, (level,)) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
         finally:
             await db.close()
 
