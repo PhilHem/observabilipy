@@ -43,9 +43,9 @@
 - [x] Implement deletion methods in all storage adapters (in-memory, SQLite, ring buffer)
 - [x] Create `RetentionPolicy` value object in core
 - [x] Create pure retention logic functions in core
-- [ ] Build `EmbeddedRuntime` orchestrator (lifecycle, background thread)
-- [ ] Unit tests for retention logic (pure, no threads)
-- [ ] Integration tests for `EmbeddedRuntime` (with in-memory storage)
+- [x] Build `EmbeddedRuntime` orchestrator (lifecycle, background thread)
+- [x] Unit tests for retention logic (pure, no threads)
+- [x] Integration tests for `EmbeddedRuntime` (with in-memory storage)
 - [ ] Example usage in `examples/`
 
 ### Other
@@ -61,4 +61,4 @@
 
 **Phase 7: Runtime & Polish**
 
-Next action: Create `RetentionPolicy` value object and retention logic in core.
+Next action: Add example usage of `EmbeddedRuntime` in `examples/`.
