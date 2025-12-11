@@ -20,12 +20,12 @@
 - [x] Example app (`examples/fastapi_example.py`)
 
 ## Phase 4: Async Foundation
-- [ ] Convert ports to async (`async def read`, `async def write`, etc.)
-- [ ] Convert in-memory storage adapters to async
+- [x] Convert ports to async (`async def read`, `async def write`, etc.)
+- [x] Convert in-memory storage adapters to async
 - [ ] Convert encoders to accept `AsyncIterable`
-- [ ] Update FastAPI adapter to async endpoints
-- [ ] Add `pytest-asyncio`, update all tests to async
-- [ ] Update example app
+- [x] Update FastAPI adapter to async endpoints
+- [x] Add `pytest-asyncio`, update all tests to async
+- [x] Update example app
 
 ## Phase 5: Persistent Storage
 - [ ] SQLite storage adapter (async with `aiosqlite`)
@@ -47,4 +47,4 @@
 
 **Phase 4: Async Foundation**
 
-Next action: Convert ports to async interfaces.
+Next action: Convert encoders to accept `AsyncIterable`.
