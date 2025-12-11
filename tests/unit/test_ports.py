@@ -23,7 +23,7 @@ class TestLogStoragePort:
 
     @pytest.mark.core
     def test_class_implementing_protocol_is_recognized(self) -> None:
-        """A class with async write and read methods should satisfy LogStoragePort."""
+        """A class with all required methods should satisfy LogStoragePort."""
 
         class FakeLogStorage:
             async def write(self, entry: LogEntry) -> None:
@@ -32,6 +32,12 @@ class TestLogStoragePort:
             async def read(self, since: float = 0) -> AsyncGenerator[LogEntry]:
                 return
                 yield  # Make this an async generator
+
+            async def count(self) -> int:
+                return 0
+
+            async def delete_before(self, timestamp: float) -> int:
+                return 0
 
         storage: LogStoragePort = FakeLogStorage()
         assert isinstance(storage, LogStoragePort)
@@ -52,7 +58,7 @@ class TestMetricsStoragePort:
 
     @pytest.mark.core
     def test_class_implementing_protocol_is_recognized(self) -> None:
-        """A class with write and scrape methods should satisfy MetricsStoragePort."""
+        """A class with all required methods should satisfy MetricsStoragePort."""
 
         class FakeMetricsStorage:
             async def write(self, sample: MetricSample) -> None:
@@ -61,6 +67,12 @@ class TestMetricsStoragePort:
             async def scrape(self) -> AsyncGenerator[MetricSample]:
                 return
                 yield  # Make this an async generator
+
+            async def count(self) -> int:
+                return 0
+
+            async def delete_before(self, timestamp: float) -> int:
+                return 0
 
         storage: MetricsStoragePort = FakeMetricsStorage()
         assert isinstance(storage, MetricsStoragePort)

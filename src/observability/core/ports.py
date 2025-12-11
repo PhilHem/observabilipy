@@ -34,6 +34,22 @@ class LogStoragePort(Protocol):
         """
         ...
 
+    async def count(self) -> int:
+        """Return total number of log entries in storage."""
+        ...
+
+    async def delete_before(self, timestamp: float) -> int:
+        """Delete log entries with timestamp < given value.
+
+        Args:
+            timestamp: Unix timestamp. Entries with timestamp < this value
+                       will be deleted.
+
+        Returns:
+            Number of entries deleted.
+        """
+        ...
+
 
 @runtime_checkable
 class MetricsStoragePort(Protocol):
@@ -52,5 +68,21 @@ class MetricsStoragePort(Protocol):
 
         Returns:
             AsyncIterable of MetricSample objects representing current state.
+        """
+        ...
+
+    async def count(self) -> int:
+        """Return total number of metric samples in storage."""
+        ...
+
+    async def delete_before(self, timestamp: float) -> int:
+        """Delete metric samples with timestamp < given value.
+
+        Args:
+            timestamp: Unix timestamp. Samples with timestamp < this value
+                       will be deleted.
+
+        Returns:
+            Number of samples deleted.
         """
         ...
