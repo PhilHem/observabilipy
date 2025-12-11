@@ -57,16 +57,3 @@ See the [examples/](examples/) directory:
 | [ring_buffer_example.py](examples/ring_buffer_example.py) | Fixed-size storage for constrained environments |
 | [embedded_runtime_example.py](examples/embedded_runtime_example.py) | Background retention cleanup |
 
-## Architecture
-
-This library follows hexagonal architecture with pure core domain, port interfaces, and swappable adapters. See [CLAUDE.md](CLAUDE.md) for full architectural documentation.
-
-## Development
-
-```bash
-uv sync                      # Install dependencies
-uv run pytest                # Run tests
-uv run mypy src/             # Type checking
-uv run ruff check src/       # Linting
-uv run ruff format src/      # Formatting
-```
