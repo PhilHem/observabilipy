@@ -19,12 +19,19 @@ class InMemoryLogStorage:
         """Write a log entry to storage."""
         self._entries.append(entry)
 
-    async def read(self, since: float = 0) -> AsyncIterable[LogEntry]:
-        """Read log entries since the given timestamp.
+    async def read(
+        self, since: float = 0, level: str | None = None
+    ) -> AsyncIterable[LogEntry]:
+        """Read log entries since the given timestamp, optionally filtered by level.
 
         Returns entries with timestamp > since, ordered by timestamp ascending.
+        If level is provided, only entries with matching level (case-insensitive)
+        are returned.
         """
         filtered = [e for e in self._entries if e.timestamp > since]
+        if level is not None:
+            level_upper = level.upper()
+            filtered = [e for e in filtered if e.level.upper() == level_upper]
         for entry in sorted(filtered, key=lambda e: e.timestamp):
             yield entry
 
