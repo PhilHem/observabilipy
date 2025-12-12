@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from observabilipy.core.metrics import counter, gauge
+from observabilipy.core.metrics import counter, gauge, histogram
 from observabilipy.core.models import MetricSample
 
 
@@ -116,6 +116,78 @@ class TestGauge:
         assert sample.value == 0.0
 
 
+class TestHistogram:
+    """Tests for histogram() helper function."""
+
+    @pytest.mark.core
+    def test_histogram_returns_list_of_metric_samples(self) -> None:
+        """Histogram returns a list of MetricSample instances."""
+        samples = histogram("request_duration", value=0.25)
+        assert isinstance(samples, list)
+        assert all(isinstance(s, MetricSample) for s in samples)
+
+    @pytest.mark.core
+    def test_histogram_creates_bucket_samples(self) -> None:
+        """Histogram creates bucket samples with _bucket suffix and le label."""
+        samples = histogram("request_duration", value=0.25, buckets=[0.1, 0.5, 1.0])
+        bucket_samples = [s for s in samples if "_bucket" in s.name]
+        assert len(bucket_samples) == 4  # 3 buckets + +Inf
+        assert all(s.name == "request_duration_bucket" for s in bucket_samples)
+        assert all("le" in s.labels for s in bucket_samples)
+
+    @pytest.mark.core
+    def test_histogram_bucket_values_are_cumulative(self) -> None:
+        """Histogram bucket values are cumulative counts."""
+        samples = histogram("request_duration", value=0.25, buckets=[0.1, 0.5, 1.0])
+        bucket_samples = [s for s in samples if "_bucket" in s.name]
+        le_values = {s.labels["le"]: s.value for s in bucket_samples}
+
+        # value=0.25 falls into le="0.5" bucket and above
+        assert le_values["0.1"] == 0  # 0.25 > 0.1
+        assert le_values["0.5"] == 1  # 0.25 <= 0.5
+        assert le_values["1.0"] == 1  # 0.25 <= 1.0
+        assert le_values["+Inf"] == 1  # always 1
+
+    @pytest.mark.core
+    def test_histogram_creates_sum_and_count_samples(self) -> None:
+        """Histogram creates _sum and _count samples."""
+        samples = histogram("request_duration", value=0.25, buckets=[0.1, 0.5, 1.0])
+        names = [s.name for s in samples]
+        assert "request_duration_sum" in names
+        assert "request_duration_count" in names
+
+        sum_sample = next(s for s in samples if s.name == "request_duration_sum")
+        count_sample = next(s for s in samples if s.name == "request_duration_count")
+        assert sum_sample.value == 0.25
+        assert count_sample.value == 1
+
+    @pytest.mark.core
+    def test_histogram_propagates_labels(self) -> None:
+        """Histogram propagates labels to all samples."""
+        samples = histogram(
+            "request_duration", value=0.25, labels={"method": "GET"}, buckets=[0.1]
+        )
+        for sample in samples:
+            assert sample.labels.get("method") == "GET"
+
+    @pytest.mark.core
+    def test_histogram_uses_default_buckets(self) -> None:
+        """Histogram uses default Prometheus buckets when none specified."""
+        samples = histogram("request_duration", value=0.25)
+        bucket_samples = [s for s in samples if "_bucket" in s.name]
+        # Default: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10] + Inf
+        assert len(bucket_samples) == 12
+
+    @pytest.mark.core
+    def test_histogram_all_samples_have_same_timestamp(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """All histogram samples have the same timestamp."""
+        monkeypatch.setattr(time, "time", lambda: 1702300000.0)
+        samples = histogram("request_duration", value=0.25)
+        assert all(s.timestamp == 1702300000.0 for s in samples)
+
+
 class TestPackageExports:
     """Tests for package-level exports."""
 
@@ -126,3 +198,10 @@ class TestPackageExports:
 
         assert callable(counter)
         assert callable(gauge)
+
+    @pytest.mark.core
+    def test_histogram_importable_from_package(self) -> None:
+        """Histogram helper is importable from observabilipy package."""
+        from observabilipy import histogram
+
+        assert callable(histogram)

@@ -22,7 +22,7 @@ from observabilipy.adapters.storage import (
 )
 from observabilipy.core.encoding.ndjson import encode_ndjson
 from observabilipy.core.exceptions import ConfigurationError, ObservabilityError
-from observabilipy.core.metrics import counter, gauge
+from observabilipy.core.metrics import counter, gauge, histogram
 from observabilipy.core.models import (
     LevelRetentionPolicy,
     LogEntry,
@@ -41,6 +41,7 @@ __all__ = [
     # Metric helpers
     "counter",
     "gauge",
+    "histogram",
     # Ports
     "LogStoragePort",
     "MetricsStoragePort",

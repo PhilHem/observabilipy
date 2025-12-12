@@ -80,8 +80,9 @@
 - [x] WSGI adapter (Flask, Bottle, etc.)
 
 ### API Ergonomics
-- [x] Metric helper functions (`counter()`, `gauge()`) - histogram deferred
-- [ ] `histogram()` helper function with configurable bucket boundaries
+- [x] Metric helper functions (`counter()`, `gauge()`, `histogram()`)
+- [ ] Export `DEFAULT_HISTOGRAM_BUCKETS` constant from package root
+- [ ] `timer()` context manager for histogram (auto-records elapsed time)
 - [ ] Log helper function `log(level, message, **attributes)`
 - [x] Re-export common symbols from root `__init__.py` for simpler imports
 - [x] Rename package directory from `observability/` to `observabilipy/` (match PyPI name)
