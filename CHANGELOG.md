@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.10.2] - 2025-12-12
+
+### Fixed
+- SQLite storage adapters now use lazy `asyncio.Lock` creation to prevent event loop binding issues with pytest-asyncio
+- Tests using `:memory:` databases now properly close connections to prevent hanging pytest processes
+
 ## [0.10.1] - 2025-12-11
 
 ### Fixed

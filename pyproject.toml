@@ -1,6 +1,6 @@
 [project]
 name = "observabilipy"
-version = "0.10.1"
+version = "0.10.2"
 description = "Framework-agnostic metrics and structured log collection with hexagonal architecture"
 readme = "README.md"
 license = "MIT"
