@@ -4,7 +4,7 @@ import time
 
 import pytest
 
-from observabilipy.core.metrics import counter, gauge, histogram
+from observabilipy.core.metrics import counter, gauge, histogram, timer
 from observabilipy.core.models import MetricSample
 
 
@@ -213,3 +213,81 @@ class TestPackageExports:
 
         assert isinstance(DEFAULT_HISTOGRAM_BUCKETS, list)
         assert len(DEFAULT_HISTOGRAM_BUCKETS) == 11  # Standard Prometheus buckets
+
+    @pytest.mark.core
+    def test_timer_importable_from_package(self) -> None:
+        """Timer is importable from observabilipy package."""
+        from observabilipy import timer
+
+        assert callable(timer)
+
+    @pytest.mark.core
+    def test_timer_result_importable_from_package(self) -> None:
+        """TimerResult is importable from observabilipy package."""
+        from observabilipy import TimerResult
+
+        assert TimerResult is not None
+
+
+class TestTimer:
+    """Tests for timer() context manager."""
+
+    @pytest.mark.core
+    def test_timer_returns_histogram_samples(self) -> None:
+        """Timer context manager returns histogram samples."""
+        with timer("request_duration") as t:
+            pass
+        assert isinstance(t.samples, list)
+        assert len(t.samples) > 0
+
+    @pytest.mark.core
+    def test_timer_measures_elapsed_time(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        """Timer measures elapsed time during context."""
+        call_count = 0
+
+        def mock_perf_counter() -> float:
+            nonlocal call_count
+            call_count += 1
+            return 100.0 if call_count == 1 else 100.5  # 0.5s elapsed
+
+        monkeypatch.setattr(time, "perf_counter", mock_perf_counter)
+
+        with timer("request_duration", buckets=[0.1, 1.0]) as t:
+            pass
+
+        sum_sample = next(s for s in t.samples if s.name == "request_duration_sum")
+        assert sum_sample.value == 0.5
+
+    @pytest.mark.core
+    def test_timer_accepts_labels(self) -> None:
+        """Timer propagates labels to histogram samples."""
+        with timer("request_duration", labels={"method": "GET"}, buckets=[0.1]) as t:
+            pass
+        for sample in t.samples:
+            assert sample.labels.get("method") == "GET"
+
+    @pytest.mark.core
+    def test_timer_accepts_custom_buckets(self) -> None:
+        """Timer uses custom bucket boundaries."""
+        with timer("request_duration", buckets=[0.1, 0.5]) as t:
+            pass
+        bucket_samples = [s for s in t.samples if "_bucket" in s.name]
+        assert len(bucket_samples) == 3  # 2 buckets + +Inf
+
+    @pytest.mark.core
+    def test_timer_uses_default_buckets(self) -> None:
+        """Timer uses default histogram buckets when none specified."""
+        with timer("request_duration") as t:
+            pass
+        bucket_samples = [s for s in t.samples if "_bucket" in s.name]
+        assert len(bucket_samples) == 12  # 11 default + +Inf
+
+    @pytest.mark.core
+    def test_timer_samples_have_same_timestamp(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """All timer samples have the same timestamp."""
+        monkeypatch.setattr(time, "time", lambda: 1702300000.0)
+        with timer("request_duration") as t:
+            pass
+        assert all(s.timestamp == 1702300000.0 for s in t.samples)

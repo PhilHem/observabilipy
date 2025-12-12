@@ -1,6 +1,8 @@
 """Metric helper functions for creating MetricSample objects."""
 
 import time
+from collections.abc import Generator
+from contextlib import contextmanager
 
 from observabilipy.core.models import MetricSample
 
@@ -122,3 +124,38 @@ def histogram(
     )
 
     return samples
+
+
+class TimerResult:
+    """Result object for timer context manager."""
+
+    def __init__(self) -> None:
+        self.samples: list[MetricSample] = []
+
+
+@contextmanager
+def timer(
+    name: str,
+    labels: dict[str, str] | None = None,
+    buckets: list[float] | None = None,
+) -> Generator[TimerResult]:
+    """Context manager that measures elapsed time and records as histogram.
+
+    Args:
+        name: Metric name (e.g., "http_request_duration_seconds")
+        labels: Optional dimension labels
+        buckets: Bucket boundaries (default: Prometheus standard buckets)
+
+    Yields:
+        TimerResult with samples populated after context exits
+
+    Example:
+        with timer("request_duration", labels={"method": "GET"}) as t:
+            process_request()
+        # t.samples contains histogram samples
+    """
+    result = TimerResult()
+    start = time.perf_counter()
+    yield result
+    elapsed = time.perf_counter() - start
+    result.samples = histogram(name, elapsed, labels=labels, buckets=buckets)

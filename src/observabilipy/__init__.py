@@ -24,9 +24,11 @@ from observabilipy.core.encoding.ndjson import encode_ndjson
 from observabilipy.core.exceptions import ConfigurationError, ObservabilityError
 from observabilipy.core.metrics import (
     DEFAULT_HISTOGRAM_BUCKETS,
+    TimerResult,
     counter,
     gauge,
     histogram,
+    timer,
 )
 from observabilipy.core.models import (
     LevelRetentionPolicy,
@@ -48,6 +50,8 @@ __all__ = [
     "DEFAULT_HISTOGRAM_BUCKETS",
     "gauge",
     "histogram",
+    "timer",
+    "TimerResult",
     # Ports
     "LogStoragePort",
     "MetricsStoragePort",
