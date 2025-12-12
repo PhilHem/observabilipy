@@ -87,14 +87,20 @@ class SQLiteLogStorage:
     def __init__(self, db_path: str) -> None:
         self._db_path = db_path
         self._initialized = False
-        self._init_lock = asyncio.Lock()
+        self._init_lock: asyncio.Lock | None = None
         self._persistent_conn: aiosqlite.Connection | None = None
+
+    def _get_lock(self) -> asyncio.Lock:
+        """Get or create the initialization lock (lazy to avoid event loop issues)."""
+        if self._init_lock is None:
+            self._init_lock = asyncio.Lock()
+        return self._init_lock
 
     async def _ensure_initialized(self) -> None:
         """Initialize database schema once."""
         if self._initialized:
             return
-        async with self._init_lock:
+        async with self._get_lock():
             if self._initialized:
                 return
             if self._db_path == ":memory:":
@@ -216,14 +222,20 @@ class SQLiteMetricsStorage:
     def __init__(self, db_path: str) -> None:
         self._db_path = db_path
         self._initialized = False
-        self._init_lock = asyncio.Lock()
+        self._init_lock: asyncio.Lock | None = None
         self._persistent_conn: aiosqlite.Connection | None = None
+
+    def _get_lock(self) -> asyncio.Lock:
+        """Get or create the initialization lock (lazy to avoid event loop issues)."""
+        if self._init_lock is None:
+            self._init_lock = asyncio.Lock()
+        return self._init_lock
 
     async def _ensure_initialized(self) -> None:
         """Initialize database schema once."""
         if self._initialized:
             return
-        async with self._init_lock:
+        async with self._get_lock():
             if self._initialized:
                 return
             if self._db_path == ":memory:":
