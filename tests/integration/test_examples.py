@@ -185,3 +185,73 @@ class TestEmbeddedRuntimeExample:
 
         assert log_retention.max_age_seconds == 3600
         assert metrics_retention.max_age_seconds == 3600
+
+
+@pytest.mark.examples
+class TestWsgiExample:
+    """Tests for wsgi_example.py."""
+
+    def test_app_creation(self) -> None:
+        """Example WSGI app can be created."""
+        from examples.wsgi_example import app, create_wsgi_app
+
+        assert app is not None
+        assert callable(create_wsgi_app)
+
+    def test_demo_data_function(self) -> None:
+        """Demo data function works."""
+        from examples.wsgi_example import demo_data, log_storage, metrics_storage
+
+        # Clear any existing data
+        log_storage._entries.clear()
+        metrics_storage._samples.clear()
+
+        demo_data()
+
+        # Verify data was added
+        assert len(log_storage._entries) == 1
+        assert len(metrics_storage._samples) == 1
+
+
+@pytest.mark.examples
+class TestFlaskExample:
+    """Tests for flask_example.py."""
+
+    def test_imports(self) -> None:
+        """Example imports work correctly."""
+        pytest.importorskip("flask", reason="flask not installed")
+
+        from examples.flask_example import (
+            app,
+            log_storage,
+            metrics_storage,
+            observability_app,
+        )
+
+        assert app is not None
+        assert log_storage is not None
+        assert metrics_storage is not None
+        assert observability_app is not None
+
+    def test_observability_endpoints_mounted(self) -> None:
+        """Observability endpoints are accessible at /observability prefix."""
+        pytest.importorskip("flask", reason="flask not installed")
+
+        from examples.flask_example import app, log_storage, metrics_storage
+
+        # Clear any existing data
+        log_storage._entries.clear()
+        metrics_storage._samples.clear()
+
+        with app.test_client() as client:
+            # Flask root should work
+            response = client.get("/")
+            assert response.status_code == 200
+
+            # Observability endpoints should work
+            assert client.get("/observability/metrics").status_code == 200
+            assert client.get("/observability/logs").status_code == 200
+
+            # Data should have been recorded from hitting root endpoint
+            logs_response = client.get("/observability/logs")
+            assert b"Root endpoint accessed" in logs_response.data
