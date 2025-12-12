@@ -46,6 +46,31 @@ def encode_metrics_sync(samples: Iterable[MetricSample]) -> str:
     return "\n".join(lines) + "\n"
 
 
+def encode_current_sync(samples: Iterable[MetricSample]) -> str:
+    """Encode metric samples, keeping only the latest sample per metric (sync version).
+
+    This is intended for Prometheus scrape endpoints where each metric
+    (identified by name + labels) should appear only once with its
+    most recent value.
+
+    Args:
+        samples: An iterable of MetricSample objects.
+
+    Returns:
+        Prometheus text format string with one line per unique metric.
+        Empty string if no samples.
+    """
+    latest: dict[tuple[str, frozenset[tuple[str, str]]], MetricSample] = {}
+
+    for sample in samples:
+        key = (sample.name, frozenset(sample.labels.items()))
+        existing = latest.get(key)
+        if existing is None or sample.timestamp > existing.timestamp:
+            latest[key] = sample
+
+    return encode_metrics_sync(latest.values())
+
+
 async def encode_metrics(samples: AsyncIterable[MetricSample]) -> str:
     """Encode metric samples to Prometheus text format.
 
@@ -77,3 +102,28 @@ async def encode_metrics(samples: AsyncIterable[MetricSample]) -> str:
         return ""
 
     return "\n".join(lines) + "\n"
+
+
+async def encode_current(samples: AsyncIterable[MetricSample]) -> str:
+    """Encode metric samples, keeping only the latest sample per metric.
+
+    This is intended for Prometheus scrape endpoints where each metric
+    (identified by name + labels) should appear only once with its
+    most recent value.
+
+    Args:
+        samples: An async iterable of MetricSample objects.
+
+    Returns:
+        Prometheus text format string with one line per unique metric.
+        Empty string if no samples.
+    """
+    latest: dict[tuple[str, frozenset[tuple[str, str]]], MetricSample] = {}
+
+    async for sample in samples:
+        key = (sample.name, frozenset(sample.labels.items()))
+        existing = latest.get(key)
+        if existing is None or sample.timestamp > existing.timestamp:
+            latest[key] = sample
+
+    return encode_metrics_sync(latest.values())

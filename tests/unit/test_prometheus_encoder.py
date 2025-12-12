@@ -4,7 +4,11 @@ from collections.abc import AsyncIterator
 
 import pytest
 
-from observabilipy.core.encoding.prometheus import encode_metrics
+from observabilipy.core.encoding.prometheus import (
+    encode_current,
+    encode_current_sync,
+    encode_metrics,
+)
 from observabilipy.core.models import MetricSample
 
 
@@ -113,3 +117,90 @@ class TestPrometheusEncoder:
         result = await encode_metrics(to_async_iter([sample]))
 
         assert "0.123456789" in result
+
+
+class TestPrometheusEncoderCurrent:
+    """Tests for encode_current() which deduplicates to latest sample per metric."""
+
+    @pytest.mark.encoding
+    async def test_encode_current_empty_iterable(self) -> None:
+        """Empty input returns empty string."""
+        result = await encode_current(to_async_iter([]))
+        assert result == ""
+
+    @pytest.mark.encoding
+    async def test_encode_current_single_sample(self) -> None:
+        """Single sample encodes normally."""
+        sample = MetricSample(name="requests_total", timestamp=1702300000.0, value=42.0)
+        result = await encode_current(to_async_iter([sample]))
+        assert result == "requests_total 42.0 1702300000000\n"
+
+    @pytest.mark.encoding
+    async def test_encode_current_keeps_latest_by_timestamp(self) -> None:
+        """Multiple samples for same metric: keep only the latest."""
+        samples = [
+            MetricSample(name="counter", timestamp=1.0, value=10.0),
+            MetricSample(name="counter", timestamp=3.0, value=30.0),  # latest
+            MetricSample(name="counter", timestamp=2.0, value=20.0),
+        ]
+        result = await encode_current(to_async_iter(samples))
+
+        lines = result.strip().split("\n")
+        assert len(lines) == 1
+        assert "30.0" in lines[0]  # latest value
+        assert "3000" in lines[0]  # latest timestamp (ms)
+
+    @pytest.mark.encoding
+    async def test_encode_current_different_labels_are_distinct(self) -> None:
+        """Same name but different labels are treated as distinct metrics."""
+        samples = [
+            MetricSample(
+                name="http_requests",
+                timestamp=1.0,
+                value=10.0,
+                labels={"method": "GET"},
+            ),
+            MetricSample(
+                name="http_requests",
+                timestamp=2.0,
+                value=20.0,
+                labels={"method": "POST"},
+            ),
+        ]
+        result = await encode_current(to_async_iter(samples))
+
+        lines = result.strip().split("\n")
+        assert len(lines) == 2
+
+    @pytest.mark.encoding
+    async def test_encode_current_mixed_metrics(self) -> None:
+        """Multiple metrics with some having duplicates."""
+        samples = [
+            MetricSample(name="metric_a", timestamp=1.0, value=1.0),
+            MetricSample(name="metric_b", timestamp=1.0, value=100.0),
+            MetricSample(name="metric_a", timestamp=2.0, value=2.0),  # newer a
+            MetricSample(name="metric_b", timestamp=0.5, value=50.0),  # older b
+        ]
+        result = await encode_current(to_async_iter(samples))
+
+        lines = result.strip().split("\n")
+        assert len(lines) == 2
+        # Check values are present (order may vary due to dict)
+        result_text = result
+        assert "metric_a" in result_text
+        assert "metric_b" in result_text
+        assert "2.0" in result_text  # metric_a latest value
+        assert "100.0" in result_text  # metric_b latest value
+
+    @pytest.mark.encoding
+    def test_encode_current_sync_keeps_latest(self) -> None:
+        """Sync version also deduplicates correctly."""
+        samples = [
+            MetricSample(name="counter", timestamp=1.0, value=10.0),
+            MetricSample(name="counter", timestamp=3.0, value=30.0),
+        ]
+        result = encode_current_sync(samples)
+
+        lines = result.strip().split("\n")
+        assert len(lines) == 1
+        assert "30.0" in lines[0]
