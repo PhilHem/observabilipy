@@ -88,25 +88,58 @@
 
 Unify storage and HTTP API design for consistency and clarity.
 
-### Storage Port Interface
-- [ ] Add `read(since: float = 0)` to `MetricsStoragePort` (match `LogStoragePort`)
-- [ ] Rename `scrape()` to `read()` or remove in favor of unified interface
-- [ ] Move "latest per metric" logic to encoding layer (`encode_current()`)
+### 11.1 Storage Port Interface
 
-### HTTP API
-- [ ] `GET /logs?since=` → NDJSON stream of log entries
-- [ ] `GET /metrics?since=` → NDJSON stream of metric samples
-- [ ] `GET /metrics/prometheus` → Prometheus text format (latest per metric, for scrapers)
-- [ ] Update all framework adapters (FastAPI, Django, ASGI)
+**Add `read(since)` to MetricsStoragePort:**
+- [ ] Add `read(since: float = 0) -> AsyncIterable[MetricSample]` to `MetricsStoragePort` protocol
+- [ ] Implement `read(since)` in `InMemoryMetricsStorage`
+- [ ] Implement `read(since)` in `SQLiteMetricsStorage` (add index on timestamp)
+- [ ] Implement `read(since)` in `RingBufferMetricsStorage`
+- [ ] Add unit tests for `read(since)` in all storage adapters
 
-### Cleanup
-- [ ] Update dashboard example to use new endpoints
-- [ ] Update documentation
+**Deprecate and remove `scrape()`:**
+- [ ] Mark `scrape()` as deprecated (keep for one release)
+- [ ] Update all internal usage to use `read()` instead
+- [ ] Remove `scrape()` in next major version
+
+### 11.2 Encoding Layer
+
+**Add `encode_current()` for Prometheus:**
+- [ ] Add `encode_current(samples: AsyncIterable[MetricSample]) -> str` to `core/encoding/prometheus.py`
+- [ ] Logic: keep only latest sample per (name, labels) combination
+- [ ] Unit tests for `encode_current()` with multiple samples per metric
+
+### 11.3 HTTP API - Framework Adapters
+
+**FastAPI adapter (`adapters/frameworks/fastapi.py`):**
+- [ ] Update `GET /logs` to accept `?since=` query param, return NDJSON
+- [ ] Update `GET /metrics` to accept `?since=` query param, return NDJSON
+- [ ] Add `GET /metrics/prometheus` endpoint using `encode_current()`
+- [ ] Integration tests for all three endpoints
+
+**Django adapter (`adapters/frameworks/django.py`):**
+- [ ] Update `/logs/` to accept `?since=` query param, return NDJSON
+- [ ] Update `/metrics/` to accept `?since=` query param, return NDJSON
+- [ ] Add `/metrics/prometheus/` endpoint using `encode_current()`
+- [ ] Integration tests for all three endpoints
+
+**ASGI adapter (`adapters/frameworks/asgi.py`):**
+- [ ] Update `/logs` to accept `?since=` query param, return NDJSON
+- [ ] Update `/metrics` to accept `?since=` query param, return NDJSON
+- [ ] Add `/metrics/prometheus` endpoint using `encode_current()`
+- [ ] Integration tests for all three endpoints
+
+### 11.4 Examples & Documentation
+
+- [ ] Update `dashboard_example.py` to use `/metrics?since=` with NDJSON parsing
+- [ ] Update `fastapi_example.py` to demonstrate new endpoints
+- [ ] Update README with new API documentation
+- [ ] Add migration guide for users upgrading from `scrape()` API
 
 ---
 
 ## Current Focus
 
-**Phase 11: API Redesign**
+**Phase 11: API Redesign** → Start with 11.1 (Storage Port Interface)
 
-Next action: Add `read(since)` to `MetricsStoragePort` and implement in storage adapters.
+Next action: Add `read(since)` to `MetricsStoragePort` protocol in `core/ports.py`.
