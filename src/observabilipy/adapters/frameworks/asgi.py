@@ -9,8 +9,8 @@ from collections.abc import Callable, Coroutine
 from typing import Any
 from urllib.parse import parse_qs
 
-from observabilipy.core.encoding.ndjson import encode_logs
-from observabilipy.core.encoding.prometheus import encode_metrics
+from observabilipy.core.encoding.ndjson import encode_logs, encode_ndjson
+from observabilipy.core.encoding.prometheus import encode_current
 from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
 # ASGI type aliases
@@ -24,7 +24,7 @@ def create_asgi_app(
     log_storage: LogStoragePort,
     metrics_storage: MetricsStoragePort,
 ) -> ASGIApp:
-    """Create an ASGI application with /metrics and /logs endpoints.
+    """Create an ASGI app with /metrics, /metrics/prometheus, and /logs endpoints.
 
     Args:
         log_storage: Storage adapter implementing LogStoragePort.
@@ -41,8 +41,18 @@ def create_asgi_app(
         path = scope["path"]
 
         if path == "/metrics":
+            headers = [(b"content-type", b"application/x-ndjson")]
+            query_string = scope.get("query_string", b"").decode()
+            params = parse_qs(query_string)
+            since = float(params.get("since", ["0"])[0])
+            body = await encode_ndjson(metrics_storage.read(since=since))
+            await send(
+                {"type": "http.response.start", "status": 200, "headers": headers}
+            )
+            await send({"type": "http.response.body", "body": body.encode()})
+        elif path == "/metrics/prometheus":
             headers = [(b"content-type", b"text/plain; version=0.0.4; charset=utf-8")]
-            body = await encode_metrics(metrics_storage.read())
+            body = await encode_current(metrics_storage.read())
             await send(
                 {"type": "http.response.start", "status": 200, "headers": headers}
             )

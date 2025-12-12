@@ -68,10 +68,10 @@ class TestDjangoMetricsEndpoint:
     """Tests for the /metrics endpoint."""
 
     @pytest.mark.django
-    async def test_metrics_endpoint_returns_prometheus_format(
+    async def test_metrics_endpoint_returns_ndjson(
         self, metrics_storage: InMemoryMetricsStorage
     ) -> None:
-        """Metrics endpoint returns data in Prometheus text format."""
+        """Metrics endpoint returns data in NDJSON format."""
         await metrics_storage.write(
             MetricSample(
                 name="http_requests_total",
@@ -85,22 +85,21 @@ class TestDjangoMetricsEndpoint:
         response = await client.get("/metrics")
 
         assert response.status_code == 200
-        assert (
-            'http_requests_total{method="GET",path="/api"} 42.0'
-            in response.content.decode()
-        )
+        parsed = json.loads(response.content.decode().strip())
+        assert parsed["name"] == "http_requests_total"
+        assert parsed["value"] == 42.0
+        assert parsed["labels"] == {"method": "GET", "path": "/api"}
 
     @pytest.mark.django
     async def test_metrics_endpoint_content_type(
         self, metrics_storage: InMemoryMetricsStorage
     ) -> None:
-        """Metrics endpoint returns correct content type for Prometheus."""
+        """Metrics endpoint returns correct content type for NDJSON."""
         client = AsyncClient()
         response = await client.get("/metrics")
 
         assert response.status_code == 200
-        assert "text/plain" in response["Content-Type"]
-        assert "version=0.0.4" in response["Content-Type"]
+        assert "application/x-ndjson" in response["Content-Type"]
 
     @pytest.mark.django
     async def test_metrics_endpoint_empty_storage(
@@ -112,6 +111,97 @@ class TestDjangoMetricsEndpoint:
 
         assert response.status_code == 200
         assert response.content.decode() == ""
+
+    @pytest.mark.django
+    async def test_metrics_endpoint_since_parameter(
+        self, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
+        """Metrics endpoint filters by since parameter."""
+        await metrics_storage.write(
+            MetricSample(name="counter", timestamp=1702300000.0, value=1.0)
+        )
+        await metrics_storage.write(
+            MetricSample(name="counter", timestamp=1702300002.0, value=2.0)
+        )
+
+        client = AsyncClient()
+        response = await client.get("/metrics", {"since": "1702300001.0"})
+
+        assert response.status_code == 200
+        lines = response.content.decode().strip().split("\n")
+        assert len(lines) == 1
+        parsed = json.loads(lines[0])
+        assert parsed["value"] == 2.0
+
+
+class TestDjangoMetricsPrometheusEndpoint:
+    """Tests for the /metrics/prometheus endpoint."""
+
+    @pytest.mark.django
+    async def test_metrics_prometheus_endpoint_returns_prometheus_format(
+        self, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
+        """Metrics prometheus endpoint returns data in Prometheus text format."""
+        await metrics_storage.write(
+            MetricSample(
+                name="http_requests_total",
+                timestamp=1702300000.0,
+                value=42.0,
+                labels={"method": "GET", "path": "/api"},
+            )
+        )
+
+        client = AsyncClient()
+        response = await client.get("/metrics/prometheus")
+
+        assert response.status_code == 200
+        assert (
+            'http_requests_total{method="GET",path="/api"} 42.0'
+            in response.content.decode()
+        )
+
+    @pytest.mark.django
+    async def test_metrics_prometheus_endpoint_content_type(
+        self, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
+        """Metrics prometheus endpoint returns correct content type."""
+        client = AsyncClient()
+        response = await client.get("/metrics/prometheus")
+
+        assert response.status_code == 200
+        assert "text/plain" in response["Content-Type"]
+        assert "version=0.0.4" in response["Content-Type"]
+
+    @pytest.mark.django
+    async def test_metrics_prometheus_endpoint_empty_storage(
+        self, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
+        """Metrics prometheus endpoint returns empty body when no metrics."""
+        client = AsyncClient()
+        response = await client.get("/metrics/prometheus")
+
+        assert response.status_code == 200
+        assert response.content.decode() == ""
+
+    @pytest.mark.django
+    async def test_metrics_prometheus_uses_encode_current(
+        self, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
+        """Metrics prometheus endpoint keeps only latest sample per metric."""
+        await metrics_storage.write(
+            MetricSample(name="counter", timestamp=1702300000.0, value=1.0, labels={})
+        )
+        await metrics_storage.write(
+            MetricSample(name="counter", timestamp=1702300002.0, value=5.0, labels={})
+        )
+
+        client = AsyncClient()
+        response = await client.get("/metrics/prometheus")
+
+        assert response.status_code == 200
+        lines = [line for line in response.content.decode().strip().split("\n") if line]
+        assert len(lines) == 1  # Only latest sample
+        assert "5.0" in lines[0]
 
 
 class TestDjangoLogsEndpoint:

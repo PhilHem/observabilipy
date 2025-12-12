@@ -85,7 +85,7 @@ class TestMetricsPrometheusFormat:
             )
         )
 
-        response = await client.get("/metrics")
+        response = await client.get("/metrics/prometheus")
 
         expected = "text/plain; version=0.0.4; charset=utf-8"
         assert response.headers["content-type"] == expected
@@ -105,7 +105,7 @@ class TestMetricsPrometheusFormat:
             )
         )
 
-        response = await client.get("/metrics")
+        response = await client.get("/metrics/prometheus")
 
         # Should contain metric name with labels in alphabetical order
         assert "http_requests_total{" in response.text
@@ -130,7 +130,7 @@ class TestMetricsPrometheusFormat:
             )
         )
 
-        response = await client.get("/metrics")
+        response = await client.get("/metrics/prometheus")
 
         # Metric without labels has no braces
         lines = response.text.strip().split("\n")
@@ -155,7 +155,7 @@ class TestMetricsPrometheusFormat:
             )
         )
 
-        response = await client.get("/metrics")
+        response = await client.get("/metrics/prometheus")
 
         # 1702300000 seconds = 1702300000000 milliseconds
         assert "1702300000000" in response.text
@@ -176,7 +176,7 @@ class TestMetricsPrometheusFormat:
                 )
             )
 
-        response = await client.get("/metrics")
+        response = await client.get("/metrics/prometheus")
 
         lines = [line for line in response.text.strip().split("\n") if line]
         assert len(lines) == 3
@@ -184,7 +184,7 @@ class TestMetricsPrometheusFormat:
 
 @pytest.mark.e2e
 class TestMetricsLabelEscaping:
-    """Test that label values are properly escaped."""
+    """Test that label values are properly escaped in Prometheus format."""
 
     async def test_quotes_in_label_value_escaped(
         self,
@@ -201,7 +201,7 @@ class TestMetricsLabelEscaping:
             )
         )
 
-        response = await client.get("/metrics")
+        response = await client.get("/metrics/prometheus")
 
         # Quotes should be escaped as \"
         assert r"\"test\"" in response.text
@@ -221,7 +221,7 @@ class TestMetricsLabelEscaping:
             )
         )
 
-        response = await client.get("/metrics")
+        response = await client.get("/metrics/prometheus")
 
         # Backslashes should be escaped as \\
         assert r"C:\\Users\\test" in response.text
@@ -241,7 +241,7 @@ class TestMetricsLabelEscaping:
             )
         )
 
-        response = await client.get("/metrics")
+        response = await client.get("/metrics/prometheus")
 
         # Newline should be escaped as \n
         assert r"\n" in response.text
@@ -304,7 +304,7 @@ class TestMetricsEdgeCases:
         metrics_storage: InMemoryMetricsStorage,
         client: httpx.AsyncClient,
     ) -> None:
-        """Labels are sorted alphabetically in output."""
+        """Labels are sorted alphabetically in Prometheus output."""
         await metrics_storage.write(
             MetricSample(
                 name="test_metric",
@@ -314,7 +314,7 @@ class TestMetricsEdgeCases:
             )
         )
 
-        response = await client.get("/metrics")
+        response = await client.get("/metrics/prometheus")
 
         # Find the labels section
         line = response.text.strip()

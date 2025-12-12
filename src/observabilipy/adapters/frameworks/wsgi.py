@@ -10,8 +10,8 @@ from collections.abc import AsyncIterable, Callable, Iterable
 from typing import Any
 from urllib.parse import parse_qs
 
-from observabilipy.core.encoding.ndjson import encode_logs_sync
-from observabilipy.core.encoding.prometheus import encode_metrics_sync
+from observabilipy.core.encoding.ndjson import encode_logs_sync, encode_ndjson_sync
+from observabilipy.core.encoding.prometheus import encode_current_sync
 from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
 # WSGI type aliases
@@ -28,7 +28,7 @@ def create_wsgi_app(
     log_storage: LogStoragePort,
     metrics_storage: MetricsStoragePort,
 ) -> WSGIApp:
-    """Create a WSGI application with /metrics and /logs endpoints.
+    """Create a WSGI app with /metrics, /metrics/prometheus, and /logs endpoints.
 
     Args:
         log_storage: Storage adapter implementing LogStoragePort.
@@ -42,9 +42,18 @@ def create_wsgi_app(
         path = environ.get("PATH_INFO", "/")
 
         if path == "/metrics":
+            headers = [("Content-Type", "application/x-ndjson")]
+            query_string = environ.get("QUERY_STRING", "")
+            params = parse_qs(query_string)
+            since = float(params.get("since", ["0"])[0])
+            samples = asyncio.run(_collect_async(metrics_storage.read(since=since)))
+            body = encode_ndjson_sync(samples)
+            start_response("200 OK", headers)
+            return [body.encode()]
+        elif path == "/metrics/prometheus":
             headers = [("Content-Type", "text/plain; version=0.0.4; charset=utf-8")]
             samples = asyncio.run(_collect_async(metrics_storage.read()))
-            body = encode_metrics_sync(samples)
+            body = encode_current_sync(samples)
             start_response("200 OK", headers)
             return [body.encode()]
         elif path == "/logs":

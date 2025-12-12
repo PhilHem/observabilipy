@@ -2,8 +2,8 @@
 
 from fastapi import APIRouter, Query, Response
 
-from observabilipy.core.encoding.ndjson import encode_logs
-from observabilipy.core.encoding.prometheus import encode_metrics
+from observabilipy.core.encoding.ndjson import encode_logs, encode_ndjson
+from observabilipy.core.encoding.prometheus import encode_current
 from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
 
@@ -11,21 +11,36 @@ def create_observability_router(
     log_storage: LogStoragePort,
     metrics_storage: MetricsStoragePort,
 ) -> APIRouter:
-    """Create a FastAPI router with /metrics and /logs endpoints.
+    """Create a FastAPI router with /metrics, /metrics/prometheus, and /logs endpoints.
 
     Args:
         log_storage: Storage adapter implementing LogStoragePort.
         metrics_storage: Storage adapter implementing MetricsStoragePort.
 
     Returns:
-        APIRouter with /metrics and /logs endpoints configured.
+        APIRouter with /metrics, /metrics/prometheus, and /logs endpoints configured.
     """
     router = APIRouter()
 
     @router.get("/metrics")
-    async def get_metrics() -> Response:
-        """Return metrics in Prometheus text format."""
-        body = await encode_metrics(metrics_storage.read())
+    async def get_metrics(
+        since: float = Query(default=0),
+    ) -> Response:
+        """Return metrics in NDJSON format.
+
+        Args:
+            since: Unix timestamp. Returns samples with timestamp > since.
+        """
+        body = await encode_ndjson(metrics_storage.read(since=since))
+        return Response(
+            content=body,
+            media_type="application/x-ndjson",
+        )
+
+    @router.get("/metrics/prometheus")
+    async def get_metrics_prometheus() -> Response:
+        """Return metrics in Prometheus text format (latest value per metric)."""
+        body = await encode_current(metrics_storage.read())
         return Response(
             content=body,
             media_type="text/plain; version=0.0.4; charset=utf-8",

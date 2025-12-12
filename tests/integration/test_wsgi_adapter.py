@@ -1,6 +1,7 @@
 """Integration tests for WSGI generic adapter."""
 
 import asyncio
+import json
 
 import httpx
 import pytest
@@ -36,7 +37,7 @@ class TestWSGIMetricsEndpoint:
         assert response.status_code == 200
 
     @pytest.mark.wsgi
-    def test_metrics_endpoint_has_prometheus_content_type(self) -> None:
+    def test_metrics_endpoint_has_ndjson_content_type(self) -> None:
         """Test that /metrics returns correct Content-Type header."""
         log_storage = InMemoryLogStorage()
         metrics_storage = InMemoryMetricsStorage()
@@ -47,12 +48,11 @@ class TestWSGIMetricsEndpoint:
         ) as client:
             response = client.get("/metrics")
 
-        expected_content_type = "text/plain; version=0.0.4; charset=utf-8"
-        assert response.headers["content-type"] == expected_content_type
+        assert response.headers["content-type"] == "application/x-ndjson"
 
     @pytest.mark.wsgi
-    def test_metrics_endpoint_returns_prometheus_format(self) -> None:
-        """Test that /metrics returns data in Prometheus format."""
+    def test_metrics_endpoint_returns_ndjson_format(self) -> None:
+        """Test that /metrics returns data in NDJSON format."""
         log_storage = InMemoryLogStorage()
         metrics_storage = InMemoryMetricsStorage()
         _run_async(
@@ -72,8 +72,136 @@ class TestWSGIMetricsEndpoint:
         ) as client:
             response = client.get("/metrics")
 
+        parsed = json.loads(response.text.strip())
+        assert parsed["name"] == "http_requests_total"
+        assert parsed["value"] == 42.0
+        assert parsed["labels"] == {"method": "GET", "status": "200"}
+
+    @pytest.mark.wsgi
+    def test_metrics_endpoint_filters_by_since(self) -> None:
+        """Test that /metrics?since=X filters samples by timestamp."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        _run_async(
+            metrics_storage.write(
+                MetricSample(name="counter", timestamp=100.0, value=1.0)
+            )
+        )
+        _run_async(
+            metrics_storage.write(
+                MetricSample(name="counter", timestamp=200.0, value=2.0)
+            )
+        )
+        app = create_wsgi_app(log_storage, metrics_storage)
+
+        with httpx.Client(
+            transport=httpx.WSGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = client.get("/metrics?since=150")
+
+        lines = response.text.strip().split("\n")
+        assert len(lines) == 1
+        parsed = json.loads(lines[0])
+        assert parsed["value"] == 2.0
+
+
+class TestWSGIMetricsPrometheusEndpoint:
+    """Tests for the /metrics/prometheus endpoint."""
+
+    @pytest.mark.wsgi
+    def test_metrics_prometheus_endpoint_returns_200(self) -> None:
+        """Test that /metrics/prometheus returns HTTP 200."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        app = create_wsgi_app(log_storage, metrics_storage)
+
+        with httpx.Client(
+            transport=httpx.WSGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = client.get("/metrics/prometheus")
+
+        assert response.status_code == 200
+
+    @pytest.mark.wsgi
+    def test_metrics_prometheus_has_correct_content_type(self) -> None:
+        """Test that /metrics/prometheus returns correct Content-Type header."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        app = create_wsgi_app(log_storage, metrics_storage)
+
+        with httpx.Client(
+            transport=httpx.WSGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = client.get("/metrics/prometheus")
+
+        expected_content_type = "text/plain; version=0.0.4; charset=utf-8"
+        assert response.headers["content-type"] == expected_content_type
+
+    @pytest.mark.wsgi
+    def test_metrics_prometheus_returns_prometheus_format(self) -> None:
+        """Test that /metrics/prometheus returns data in Prometheus format."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        _run_async(
+            metrics_storage.write(
+                MetricSample(
+                    name="http_requests_total",
+                    value=42.0,
+                    timestamp=1000.0,
+                    labels={"method": "GET", "status": "200"},
+                )
+            )
+        )
+        app = create_wsgi_app(log_storage, metrics_storage)
+
+        with httpx.Client(
+            transport=httpx.WSGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = client.get("/metrics/prometheus")
+
         assert "http_requests_total" in response.text
         assert "42" in response.text
+
+    @pytest.mark.wsgi
+    def test_metrics_prometheus_uses_encode_current(self) -> None:
+        """Test that /metrics/prometheus keeps only latest sample per metric."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        _run_async(
+            metrics_storage.write(
+                MetricSample(name="counter", timestamp=100.0, value=1.0, labels={})
+            )
+        )
+        _run_async(
+            metrics_storage.write(
+                MetricSample(name="counter", timestamp=200.0, value=5.0, labels={})
+            )
+        )
+        app = create_wsgi_app(log_storage, metrics_storage)
+
+        with httpx.Client(
+            transport=httpx.WSGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = client.get("/metrics/prometheus")
+
+        lines = [line for line in response.text.strip().split("\n") if line]
+        assert len(lines) == 1  # Only latest sample
+        assert "5.0" in lines[0]
+
+    @pytest.mark.wsgi
+    def test_metrics_prometheus_empty_storage_returns_empty_body(self) -> None:
+        """Test that /metrics/prometheus returns empty body when storage is empty."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        app = create_wsgi_app(log_storage, metrics_storage)
+
+        with httpx.Client(
+            transport=httpx.WSGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = client.get("/metrics/prometheus")
+
+        assert response.status_code == 200
+        assert response.text == ""
 
 
 class TestWSGILogsEndpoint:

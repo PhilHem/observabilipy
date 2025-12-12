@@ -116,22 +116,28 @@ Unify storage and HTTP API design for consistency and clarity.
 ### 11.3 HTTP API - Framework Adapters
 
 **FastAPI adapter (`adapters/frameworks/fastapi.py`):**
-- [ ] Update `GET /logs` to accept `?since=` query param, return NDJSON
-- [ ] Update `GET /metrics` to accept `?since=` query param, return NDJSON
-- [ ] Add `GET /metrics/prometheus` endpoint using `encode_current()`
-- [ ] Integration tests for all three endpoints
+- [x] Update `GET /logs` to accept `?since=` query param, return NDJSON
+- [x] Update `GET /metrics` to accept `?since=` query param, return NDJSON
+- [x] Add `GET /metrics/prometheus` endpoint using `encode_current()`
+- [x] Integration tests for all three endpoints
 
 **Django adapter (`adapters/frameworks/django.py`):**
-- [ ] Update `/logs/` to accept `?since=` query param, return NDJSON
-- [ ] Update `/metrics/` to accept `?since=` query param, return NDJSON
-- [ ] Add `/metrics/prometheus/` endpoint using `encode_current()`
-- [ ] Integration tests for all three endpoints
+- [x] Update `/logs/` to accept `?since=` query param, return NDJSON
+- [x] Update `/metrics/` to accept `?since=` query param, return NDJSON
+- [x] Add `/metrics/prometheus/` endpoint using `encode_current()`
+- [x] Integration tests for all three endpoints
 
 **ASGI adapter (`adapters/frameworks/asgi.py`):**
-- [ ] Update `/logs` to accept `?since=` query param, return NDJSON
-- [ ] Update `/metrics` to accept `?since=` query param, return NDJSON
-- [ ] Add `/metrics/prometheus` endpoint using `encode_current()`
-- [ ] Integration tests for all three endpoints
+- [x] Update `/logs` to accept `?since=` query param, return NDJSON
+- [x] Update `/metrics` to accept `?since=` query param, return NDJSON
+- [x] Add `/metrics/prometheus` endpoint using `encode_current()`
+- [x] Integration tests for all three endpoints
+
+**WSGI adapter (`adapters/frameworks/wsgi.py`):**
+- [x] Update `/logs` to accept `?since=` query param, return NDJSON
+- [x] Update `/metrics` to accept `?since=` query param, return NDJSON
+- [x] Add `/metrics/prometheus` endpoint using `encode_current()`
+- [x] Integration tests for all three endpoints
 
 ### 11.4 Examples & Documentation
 

@@ -20,8 +20,8 @@ class TestFastAPIMetricsEndpoint:
     """Tests for the /metrics endpoint."""
 
     @pytest.mark.fastapi
-    async def test_metrics_endpoint_returns_prometheus_format(self) -> None:
-        """Metrics endpoint returns data in Prometheus text format."""
+    async def test_metrics_endpoint_returns_ndjson(self) -> None:
+        """Metrics endpoint returns data in NDJSON format."""
         log_storage = InMemoryLogStorage()
         metrics_storage = InMemoryMetricsStorage()
         await metrics_storage.write(
@@ -40,11 +40,14 @@ class TestFastAPIMetricsEndpoint:
         response = client.get("/metrics")
 
         assert response.status_code == 200
-        assert 'http_requests_total{method="GET",path="/api"} 42.0' in response.text
+        parsed = json.loads(response.text.strip())
+        assert parsed["name"] == "http_requests_total"
+        assert parsed["value"] == 42.0
+        assert parsed["labels"] == {"method": "GET", "path": "/api"}
 
     @pytest.mark.fastapi
     async def test_metrics_endpoint_content_type(self) -> None:
-        """Metrics endpoint returns correct content type for Prometheus."""
+        """Metrics endpoint returns correct content type for NDJSON."""
         log_storage = InMemoryLogStorage()
         metrics_storage = InMemoryMetricsStorage()
 
@@ -55,8 +58,7 @@ class TestFastAPIMetricsEndpoint:
         response = client.get("/metrics")
 
         assert response.status_code == 200
-        assert "text/plain" in response.headers["content-type"]
-        assert "version=0.0.4" in response.headers["content-type"]
+        assert "application/x-ndjson" in response.headers["content-type"]
 
     @pytest.mark.fastapi
     async def test_metrics_endpoint_empty_storage(self) -> None:
@@ -72,6 +74,111 @@ class TestFastAPIMetricsEndpoint:
 
         assert response.status_code == 200
         assert response.text == ""
+
+    @pytest.mark.fastapi
+    async def test_metrics_endpoint_since_parameter(self) -> None:
+        """Metrics endpoint filters by since parameter."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        await metrics_storage.write(
+            MetricSample(name="counter", timestamp=1702300000.0, value=1.0)
+        )
+        await metrics_storage.write(
+            MetricSample(name="counter", timestamp=1702300002.0, value=2.0)
+        )
+
+        app = FastAPI()
+        app.include_router(create_observability_router(log_storage, metrics_storage))
+        client = TestClient(app)
+
+        response = client.get("/metrics", params={"since": 1702300001.0})
+
+        assert response.status_code == 200
+        lines = response.text.strip().split("\n")
+        assert len(lines) == 1
+        parsed = json.loads(lines[0])
+        assert parsed["value"] == 2.0
+
+
+class TestFastAPIMetricsPrometheusEndpoint:
+    """Tests for the /metrics/prometheus endpoint."""
+
+    @pytest.mark.fastapi
+    async def test_metrics_prometheus_endpoint_returns_prometheus_format(self) -> None:
+        """Metrics prometheus endpoint returns data in Prometheus text format."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        await metrics_storage.write(
+            MetricSample(
+                name="http_requests_total",
+                timestamp=1702300000.0,
+                value=42.0,
+                labels={"method": "GET", "path": "/api"},
+            )
+        )
+
+        app = FastAPI()
+        app.include_router(create_observability_router(log_storage, metrics_storage))
+        client = TestClient(app)
+
+        response = client.get("/metrics/prometheus")
+
+        assert response.status_code == 200
+        assert 'http_requests_total{method="GET",path="/api"} 42.0' in response.text
+
+    @pytest.mark.fastapi
+    async def test_metrics_prometheus_endpoint_content_type(self) -> None:
+        """Metrics prometheus endpoint returns correct content type."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+
+        app = FastAPI()
+        app.include_router(create_observability_router(log_storage, metrics_storage))
+        client = TestClient(app)
+
+        response = client.get("/metrics/prometheus")
+
+        assert response.status_code == 200
+        assert "text/plain" in response.headers["content-type"]
+        assert "version=0.0.4" in response.headers["content-type"]
+
+    @pytest.mark.fastapi
+    async def test_metrics_prometheus_endpoint_empty_storage(self) -> None:
+        """Metrics prometheus endpoint returns empty body when no metrics."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+
+        app = FastAPI()
+        app.include_router(create_observability_router(log_storage, metrics_storage))
+        client = TestClient(app)
+
+        response = client.get("/metrics/prometheus")
+
+        assert response.status_code == 200
+        assert response.text == ""
+
+    @pytest.mark.fastapi
+    async def test_metrics_prometheus_uses_encode_current(self) -> None:
+        """Metrics prometheus endpoint keeps only latest sample per metric."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        await metrics_storage.write(
+            MetricSample(name="counter", timestamp=1702300000.0, value=1.0, labels={})
+        )
+        await metrics_storage.write(
+            MetricSample(name="counter", timestamp=1702300002.0, value=5.0, labels={})
+        )
+
+        app = FastAPI()
+        app.include_router(create_observability_router(log_storage, metrics_storage))
+        client = TestClient(app)
+
+        response = client.get("/metrics/prometheus")
+
+        assert response.status_code == 200
+        lines = [line for line in response.text.strip().split("\n") if line]
+        assert len(lines) == 1  # Only latest sample
+        assert "5.0" in lines[0]
 
 
 class TestFastAPILogsEndpoint:
