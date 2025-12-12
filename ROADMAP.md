@@ -76,7 +76,7 @@
 - [x] Per-level retention policies (optional overrides per log level)
 
 ### Framework Adapters
-- [ ] Log level filtering on `/logs` endpoint (`?level=error`)
+- [x] Log level filtering on `/logs` endpoint (`?level=error`)
 - [ ] WSGI adapter (Flask, Bottle, etc.)
 
 ### API Ergonomics
