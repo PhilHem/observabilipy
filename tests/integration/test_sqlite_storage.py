@@ -340,6 +340,79 @@ class TestSQLiteLogStorage:
 
         assert count == 0
 
+    @pytest.mark.storage
+    async def test_read_filters_by_level(self, log_db_path: str) -> None:
+        """Read with level parameter returns only matching entries."""
+        storage = SQLiteLogStorage(log_db_path)
+        error_entry = LogEntry(timestamp=1000.0, level="ERROR", message="error msg")
+        info_entry = LogEntry(timestamp=1001.0, level="INFO", message="info msg")
+        debug_entry = LogEntry(timestamp=1002.0, level="DEBUG", message="debug msg")
+
+        await storage.write(error_entry)
+        await storage.write(info_entry)
+        await storage.write(debug_entry)
+        result = [e async for e in storage.read(level="ERROR")]
+
+        assert result == [error_entry]
+
+    @pytest.mark.storage
+    async def test_read_level_none_returns_all_entries(self, log_db_path: str) -> None:
+        """Read with level=None returns all entries (backwards compatible)."""
+        storage = SQLiteLogStorage(log_db_path)
+        error_entry = LogEntry(timestamp=1000.0, level="ERROR", message="error msg")
+        info_entry = LogEntry(timestamp=1001.0, level="INFO", message="info msg")
+
+        await storage.write(error_entry)
+        await storage.write(info_entry)
+        result = [e async for e in storage.read(level=None)]
+
+        assert result == [error_entry, info_entry]
+
+    @pytest.mark.storage
+    async def test_read_level_filter_is_case_insensitive(
+        self, log_db_path: str
+    ) -> None:
+        """Read level filter matches regardless of case."""
+        storage = SQLiteLogStorage(log_db_path)
+        error_entry = LogEntry(timestamp=1000.0, level="ERROR", message="error msg")
+        info_entry = LogEntry(timestamp=1001.0, level="INFO", message="info msg")
+
+        await storage.write(error_entry)
+        await storage.write(info_entry)
+        result = [e async for e in storage.read(level="error")]
+
+        assert result == [error_entry]
+
+    @pytest.mark.storage
+    async def test_read_combines_since_and_level_filters(
+        self, log_db_path: str
+    ) -> None:
+        """Read combines both since and level filters."""
+        storage = SQLiteLogStorage(log_db_path)
+        old_error = LogEntry(timestamp=1000.0, level="ERROR", message="old error")
+        new_error = LogEntry(timestamp=2000.0, level="ERROR", message="new error")
+        new_info = LogEntry(timestamp=2001.0, level="INFO", message="new info")
+
+        await storage.write(old_error)
+        await storage.write(new_error)
+        await storage.write(new_info)
+        result = [e async for e in storage.read(since=1500.0, level="ERROR")]
+
+        assert result == [new_error]
+
+    @pytest.mark.storage
+    async def test_read_level_returns_empty_for_nonexistent_level(
+        self, log_db_path: str
+    ) -> None:
+        """Read with non-existent level returns empty result."""
+        storage = SQLiteLogStorage(log_db_path)
+        info_entry = LogEntry(timestamp=1000.0, level="INFO", message="info msg")
+
+        await storage.write(info_entry)
+        result = [e async for e in storage.read(level="FATAL")]
+
+        assert result == []
+
 
 class TestSQLiteMetricsStorage:
     """Tests for SQLiteMetricsStorage adapter."""

@@ -41,6 +41,13 @@ WHERE timestamp > ?
 ORDER BY timestamp ASC
 """
 
+_SELECT_LOGS_BY_LEVEL = """
+SELECT timestamp, level, message, attributes
+FROM logs
+WHERE timestamp > ? AND UPPER(level) = UPPER(?)
+ORDER BY timestamp ASC
+"""
+
 _INSERT_METRIC = """
 INSERT INTO metrics (name, timestamp, value, labels) VALUES (?, ?, ?, ?)
 """
@@ -139,11 +146,23 @@ class SQLiteLogStorage:
             if self._db_path != ":memory:":
                 await db.close()
 
-    async def read(self, since: float = 0) -> AsyncIterable[LogEntry]:
-        """Read log entries since the given timestamp."""
+    async def read(
+        self, since: float = 0, level: str | None = None
+    ) -> AsyncIterable[LogEntry]:
+        """Read log entries since the given timestamp, optionally filtered by level.
+
+        If level is provided, only entries with matching level (case-insensitive)
+        are returned.
+        """
         db = await self._get_connection()
         try:
-            async with db.execute(_SELECT_LOGS, (since,)) as cursor:
+            if level is not None:
+                query = _SELECT_LOGS_BY_LEVEL
+                params: tuple[float] | tuple[float, str] = (since, level)
+            else:
+                query = _SELECT_LOGS
+                params = (since,)
+            async with db.execute(query, params) as cursor:
                 async for row in cursor:
                     yield LogEntry(
                         timestamp=row[0],
