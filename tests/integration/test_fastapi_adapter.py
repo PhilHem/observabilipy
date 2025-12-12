@@ -154,3 +154,100 @@ class TestFastAPILogsEndpoint:
         assert len(lines) == 1
         parsed = json.loads(lines[0])
         assert parsed["message"] == "New log"
+
+    @pytest.mark.fastapi
+    async def test_logs_endpoint_level_parameter(self) -> None:
+        """Logs endpoint filters by level parameter."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        await log_storage.write(
+            LogEntry(timestamp=1702300000.0, level="ERROR", message="Error log")
+        )
+        await log_storage.write(
+            LogEntry(timestamp=1702300001.0, level="INFO", message="Info log")
+        )
+        await log_storage.write(
+            LogEntry(timestamp=1702300002.0, level="DEBUG", message="Debug log")
+        )
+
+        app = FastAPI()
+        app.include_router(create_observability_router(log_storage, metrics_storage))
+        client = TestClient(app)
+
+        response = client.get("/logs", params={"level": "ERROR"})
+
+        assert response.status_code == 200
+        lines = response.text.strip().split("\n")
+        assert len(lines) == 1
+        parsed = json.loads(lines[0])
+        assert parsed["level"] == "ERROR"
+        assert parsed["message"] == "Error log"
+
+    @pytest.mark.fastapi
+    async def test_logs_endpoint_level_parameter_case_insensitive(self) -> None:
+        """Logs endpoint level filter is case-insensitive."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        await log_storage.write(
+            LogEntry(timestamp=1702300000.0, level="ERROR", message="Error log")
+        )
+        await log_storage.write(
+            LogEntry(timestamp=1702300001.0, level="INFO", message="Info log")
+        )
+
+        app = FastAPI()
+        app.include_router(create_observability_router(log_storage, metrics_storage))
+        client = TestClient(app)
+
+        response = client.get("/logs", params={"level": "error"})
+
+        assert response.status_code == 200
+        lines = response.text.strip().split("\n")
+        assert len(lines) == 1
+        parsed = json.loads(lines[0])
+        assert parsed["level"] == "ERROR"
+
+    @pytest.mark.fastapi
+    async def test_logs_endpoint_combines_since_and_level(self) -> None:
+        """Logs endpoint combines since and level parameters."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        await log_storage.write(
+            LogEntry(timestamp=1702300000.0, level="ERROR", message="Old error")
+        )
+        await log_storage.write(
+            LogEntry(timestamp=1702300002.0, level="ERROR", message="New error")
+        )
+        await log_storage.write(
+            LogEntry(timestamp=1702300003.0, level="INFO", message="New info")
+        )
+
+        app = FastAPI()
+        app.include_router(create_observability_router(log_storage, metrics_storage))
+        client = TestClient(app)
+
+        response = client.get("/logs", params={"since": 1702300001.0, "level": "ERROR"})
+
+        assert response.status_code == 200
+        lines = response.text.strip().split("\n")
+        assert len(lines) == 1
+        parsed = json.loads(lines[0])
+        assert parsed["message"] == "New error"
+
+    @pytest.mark.fastapi
+    async def test_logs_endpoint_level_returns_empty_for_nonexistent(self) -> None:
+        """Logs endpoint returns empty for non-existent level."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        await log_storage.write(
+            LogEntry(timestamp=1702300000.0, level="INFO", message="Info log")
+        )
+
+        app = FastAPI()
+        app.include_router(create_observability_router(log_storage, metrics_storage))
+        client = TestClient(app)
+
+        response = client.get("/logs", params={"level": "FATAL"})
+
+        assert response.status_code == 200
+        assert response.text == ""

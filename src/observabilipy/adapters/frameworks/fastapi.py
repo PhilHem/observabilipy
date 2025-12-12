@@ -32,13 +32,17 @@ def create_observability_router(
         )
 
     @router.get("/logs")
-    async def get_logs(since: float = Query(default=0)) -> Response:
+    async def get_logs(
+        since: float = Query(default=0),
+        level: str | None = Query(default=None),
+    ) -> Response:
         """Return logs in NDJSON format.
 
         Args:
             since: Unix timestamp. Returns entries with timestamp > since.
+            level: Optional log level filter (case-insensitive).
         """
-        body = await encode_logs(log_storage.read(since=since))
+        body = await encode_logs(log_storage.read(since=since, level=level))
         return Response(
             content=body,
             media_type="application/x-ndjson",
