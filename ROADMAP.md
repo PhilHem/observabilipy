@@ -77,7 +77,7 @@
 
 ### Framework Adapters
 - [x] Log level filtering on `/logs` endpoint (`?level=error`)
-- [ ] WSGI adapter (Flask, Bottle, etc.)
+- [x] WSGI adapter (Flask, Bottle, etc.)
 
 ### API Ergonomics
 - [ ] Metric helper functions (`counter()`, `gauge()`, `histogram()`)
