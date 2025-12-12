@@ -186,6 +186,24 @@ This architecture is designed for test-driven development. Always write tests fi
 
 The in-memory adapters are not test doubles - they're production-ready implementations. Unit tests use them directly, keeping tests fast and deterministic.
 
+### Planning Review
+
+After completing any significant implementation, review for roadmap opportunities:
+
+1. **Read ROADMAP.md first** to understand current phases, existing items, and future directions - suggestions must NOT duplicate anything already listed
+
+2. **Identify 3 quick wins** that:
+   - Build directly on what was just implemented
+   - Are small in scope (1-2 TDD cycles)
+   - Complete a natural workflow or fill an obvious gap
+   - Are NOT already in the roadmap (check all phases including Future)
+
+3. **Present to user** before adding to `ROADMAP.md`
+
+4. **Use `/update-roadmap`** command to trigger this review
+
+This keeps the roadmap fresh with achievable next steps that leverage recent work.
+
 ### Test Organization
 
 - **Unit tests** (`tests/unit/`): Core only, use `InMemoryLogStorage`/`InMemoryMetricsStorage`, no I/O
