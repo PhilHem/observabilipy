@@ -110,8 +110,8 @@ Unify storage and HTTP API design for consistency and clarity.
 - [x] Unit tests for `encode_current()` with multiple samples per metric
 
 **Add NDJSON encoding for metrics:**
-- [ ] Add `encode_ndjson(samples: AsyncIterable[MetricSample]) -> str` to `core/encoding/ndjson.py`
-- [ ] Add `encode_ndjson_sync(samples: Iterable[MetricSample]) -> str` for sync adapters
+- [x] Add `encode_ndjson(samples: AsyncIterable[MetricSample]) -> str` to `core/encoding/ndjson.py`
+- [x] Add `encode_ndjson_sync(samples: Iterable[MetricSample]) -> str` for sync adapters
 
 ### 11.3 HTTP API - Framework Adapters
 
@@ -144,6 +144,6 @@ Unify storage and HTTP API design for consistency and clarity.
 
 ## Current Focus
 
-**Phase 11: API Redesign** → Continue with 11.2 (NDJSON for metrics) or 11.3 (HTTP endpoints)
+**Phase 11: API Redesign** → 11.2 complete, continue with 11.3 (HTTP endpoints)
 
-Next action: Add NDJSON encoding for metrics OR add `/metrics/prometheus` endpoint to FastAPI.
+Next action: Add `?since=` query param and `/metrics/prometheus` endpoint to FastAPI adapter.

@@ -20,6 +20,7 @@ from observabilipy.adapters.storage import (
     SQLiteLogStorage,
     SQLiteMetricsStorage,
 )
+from observabilipy.core.encoding.ndjson import encode_ndjson
 from observabilipy.core.exceptions import ConfigurationError, ObservabilityError
 from observabilipy.core.models import (
     LevelRetentionPolicy,
@@ -39,6 +40,8 @@ __all__ = [
     # Ports
     "LogStoragePort",
     "MetricsStoragePort",
+    # Encoding
+    "encode_ndjson",
     # Exceptions
     "ConfigurationError",
     "ObservabilityError",
