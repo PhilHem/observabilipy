@@ -98,7 +98,7 @@ class TestSQLiteMetricsPersistence:
 
         # Create new storage instance (simulating app restart)
         storage2 = SQLiteMetricsStorage(sqlite_metrics_db_path)
-        samples = [s async for s in storage2.scrape()]
+        samples = [s async for s in storage2.read()]
 
         assert len(samples) == 1
         assert samples[0].name == "persistent_counter"
@@ -196,7 +196,7 @@ class TestRetentionCleanup:
         )
         await runtime.run_once()
 
-        samples = [s async for s in storage.scrape()]
+        samples = [s async for s in storage.read()]
         assert len(samples) == 1
         assert samples[0].name == "new_metric"
 

@@ -43,7 +43,7 @@ def create_wsgi_app(
 
         if path == "/metrics":
             headers = [("Content-Type", "text/plain; version=0.0.4; charset=utf-8")]
-            samples = asyncio.run(_collect_async(metrics_storage.scrape()))
+            samples = asyncio.run(_collect_async(metrics_storage.read()))
             body = encode_metrics_sync(samples)
             start_response("200 OK", headers)
             return [body.encode()]

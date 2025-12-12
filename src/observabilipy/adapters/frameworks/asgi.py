@@ -42,7 +42,7 @@ def create_asgi_app(
 
         if path == "/metrics":
             headers = [(b"content-type", b"text/plain; version=0.0.4; charset=utf-8")]
-            body = await encode_metrics(metrics_storage.scrape())
+            body = await encode_metrics(metrics_storage.read())
             await send(
                 {"type": "http.response.start", "status": 200, "headers": headers}
             )

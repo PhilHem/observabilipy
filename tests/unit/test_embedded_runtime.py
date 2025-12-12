@@ -146,7 +146,7 @@ class TestEmbeddedRuntimeRetention:
         await runtime.run_once()
 
         assert await storage.count() == 2
-        samples = [s async for s in storage.scrape()]
+        samples = [s async for s in storage.read()]
         values = sorted(s.value for s in samples)
         assert values == [2.0, 3.0]
 

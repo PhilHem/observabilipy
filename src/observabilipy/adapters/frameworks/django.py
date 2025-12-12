@@ -28,7 +28,7 @@ def create_observability_urlpatterns(
 
     async def get_metrics(request: HttpRequest) -> HttpResponse:
         """Return metrics in Prometheus text format."""
-        body = await encode_metrics(metrics_storage.scrape())
+        body = await encode_metrics(metrics_storage.read())
         return HttpResponse(
             content=body,
             content_type="text/plain; version=0.0.4; charset=utf-8",

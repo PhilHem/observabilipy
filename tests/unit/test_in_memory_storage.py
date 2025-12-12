@@ -325,7 +325,7 @@ class TestInMemoryMetricsStorage:
         sample = MetricSample(name="requests_total", timestamp=1000.0, value=42.0)
 
         await storage.write(sample)
-        result = [s async for s in storage.scrape()]
+        result = [s async for s in storage.read()]
 
         assert result == [sample]
 
@@ -334,7 +334,7 @@ class TestInMemoryMetricsStorage:
         """Scrape returns empty iterable when storage is empty."""
         storage = InMemoryMetricsStorage()
 
-        result = [s async for s in storage.scrape()]
+        result = [s async for s in storage.read()]
 
         assert result == []
 
@@ -349,7 +349,7 @@ class TestInMemoryMetricsStorage:
 
         for sample in samples:
             await storage.write(sample)
-        result = [s async for s in storage.scrape()]
+        result = [s async for s in storage.read()]
 
         assert result == samples
 
@@ -372,7 +372,7 @@ class TestInMemoryMetricsStorage:
 
         await storage.write(sample_a)
         await storage.write(sample_b)
-        result = [s async for s in storage.scrape()]
+        result = [s async for s in storage.read()]
 
         assert len(result) == 2
         assert sample_a in result
@@ -411,7 +411,7 @@ class TestInMemoryMetricsStorage:
 
         await storage.delete_before(1500.0)
 
-        result = [s async for s in storage.scrape()]
+        result = [s async for s in storage.read()]
         assert result == [new_sample]
 
     @pytest.mark.storage
@@ -425,7 +425,7 @@ class TestInMemoryMetricsStorage:
 
         await storage.delete_before(1500.0)
 
-        result = [s async for s in storage.scrape()]
+        result = [s async for s in storage.read()]
         assert sample_at in result
         assert sample_after in result
 
@@ -450,3 +450,40 @@ class TestInMemoryMetricsStorage:
         deleted = await storage.delete_before(1000.0)
 
         assert deleted == 0
+
+    @pytest.mark.storage
+    async def test_read_since_filters_by_timestamp(self) -> None:
+        """read(since) only returns samples with timestamp > since."""
+        storage = InMemoryMetricsStorage()
+        await storage.write(MetricSample(name="m", timestamp=100.0, value=1.0))
+        await storage.write(MetricSample(name="m", timestamp=200.0, value=2.0))
+        await storage.write(MetricSample(name="m", timestamp=300.0, value=3.0))
+
+        results = [s async for s in storage.read(since=150.0)]
+
+        assert len(results) == 2
+        assert results[0].timestamp == 200.0
+        assert results[1].timestamp == 300.0
+
+    @pytest.mark.storage
+    async def test_read_since_zero_returns_all(self) -> None:
+        """read() with default since=0 returns all samples."""
+        storage = InMemoryMetricsStorage()
+        await storage.write(MetricSample(name="m", timestamp=100.0, value=1.0))
+        await storage.write(MetricSample(name="m", timestamp=200.0, value=2.0))
+
+        results = [s async for s in storage.read()]
+
+        assert len(results) == 2
+
+    @pytest.mark.storage
+    async def test_read_since_returns_ascending_order(self) -> None:
+        """read() returns samples ordered by timestamp ascending."""
+        storage = InMemoryMetricsStorage()
+        await storage.write(MetricSample(name="m", timestamp=300.0, value=3.0))
+        await storage.write(MetricSample(name="m", timestamp=100.0, value=1.0))
+
+        results = [s async for s in storage.read()]
+
+        assert results[0].timestamp == 100.0
+        assert results[1].timestamp == 300.0

@@ -148,7 +148,7 @@ class TestAsgiExample:
 
         # Verify data was added
         entries = [e async for e in log_storage.read()]
-        samples = [s async for s in metrics_storage.scrape()]
+        samples = [s async for s in metrics_storage.read()]
         assert len(entries) == 1
         assert len(samples) == 1
 

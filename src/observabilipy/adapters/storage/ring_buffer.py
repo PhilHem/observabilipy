@@ -5,6 +5,7 @@ entries when the buffer is full. Useful for production services that
 need predictable memory usage.
 """
 
+import warnings
 from collections import deque
 from collections.abc import AsyncIterable
 
@@ -97,8 +98,27 @@ class RingBufferMetricsStorage:
         self._buffer.append(sample)
 
     async def scrape(self) -> AsyncIterable[MetricSample]:
-        """Scrape all current metric samples."""
+        """Scrape all current metric samples.
+
+        .. deprecated::
+            `scrape()` is deprecated and will be removed in the next major version.
+            Use `read()` instead.
+        """
+        warnings.warn(
+            "scrape() is deprecated, use read() instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         for sample in self._buffer:
+            yield sample
+
+    async def read(self, since: float = 0) -> AsyncIterable[MetricSample]:
+        """Read metric samples since the given timestamp.
+
+        Returns samples with timestamp > since, ordered by timestamp ascending.
+        """
+        filtered = [s for s in self._buffer if s.timestamp > since]
+        for sample in sorted(filtered, key=lambda s: s.timestamp):
             yield sample
 
     async def count(self) -> int:

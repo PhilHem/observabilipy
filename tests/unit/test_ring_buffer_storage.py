@@ -370,7 +370,7 @@ class TestRingBufferMetricsStorage:
         sample = MetricSample(name="requests_total", timestamp=1000.0, value=42.0)
 
         await storage.write(sample)
-        result = [s async for s in storage.scrape()]
+        result = [s async for s in storage.read()]
 
         assert result == [sample]
 
@@ -379,7 +379,7 @@ class TestRingBufferMetricsStorage:
         """Scrape returns empty iterable when storage is empty."""
         storage = RingBufferMetricsStorage(max_size=100)
 
-        result = [s async for s in storage.scrape()]
+        result = [s async for s in storage.read()]
 
         assert result == []
 
@@ -394,7 +394,7 @@ class TestRingBufferMetricsStorage:
 
         for sample in samples:
             await storage.write(sample)
-        result = [s async for s in storage.scrape()]
+        result = [s async for s in storage.read()]
 
         assert result == samples
 
@@ -417,7 +417,7 @@ class TestRingBufferMetricsStorage:
 
         await storage.write(sample_a)
         await storage.write(sample_b)
-        result = [s async for s in storage.scrape()]
+        result = [s async for s in storage.read()]
 
         assert len(result) == 2
         assert sample_a in result
@@ -434,7 +434,7 @@ class TestRingBufferMetricsStorage:
 
         for sample in samples:
             await storage.write(sample)
-        result = [s async for s in storage.scrape()]
+        result = [s async for s in storage.read()]
 
         # Only last 3 should remain
         assert result == samples[2:]
@@ -472,7 +472,7 @@ class TestRingBufferMetricsStorage:
 
         await storage.delete_before(1500.0)
 
-        result = [s async for s in storage.scrape()]
+        result = [s async for s in storage.read()]
         assert result == [new_sample]
 
     @pytest.mark.storage
@@ -486,7 +486,7 @@ class TestRingBufferMetricsStorage:
 
         await storage.delete_before(1500.0)
 
-        result = [s async for s in storage.scrape()]
+        result = [s async for s in storage.read()]
         assert sample_at in result
         assert sample_after in result
 
@@ -511,3 +511,27 @@ class TestRingBufferMetricsStorage:
         deleted = await storage.delete_before(1000.0)
 
         assert deleted == 0
+
+    @pytest.mark.storage
+    async def test_read_since_filters_by_timestamp(self) -> None:
+        """read(since) only returns samples with timestamp > since."""
+        storage = RingBufferMetricsStorage(max_size=10)
+        await storage.write(MetricSample(name="m", timestamp=100.0, value=1.0))
+        await storage.write(MetricSample(name="m", timestamp=200.0, value=2.0))
+
+        results = [s async for s in storage.read(since=150.0)]
+
+        assert len(results) == 1
+        assert results[0].timestamp == 200.0
+
+    @pytest.mark.storage
+    async def test_read_since_returns_ascending_order(self) -> None:
+        """read() returns samples ordered by timestamp ascending."""
+        storage = RingBufferMetricsStorage(max_size=10)
+        await storage.write(MetricSample(name="m", timestamp=300.0, value=3.0))
+        await storage.write(MetricSample(name="m", timestamp=100.0, value=1.0))
+
+        results = [s async for s in storage.read()]
+
+        assert results[0].timestamp == 100.0
+        assert results[1].timestamp == 300.0

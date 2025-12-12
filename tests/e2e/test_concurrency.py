@@ -55,7 +55,7 @@ class TestConcurrentWrites:
             await storage.write(
                 MetricSample(
                     name="concurrent_counter",
-                    timestamp=float(i),
+                    timestamp=float(i + 1),  # Start from 1, not 0
                     value=float(i),
                     labels={"index": str(i)},
                 )
@@ -65,7 +65,8 @@ class TestConcurrentWrites:
         await asyncio.gather(*[write_metric(i) for i in range(num_writes)])
 
         # Verify all writes succeeded
-        samples = [s async for s in storage.scrape()]
+        # Note: read(since=0) returns samples with timestamp > 0
+        samples = [s async for s in storage.read()]
         assert len(samples) == num_writes
 
 

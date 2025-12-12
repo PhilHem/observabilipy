@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import warnings
 from collections.abc import AsyncIterable
 
 import aiosqlite
@@ -28,6 +29,7 @@ CREATE TABLE IF NOT EXISTS metrics (
     value REAL NOT NULL,
     labels TEXT NOT NULL DEFAULT '{}'
 );
+CREATE INDEX IF NOT EXISTS idx_metrics_timestamp ON metrics(timestamp);
 """
 
 _INSERT_LOG = """
@@ -54,6 +56,12 @@ INSERT INTO metrics (name, timestamp, value, labels) VALUES (?, ?, ?, ?)
 
 _SELECT_METRICS = """
 SELECT name, timestamp, value, labels FROM metrics
+"""
+
+_SELECT_METRICS_SINCE = """
+SELECT name, timestamp, value, labels FROM metrics
+WHERE timestamp > ?
+ORDER BY timestamp ASC
 """
 
 _COUNT_LOGS = """
@@ -294,10 +302,39 @@ class SQLiteMetricsStorage:
                 await db.close()
 
     async def scrape(self) -> AsyncIterable[MetricSample]:
-        """Scrape all current metric samples."""
+        """Scrape all current metric samples.
+
+        .. deprecated::
+            `scrape()` is deprecated and will be removed in the next major version.
+            Use `read()` instead.
+        """
+        warnings.warn(
+            "scrape() is deprecated, use read() instead",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         db = await self._get_connection()
         try:
             async with db.execute(_SELECT_METRICS) as cursor:
+                async for row in cursor:
+                    yield MetricSample(
+                        name=row[0],
+                        timestamp=row[1],
+                        value=row[2],
+                        labels=json.loads(row[3]),
+                    )
+        finally:
+            if self._db_path != ":memory:":
+                await db.close()
+
+    async def read(self, since: float = 0) -> AsyncIterable[MetricSample]:
+        """Read metric samples since the given timestamp.
+
+        Returns samples with timestamp > since, ordered by timestamp ascending.
+        """
+        db = await self._get_connection()
+        try:
+            async with db.execute(_SELECT_METRICS_SINCE, (since,)) as cursor:
                 async for row in cursor:
                     yield MetricSample(
                         name=row[0],

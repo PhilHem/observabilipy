@@ -63,6 +63,11 @@ class TestMetricsStoragePort:
         assert hasattr(MetricsStoragePort, "scrape")
 
     @pytest.mark.core
+    def test_protocol_has_read_method(self) -> None:
+        """MetricsStoragePort must define read(since) -> AsyncIterable."""
+        assert hasattr(MetricsStoragePort, "read")
+
+    @pytest.mark.core
     def test_class_implementing_protocol_is_recognized(self) -> None:
         """A class with all required methods should satisfy MetricsStoragePort."""
 
@@ -71,6 +76,10 @@ class TestMetricsStoragePort:
                 pass
 
             async def scrape(self) -> AsyncGenerator[MetricSample]:
+                return
+                yield  # Make this an async generator
+
+            async def read(self, since: float = 0) -> AsyncGenerator[MetricSample]:
                 return
                 yield  # Make this an async generator
 

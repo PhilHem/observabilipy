@@ -25,7 +25,7 @@ def create_observability_router(
     @router.get("/metrics")
     async def get_metrics() -> Response:
         """Return metrics in Prometheus text format."""
-        body = await encode_metrics(metrics_storage.scrape())
+        body = await encode_metrics(metrics_storage.read())
         return Response(
             content=body,
             media_type="text/plain; version=0.0.4; charset=utf-8",

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import time
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from observabilipy.core.exceptions import ConfigurationError
 from observabilipy.core.models import (
@@ -210,10 +210,11 @@ class EmbeddedRuntime:
         is_logs: bool,
     ) -> list[LogEntry] | list[MetricSample]:
         """Collect all entries from storage."""
+        # Both LogStoragePort and MetricsStoragePort have read() method
         if is_logs:
-            return [e async for e in storage.read()]  # type: ignore[union-attr]
+            return cast(list[LogEntry], [e async for e in storage.read()])
         else:
-            return [s async for s in storage.scrape()]  # type: ignore[union-attr]
+            return cast(list[MetricSample], [s async for s in storage.read()])
 
     async def _cleanup_loop(self) -> None:
         """Background loop that periodically runs cleanup."""
