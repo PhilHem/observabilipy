@@ -52,7 +52,9 @@ def create_asgi_app(
             query_string = scope.get("query_string", b"").decode()
             params = parse_qs(query_string)
             since = float(params.get("since", ["0"])[0])
-            body = await encode_logs(log_storage.read(since=since))
+            level_list = params.get("level", [None])
+            level = level_list[0] if level_list else None
+            body = await encode_logs(log_storage.read(since=since, level=level))
             await send(
                 {"type": "http.response.start", "status": 200, "headers": headers}
             )
