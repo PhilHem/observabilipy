@@ -22,12 +22,16 @@ class LogStoragePort(Protocol):
         """Write a log entry to storage."""
         ...
 
-    def read(self, since: float = 0) -> AsyncIterable[LogEntry]:
-        """Read log entries since the given timestamp.
+    def read(
+        self, since: float = 0, level: str | None = None
+    ) -> AsyncIterable[LogEntry]:
+        """Read log entries since the given timestamp, optionally filtered by level.
 
         Args:
             since: Unix timestamp. Returns entries with timestamp > since.
                    Default 0 returns all entries.
+            level: Optional log level filter. If provided, only entries with
+                   matching level (case-insensitive) are returned.
 
         Returns:
             AsyncIterable of LogEntry objects, ordered by timestamp ascending.
