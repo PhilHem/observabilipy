@@ -205,3 +205,11 @@ class TestPackageExports:
         from observabilipy import histogram
 
         assert callable(histogram)
+
+    @pytest.mark.core
+    def test_default_histogram_buckets_importable_from_package(self) -> None:
+        """DEFAULT_HISTOGRAM_BUCKETS is importable from observabilipy."""
+        from observabilipy import DEFAULT_HISTOGRAM_BUCKETS
+
+        assert isinstance(DEFAULT_HISTOGRAM_BUCKETS, list)
+        assert len(DEFAULT_HISTOGRAM_BUCKETS) == 11  # Standard Prometheus buckets

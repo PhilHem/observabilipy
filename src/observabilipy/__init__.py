@@ -22,7 +22,12 @@ from observabilipy.adapters.storage import (
 )
 from observabilipy.core.encoding.ndjson import encode_ndjson
 from observabilipy.core.exceptions import ConfigurationError, ObservabilityError
-from observabilipy.core.metrics import counter, gauge, histogram
+from observabilipy.core.metrics import (
+    DEFAULT_HISTOGRAM_BUCKETS,
+    counter,
+    gauge,
+    histogram,
+)
 from observabilipy.core.models import (
     LevelRetentionPolicy,
     LogEntry,
@@ -40,6 +45,7 @@ __all__ = [
     "RetentionPolicy",
     # Metric helpers
     "counter",
+    "DEFAULT_HISTOGRAM_BUCKETS",
     "gauge",
     "histogram",
     # Ports
