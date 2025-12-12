@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [0.11.0] - 2025-12-12
+
+### Added
+- `level` query parameter on `/logs` endpoint for filtering logs by level (FastAPI, Django, ASGI adapters)
+- `level` parameter on `LogStoragePort.read()` for level-based filtering at storage layer
+- Level filtering implemented in all storage adapters (InMemory, SQLite, RingBuffer)
+
+### Fixed
+- pytest-asyncio session cleanup hangs by adding `asyncio_default_fixture_loop_scope` config
+- Unclosed httpx.AsyncClient in e2e tests
+
 ## [0.10.2] - 2025-12-12
 
 ### Fixed
