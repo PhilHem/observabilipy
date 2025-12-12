@@ -241,6 +241,26 @@ uv run pre-commit run --all-files
 
 The hooks use the same commands as CI, maintaining parity between local development, pre-commit, and CI.
 
+## Testing Async Code
+
+### SQLite Storage Tests
+
+The SQLite storage adapters use `asyncio.Lock` for thread-safe initialization. To avoid pytest-asyncio event loop issues:
+
+1. **Lazy lock creation**: The `_init_lock` is created lazily via `_get_lock()` rather than at `__init__` time, preventing locks from being bound to the wrong event loop.
+
+2. **Proper cleanup for `:memory:` databases**: Tests using `:memory:` databases must use fixtures that call `close()` after the test:
+
+```python
+@pytest.fixture
+async def memory_log_storage() -> AsyncGenerator[SQLiteLogStorage]:
+    storage = SQLiteLogStorage(":memory:")
+    yield storage
+    await storage.close()
+```
+
+Without proper cleanup, persistent connections remain open and can cause tests to hang.
+
 ## Extending the System
 
 ### Adding a Storage Backend
