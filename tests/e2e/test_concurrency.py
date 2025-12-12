@@ -211,10 +211,11 @@ class TestConcurrentHTTPRequests:
         assert len(scrape_results) == 20
         # Scrapes should show increasing counts as writes progress
         # (not strictly monotonic due to timing, but final should have all)
-        final_response = await httpx.AsyncClient(
+        async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app),
             base_url="http://test",
-        ).get("/logs")
+        ) as final_client:
+            final_response = await final_client.get("/logs")
         final_lines = [line for line in final_response.text.strip().split("\n") if line]
         assert len(final_lines) == num_writes
 
