@@ -3,10 +3,13 @@
 Run with:
     uvicorn examples.fastapi_example:app --reload
 
-Then visit:
-    http://localhost:8000/metrics - Prometheus metrics
-    http://localhost:8000/logs - NDJSON logs
-    http://localhost:8000/logs?since=0 - Logs since timestamp
+Endpoints:
+    /metrics              - NDJSON metrics (all samples)
+    /metrics?since=<ts>   - NDJSON metrics since timestamp (incremental)
+    /metrics/prometheus   - Prometheus text format (latest per metric)
+    /logs                 - NDJSON logs (all entries)
+    /logs?since=<ts>      - NDJSON logs since timestamp
+    /logs?level=<level>   - NDJSON logs filtered by level (INFO, ERROR, etc.)
 """
 
 import time
