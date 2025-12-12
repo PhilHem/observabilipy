@@ -91,23 +91,27 @@ Unify storage and HTTP API design for consistency and clarity.
 ### 11.1 Storage Port Interface
 
 **Add `read(since)` to MetricsStoragePort:**
-- [ ] Add `read(since: float = 0) -> AsyncIterable[MetricSample]` to `MetricsStoragePort` protocol
-- [ ] Implement `read(since)` in `InMemoryMetricsStorage`
-- [ ] Implement `read(since)` in `SQLiteMetricsStorage` (add index on timestamp)
-- [ ] Implement `read(since)` in `RingBufferMetricsStorage`
-- [ ] Add unit tests for `read(since)` in all storage adapters
+- [x] Add `read(since: float = 0) -> AsyncIterable[MetricSample]` to `MetricsStoragePort` protocol
+- [x] Implement `read(since)` in `InMemoryMetricsStorage`
+- [x] Implement `read(since)` in `SQLiteMetricsStorage` (add index on timestamp)
+- [x] Implement `read(since)` in `RingBufferMetricsStorage`
+- [x] Add unit tests for `read(since)` in all storage adapters
 
 **Deprecate and remove `scrape()`:**
-- [ ] Mark `scrape()` as deprecated (keep for one release)
-- [ ] Update all internal usage to use `read()` instead
+- [x] Mark `scrape()` as deprecated (keep for one release)
+- [x] Update all internal usage to use `read()` instead
 - [ ] Remove `scrape()` in next major version
 
 ### 11.2 Encoding Layer
 
 **Add `encode_current()` for Prometheus:**
-- [ ] Add `encode_current(samples: AsyncIterable[MetricSample]) -> str` to `core/encoding/prometheus.py`
-- [ ] Logic: keep only latest sample per (name, labels) combination
-- [ ] Unit tests for `encode_current()` with multiple samples per metric
+- [x] Add `encode_current(samples: AsyncIterable[MetricSample]) -> str` to `core/encoding/prometheus.py`
+- [x] Logic: keep only latest sample per (name, labels) combination
+- [x] Unit tests for `encode_current()` with multiple samples per metric
+
+**Add NDJSON encoding for metrics:**
+- [ ] Add `encode_ndjson(samples: AsyncIterable[MetricSample]) -> str` to `core/encoding/ndjson.py`
+- [ ] Add `encode_ndjson_sync(samples: Iterable[MetricSample]) -> str` for sync adapters
 
 ### 11.3 HTTP API - Framework Adapters
 
@@ -140,6 +144,6 @@ Unify storage and HTTP API design for consistency and clarity.
 
 ## Current Focus
 
-**Phase 11: API Redesign** → Start with 11.1 (Storage Port Interface)
+**Phase 11: API Redesign** → Continue with 11.2 (NDJSON for metrics) or 11.3 (HTTP endpoints)
 
-Next action: Add `read(since)` to `MetricsStoragePort` protocol in `core/ports.py`.
+Next action: Add NDJSON encoding for metrics OR add `/metrics/prometheus` endpoint to FastAPI.
