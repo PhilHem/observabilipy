@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+- `log()` helper function for creating LogEntry objects with automatic timestamp
+
 ## [0.11.0] - 2025-12-12
 
 ### Added
