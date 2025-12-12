@@ -155,6 +155,27 @@ Unify storage and HTTP API design for consistency and clarity.
 
 ---
 
+## Future: API Ergonomics
+
+Ideas for improving developer experience. To be prioritized later.
+
+### Instrumentation Decorators
+- [ ] `@instrument` decorator for automatic request metrics (counter + timer)
+- [ ] Configurable metric names and labels via decorator arguments
+- [ ] Framework-specific variants (FastAPI dependency, Django middleware)
+
+### Python Logging Integration
+- [ ] `ObservabilipyHandler` - logging handler that writes to `LogStoragePort`
+- [ ] Automatic attribute extraction from `LogRecord` (module, funcName, lineno)
+- [ ] Optional structured context via `logging.setLogRecordFactory` or filters
+
+### Documentation & Discoverability
+- [ ] Module-level docstring in `__init__.py` with quickstart example
+- [ ] Inline docstring examples for all public functions
+- [ ] Interactive examples in documentation (Jupyter notebook or similar)
+
+---
+
 ## Current Focus
 
 **Phase 11: API Redesign** → 11.4 Examples & Documentation in progress
