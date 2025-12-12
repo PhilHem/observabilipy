@@ -3,6 +3,9 @@
 Captures real system CPU and memory metrics using psutil and displays them
 in an interactive HTML dashboard with live-updating charts.
 
+The dashboard uses the /metrics?since= endpoint with NDJSON format for
+efficient incremental updates - only fetching new data since the last poll.
+
 Requirements:
     pip install psutil
     # or: uv add psutil
@@ -12,9 +15,9 @@ Run with:
 
 Then visit:
     http://localhost:8000/ - Interactive dashboard with live charts
-    http://localhost:8000/metrics - Prometheus metrics
+    http://localhost:8000/metrics - NDJSON metrics (with ?since= support)
+    http://localhost:8000/metrics/prometheus - Prometheus text format
     http://localhost:8000/logs - NDJSON logs
-    http://localhost:8000/api/metrics - JSON API for dashboard
 """
 
 import asyncio
@@ -221,33 +224,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
 app = FastAPI(title="System Metrics Dashboard", lifespan=lifespan)
 app.include_router(create_observability_router(log_storage, metrics_storage))
-
-
-@app.get("/api/metrics")
-async def get_metrics_json() -> JSONResponse:
-    """Return metrics as JSON for the dashboard."""
-    metrics: dict[str, list[dict]] = {}
-
-    async for sample in metrics_storage.scrape():
-        key = sample.name
-        if sample.labels:
-            label_str = ",".join(f"{k}={v}" for k, v in sorted(sample.labels.items()))
-            key = f"{sample.name}{{{label_str}}}"
-
-        if key not in metrics:
-            metrics[key] = []
-        metrics[key].append(
-            {
-                "timestamp": sample.timestamp,
-                "value": sample.value,
-            }
-        )
-
-    # Sort by timestamp
-    for key in metrics:
-        metrics[key].sort(key=lambda x: x["timestamp"])
-
-    return JSONResponse(content=metrics)
 
 
 @app.get("/api/logs")
@@ -468,9 +444,9 @@ DASHBOARD_HTML = """<!DOCTYPE html>
     </div>
 
     <div class="links">
-        <a href="/metrics" target="_blank">Prometheus Metrics</a>
+        <a href="/metrics" target="_blank">NDJSON Metrics</a>
+        <a href="/metrics/prometheus" target="_blank">Prometheus Metrics</a>
         <a href="/logs" target="_blank">NDJSON Logs</a>
-        <a href="/api/metrics" target="_blank">JSON API</a>
     </div>
 
     <script>
@@ -524,74 +500,141 @@ DASHBOARD_HTML = """<!DOCTYPE html>
         const netChart = createChart(document.getElementById('netChart'), 'Network', '#00ff88');
         const diskChart = createChart(document.getElementById('diskChart'), 'Disk', '#ffd93d');
 
+        // Track timestamp for incremental fetching
+        let lastMetricTimestamp = 0;
+        const MAX_POINTS = 600;  // 10 minutes at 1 sample/second
+
         // Track previous values for rate calculation
         let prevNetSent = null, prevNetRecv = null, prevNetTime = null;
         let prevDiskRead = null, prevDiskWrite = null, prevDiskTime = null;
 
+        // NDJSON parsing helpers
+        function parseNDJSON(text) {
+            if (!text || !text.trim()) return [];
+            return text.trim().split('\n')
+                .filter(line => line)
+                .map(line => JSON.parse(line));
+        }
+
+        function groupMetricsByName(samples) {
+            const grouped = {};
+            for (const sample of samples) {
+                let key = sample.name;
+                if (sample.labels && Object.keys(sample.labels).length > 0) {
+                    const labelStr = Object.entries(sample.labels)
+                        .sort(([a], [b]) => a.localeCompare(b))
+                        .map(([k, v]) => `${k}=${v}`)
+                        .join(',');
+                    key = `${sample.name}{${labelStr}}`;
+                }
+                if (!grouped[key]) grouped[key] = [];
+                grouped[key].push({
+                    x: sample.timestamp * 1000,
+                    y: sample.value,
+                    timestamp: sample.timestamp
+                });
+            }
+            return grouped;
+        }
+
+        function appendChartData(chart, newData, maxPoints) {
+            if (!newData || newData.length === 0) return;
+            const existing = chart.data.datasets[0].data;
+            const combined = [...existing, ...newData];
+            // Sort by timestamp and dedupe
+            combined.sort((a, b) => a.x - b.x);
+            const seen = new Set();
+            const deduped = combined.filter(d => {
+                if (seen.has(d.x)) return false;
+                seen.add(d.x);
+                return true;
+            });
+            // Trim to max points
+            chart.data.datasets[0].data = deduped.slice(-maxPoints);
+        }
+
         async function updateCharts() {
             try {
-                const response = await fetch('/api/metrics');
-                const data = await response.json();
+                // Fetch incremental data using NDJSON endpoint
+                const response = await fetch(`/metrics?since=${lastMetricTimestamp}`);
+                const text = await response.text();
+                const samples = parseNDJSON(text);
 
-                // CPU
+                if (samples.length === 0) return;
+
+                // Update lastMetricTimestamp to the max timestamp received
+                const maxTimestamp = Math.max(...samples.map(s => s.timestamp));
+                lastMetricTimestamp = maxTimestamp;
+
+                // Group samples by metric name
+                const data = groupMetricsByName(samples);
+
+                // CPU - append new data
                 if (data['system_cpu_percent']) {
-                    const cpuData = data['system_cpu_percent'].map(d => ({
-                        x: d.timestamp * 1000,
-                        y: d.value
-                    }));
-                    cpuChart.data.datasets[0].data = cpuData;
+                    appendChartData(cpuChart, data['system_cpu_percent'], MAX_POINTS);
                     cpuChart.update('none');
-                    const latest = cpuData[cpuData.length - 1];
+                    const chartData = cpuChart.data.datasets[0].data;
+                    const latest = chartData[chartData.length - 1];
                     if (latest) document.getElementById('cpu-value').textContent = latest.y.toFixed(1) + '%';
                 }
 
-                // Memory
+                // Memory - append new data
                 if (data['system_memory_percent']) {
-                    const memData = data['system_memory_percent'].map(d => ({
-                        x: d.timestamp * 1000,
-                        y: d.value
-                    }));
-                    memChart.data.datasets[0].data = memData;
+                    appendChartData(memChart, data['system_memory_percent'], MAX_POINTS);
                     memChart.update('none');
-                    const latest = memData[memData.length - 1];
+                    const chartData = memChart.data.datasets[0].data;
+                    const latest = chartData[chartData.length - 1];
                     if (latest) document.getElementById('mem-value').textContent = latest.y.toFixed(1) + '%';
                 }
 
-                // Network (calculate rate)
+                // Network (calculate rate from cumulative counters)
                 if (data['system_network_bytes_sent_total'] && data['system_network_bytes_recv_total']) {
-                    const sent = data['system_network_bytes_sent_total'];
-                    const recv = data['system_network_bytes_recv_total'];
+                    const sent = data['system_network_bytes_sent_total'].sort((a, b) => a.x - b.x);
+                    const recv = data['system_network_bytes_recv_total'].sort((a, b) => a.x - b.x);
 
-                    const netData = [];
-                    for (let i = 1; i < sent.length && i < recv.length; i++) {
-                        const dt = sent[i].timestamp - sent[i-1].timestamp;
-                        if (dt > 0) {
-                            const rate = ((sent[i].value - sent[i-1].value) + (recv[i].value - recv[i-1].value)) / dt / 1024 / 1024;
-                            netData.push({ x: sent[i].timestamp * 1000, y: Math.max(0, rate) });
+                    // Use previous values for rate calculation
+                    for (const s of sent) {
+                        if (prevNetSent !== null && prevNetTime !== null) {
+                            const dt = s.timestamp - prevNetTime;
+                            if (dt > 0) {
+                                const recvVal = recv.find(r => r.timestamp === s.timestamp)?.y || prevNetRecv;
+                                const rate = ((s.y - prevNetSent) + (recvVal - prevNetRecv)) / dt / 1024 / 1024;
+                                appendChartData(netChart, [{ x: s.x, y: Math.max(0, rate) }], MAX_POINTS);
+                            }
                         }
+                        prevNetSent = s.y;
+                        const r = recv.find(rv => rv.timestamp === s.timestamp);
+                        if (r) prevNetRecv = r.y;
+                        prevNetTime = s.timestamp;
                     }
-                    netChart.data.datasets[0].data = netData;
                     netChart.update('none');
-                    const latest = netData[netData.length - 1];
+                    const chartData = netChart.data.datasets[0].data;
+                    const latest = chartData[chartData.length - 1];
                     if (latest) document.getElementById('net-value').textContent = latest.y.toFixed(2) + ' MB/s';
                 }
 
-                // Disk (calculate rate)
+                // Disk (calculate rate from cumulative counters)
                 if (data['system_disk_read_bytes_total'] && data['system_disk_write_bytes_total']) {
-                    const read = data['system_disk_read_bytes_total'];
-                    const write = data['system_disk_write_bytes_total'];
+                    const read = data['system_disk_read_bytes_total'].sort((a, b) => a.x - b.x);
+                    const write = data['system_disk_write_bytes_total'].sort((a, b) => a.x - b.x);
 
-                    const diskData = [];
-                    for (let i = 1; i < read.length && i < write.length; i++) {
-                        const dt = read[i].timestamp - read[i-1].timestamp;
-                        if (dt > 0) {
-                            const rate = ((read[i].value - read[i-1].value) + (write[i].value - write[i-1].value)) / dt / 1024 / 1024;
-                            diskData.push({ x: read[i].timestamp * 1000, y: Math.max(0, rate) });
+                    for (const r of read) {
+                        if (prevDiskRead !== null && prevDiskTime !== null) {
+                            const dt = r.timestamp - prevDiskTime;
+                            if (dt > 0) {
+                                const writeVal = write.find(w => w.timestamp === r.timestamp)?.y || prevDiskWrite;
+                                const rate = ((r.y - prevDiskRead) + (writeVal - prevDiskWrite)) / dt / 1024 / 1024;
+                                appendChartData(diskChart, [{ x: r.x, y: Math.max(0, rate) }], MAX_POINTS);
+                            }
                         }
+                        prevDiskRead = r.y;
+                        const w = write.find(wv => wv.timestamp === r.timestamp);
+                        if (w) prevDiskWrite = w.y;
+                        prevDiskTime = r.timestamp;
                     }
-                    diskChart.data.datasets[0].data = diskData;
                     diskChart.update('none');
-                    const latest = diskData[diskData.length - 1];
+                    const chartData = diskChart.data.datasets[0].data;
+                    const latest = chartData[chartData.length - 1];
                     if (latest) document.getElementById('disk-value').textContent = latest.y.toFixed(2) + ' MB/s';
                 }
             } catch (err) {

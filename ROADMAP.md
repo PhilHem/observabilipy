@@ -141,7 +141,7 @@ Unify storage and HTTP API design for consistency and clarity.
 
 ### 11.4 Examples & Documentation
 
-- [ ] Update `dashboard_example.py` to use `/metrics?since=` with NDJSON parsing
+- [x] Update `dashboard_example.py` to use `/metrics?since=` with NDJSON parsing
 - [ ] Update `fastapi_example.py` to demonstrate new endpoints
 - [ ] Update README with new API documentation
 - [ ] Add migration guide for users upgrading from `scrape()` API
@@ -150,6 +150,6 @@ Unify storage and HTTP API design for consistency and clarity.
 
 ## Current Focus
 
-**Phase 11: API Redesign** → 11.2 complete, continue with 11.3 (HTTP endpoints)
+**Phase 11: API Redesign** → 11.3 complete, continue with 11.4 (Examples & Documentation)
 
-Next action: Add `?since=` query param and `/metrics/prometheus` endpoint to FastAPI adapter.
+Next action: Update `fastapi_example.py` to demonstrate new endpoints.
