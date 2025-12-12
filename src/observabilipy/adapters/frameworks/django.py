@@ -39,9 +39,11 @@ def create_observability_urlpatterns(
 
         Query parameters:
             since: Unix timestamp. Returns entries with timestamp > since.
+            level: Optional log level filter (case-insensitive).
         """
         since = float(request.GET.get("since", 0))
-        body = await encode_logs(log_storage.read(since=since))
+        level = request.GET.get("level")
+        body = await encode_logs(log_storage.read(since=since, level=level))
         return HttpResponse(
             content=body,
             content_type="application/x-ndjson",

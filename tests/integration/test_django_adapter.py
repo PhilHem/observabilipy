@@ -180,3 +180,90 @@ class TestDjangoLogsEndpoint:
         assert len(lines) == 1
         parsed = json.loads(lines[0])
         assert parsed["message"] == "New log"
+
+    @pytest.mark.django
+    async def test_logs_endpoint_level_parameter(
+        self, log_storage: InMemoryLogStorage
+    ) -> None:
+        """Logs endpoint filters by level parameter."""
+        await log_storage.write(
+            LogEntry(timestamp=1702300000.0, level="ERROR", message="Error log")
+        )
+        await log_storage.write(
+            LogEntry(timestamp=1702300001.0, level="INFO", message="Info log")
+        )
+        await log_storage.write(
+            LogEntry(timestamp=1702300002.0, level="DEBUG", message="Debug log")
+        )
+
+        client = AsyncClient()
+        response = await client.get("/logs", {"level": "ERROR"})
+
+        assert response.status_code == 200
+        lines = response.content.decode().strip().split("\n")
+        assert len(lines) == 1
+        parsed = json.loads(lines[0])
+        assert parsed["level"] == "ERROR"
+        assert parsed["message"] == "Error log"
+
+    @pytest.mark.django
+    async def test_logs_endpoint_level_parameter_case_insensitive(
+        self, log_storage: InMemoryLogStorage
+    ) -> None:
+        """Logs endpoint level filter is case-insensitive."""
+        await log_storage.write(
+            LogEntry(timestamp=1702300000.0, level="ERROR", message="Error log")
+        )
+        await log_storage.write(
+            LogEntry(timestamp=1702300001.0, level="INFO", message="Info log")
+        )
+
+        client = AsyncClient()
+        response = await client.get("/logs", {"level": "error"})
+
+        assert response.status_code == 200
+        lines = response.content.decode().strip().split("\n")
+        assert len(lines) == 1
+        parsed = json.loads(lines[0])
+        assert parsed["level"] == "ERROR"
+
+    @pytest.mark.django
+    async def test_logs_endpoint_combines_since_and_level(
+        self, log_storage: InMemoryLogStorage
+    ) -> None:
+        """Logs endpoint combines since and level parameters."""
+        await log_storage.write(
+            LogEntry(timestamp=1702300000.0, level="ERROR", message="Old error")
+        )
+        await log_storage.write(
+            LogEntry(timestamp=1702300002.0, level="ERROR", message="New error")
+        )
+        await log_storage.write(
+            LogEntry(timestamp=1702300003.0, level="INFO", message="New info")
+        )
+
+        client = AsyncClient()
+        response = await client.get(
+            "/logs", {"since": "1702300001.0", "level": "ERROR"}
+        )
+
+        assert response.status_code == 200
+        lines = response.content.decode().strip().split("\n")
+        assert len(lines) == 1
+        parsed = json.loads(lines[0])
+        assert parsed["message"] == "New error"
+
+    @pytest.mark.django
+    async def test_logs_endpoint_level_returns_empty_for_nonexistent(
+        self, log_storage: InMemoryLogStorage
+    ) -> None:
+        """Logs endpoint returns empty for non-existent level."""
+        await log_storage.write(
+            LogEntry(timestamp=1702300000.0, level="INFO", message="Info log")
+        )
+
+        client = AsyncClient()
+        response = await client.get("/logs", {"level": "FATAL"})
+
+        assert response.status_code == 200
+        assert response.content.decode() == ""
