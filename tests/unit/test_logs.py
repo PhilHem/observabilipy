@@ -1,10 +1,10 @@
-"""Tests for log helper function."""
+"""Tests for log helper functions."""
 
 import time
 
 import pytest
 
-from observabilipy.core.logs import log
+from observabilipy.core.logs import debug, error, info, log, warn
 from observabilipy.core.models import LogEntry
 
 
@@ -60,6 +60,74 @@ class TestLog:
         assert entry.attributes["enabled"] is True
 
 
+class TestInfoHelper:
+    """Tests for info() helper function."""
+
+    @pytest.mark.core
+    def test_info_creates_log_entry_with_info_level(self) -> None:
+        """Info creates a LogEntry with INFO level."""
+        entry = info("Server started")
+        assert entry.level == "INFO"
+        assert entry.message == "Server started"
+
+    @pytest.mark.core
+    def test_info_accepts_attributes(self) -> None:
+        """Info accepts attributes as keyword arguments."""
+        entry = info("Request completed", request_id="abc")
+        assert entry.attributes == {"request_id": "abc"}
+
+
+class TestErrorHelper:
+    """Tests for error() helper function."""
+
+    @pytest.mark.core
+    def test_error_creates_log_entry_with_error_level(self) -> None:
+        """Error creates a LogEntry with ERROR level."""
+        entry = error("Connection failed")
+        assert entry.level == "ERROR"
+        assert entry.message == "Connection failed"
+
+    @pytest.mark.core
+    def test_error_accepts_attributes(self) -> None:
+        """Error accepts attributes as keyword arguments."""
+        entry = error("Timeout", retry_count=3)
+        assert entry.attributes == {"retry_count": 3}
+
+
+class TestDebugHelper:
+    """Tests for debug() helper function."""
+
+    @pytest.mark.core
+    def test_debug_creates_log_entry_with_debug_level(self) -> None:
+        """Debug creates a LogEntry with DEBUG level."""
+        entry = debug("Entering function")
+        assert entry.level == "DEBUG"
+        assert entry.message == "Entering function"
+
+    @pytest.mark.core
+    def test_debug_accepts_attributes(self) -> None:
+        """Debug accepts attributes as keyword arguments."""
+        entry = debug("Variable state", x=42)
+        assert entry.attributes == {"x": 42}
+
+
+class TestWarnHelper:
+    """Tests for warn() helper function."""
+
+    @pytest.mark.core
+    def test_warn_creates_log_entry_with_warn_level(self) -> None:
+        """Warn creates a LogEntry with WARN level."""
+        entry = warn("Deprecated API used")
+        assert entry.level == "WARN"
+        assert entry.message == "Deprecated API used"
+
+    @pytest.mark.core
+    def test_warn_accepts_attributes(self) -> None:
+        """Warn accepts attributes as keyword arguments."""
+        entry = warn("High memory", usage_pct=85.5)
+        assert entry.attributes == {"usage_pct": 85.5}
+
+
 class TestPackageExports:
     """Tests for package-level exports."""
 
@@ -69,3 +137,10 @@ class TestPackageExports:
         from observabilipy import log
 
         assert callable(log)
+
+    @pytest.mark.core
+    def test_level_helpers_importable_from_package(self) -> None:
+        """Level-specific log helpers are importable from observabilipy package."""
+        from observabilipy import debug, error, info, warn
+
+        assert all(callable(fn) for fn in [info, error, debug, warn])

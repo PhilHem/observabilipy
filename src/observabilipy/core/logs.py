@@ -26,3 +26,55 @@ def log(
         message=message,
         attributes=dict(attributes),
     )
+
+
+def info(message: str, **attributes: str | int | float | bool) -> LogEntry:
+    """Create an INFO log entry with automatic timestamp.
+
+    Args:
+        message: The log message
+        **attributes: Additional structured fields
+
+    Returns:
+        LogEntry with INFO level and current timestamp
+    """
+    return log("INFO", message, **attributes)
+
+
+def error(message: str, **attributes: str | int | float | bool) -> LogEntry:
+    """Create an ERROR log entry with automatic timestamp.
+
+    Args:
+        message: The log message
+        **attributes: Additional structured fields
+
+    Returns:
+        LogEntry with ERROR level and current timestamp
+    """
+    return log("ERROR", message, **attributes)
+
+
+def debug(message: str, **attributes: str | int | float | bool) -> LogEntry:
+    """Create a DEBUG log entry with automatic timestamp.
+
+    Args:
+        message: The log message
+        **attributes: Additional structured fields
+
+    Returns:
+        LogEntry with DEBUG level and current timestamp
+    """
+    return log("DEBUG", message, **attributes)
+
+
+def warn(message: str, **attributes: str | int | float | bool) -> LogEntry:
+    """Create a WARN log entry with automatic timestamp.
+
+    Args:
+        message: The log message
+        **attributes: Additional structured fields
+
+    Returns:
+        LogEntry with WARN level and current timestamp
+    """
+    return log("WARN", message, **attributes)
