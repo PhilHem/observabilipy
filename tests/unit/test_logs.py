@@ -10,6 +10,7 @@ from observabilipy.core.logs import (
     error,
     info,
     log,
+    log_exception,
     timed_log,
     warn,
 )
@@ -205,6 +206,97 @@ class TestTimedLog:
         assert result.logs[1].attributes["phase"] == "exit"
 
 
+class TestLogExceptionHelper:
+    """Tests for log_exception() helper function."""
+
+    @pytest.mark.core
+    def test_log_exception_creates_error_level_entry(self) -> None:
+        """log_exception creates a LogEntry with ERROR level."""
+        try:
+            raise ValueError("test error")
+        except ValueError:
+            entry = log_exception()
+        assert entry.level == "ERROR"
+
+    @pytest.mark.core
+    def test_log_exception_uses_exception_message_as_default_message(self) -> None:
+        """log_exception uses the exception message as the default log message."""
+        try:
+            raise ValueError("something went wrong")
+        except ValueError:
+            entry = log_exception()
+        assert entry.message == "something went wrong"
+
+    @pytest.mark.core
+    def test_log_exception_allows_custom_message(self) -> None:
+        """log_exception allows overriding the message."""
+        try:
+            raise ValueError("original")
+        except ValueError:
+            entry = log_exception("Custom message")
+        assert entry.message == "Custom message"
+
+    @pytest.mark.core
+    def test_log_exception_captures_exception_type(self) -> None:
+        """log_exception captures the exception type name."""
+        try:
+            raise KeyError("missing key")
+        except KeyError:
+            entry = log_exception()
+        assert entry.attributes["exception_type"] == "KeyError"
+
+    @pytest.mark.core
+    def test_log_exception_captures_exception_message(self) -> None:
+        """log_exception captures the exception message in attributes."""
+        try:
+            raise RuntimeError("detailed error info")
+        except RuntimeError:
+            entry = log_exception()
+        assert entry.attributes["exception_message"] == "detailed error info"
+
+    @pytest.mark.core
+    def test_log_exception_captures_traceback(self) -> None:
+        """log_exception captures the formatted traceback."""
+        try:
+            raise TypeError("type mismatch")
+        except TypeError:
+            entry = log_exception()
+        assert "traceback" in entry.attributes
+        assert "TypeError" in entry.attributes["traceback"]
+        assert "type mismatch" in entry.attributes["traceback"]
+
+    @pytest.mark.core
+    def test_log_exception_accepts_additional_attributes(self) -> None:
+        """log_exception accepts additional attributes as kwargs."""
+        try:
+            raise ValueError("error")
+        except ValueError:
+            entry = log_exception(request_id="abc123", user_id=42)
+        assert entry.attributes["request_id"] == "abc123"
+        assert entry.attributes["user_id"] == 42
+
+    @pytest.mark.core
+    def test_log_exception_auto_captures_timestamp(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """log_exception automatically captures current timestamp."""
+        monkeypatch.setattr(time, "time", lambda: 1702300000.0)
+        try:
+            raise ValueError("error")
+        except ValueError:
+            entry = log_exception()
+        assert entry.timestamp == 1702300000.0
+
+    @pytest.mark.core
+    def test_log_exception_returns_log_entry(self) -> None:
+        """log_exception returns a LogEntry instance."""
+        try:
+            raise ValueError("error")
+        except ValueError:
+            entry = log_exception()
+        assert isinstance(entry, LogEntry)
+
+
 class TestPackageExports:
     """Tests for package-level exports."""
 
@@ -229,3 +321,10 @@ class TestPackageExports:
 
         assert callable(timed_log)
         assert TimedLogResult is not None
+
+    @pytest.mark.core
+    def test_log_exception_importable_from_package(self) -> None:
+        """log_exception is importable from observabilipy package."""
+        from observabilipy import log_exception
+
+        assert callable(log_exception)

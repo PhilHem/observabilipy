@@ -1,6 +1,8 @@
 """Log helper function for creating LogEntry objects."""
 
+import sys
 import time
+import traceback
 from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -124,3 +126,37 @@ def warn(message: str, **attributes: str | int | float | bool) -> LogEntry:
         LogEntry with WARN level and current timestamp
     """
     return log("WARN", message, **attributes)
+
+
+def log_exception(
+    message: str | None = None,
+    **attributes: str | int | float | bool,
+) -> LogEntry:
+    """Create an ERROR log entry capturing current exception info.
+
+    Must be called from within an exception handler (except block).
+
+    Args:
+        message: Optional custom message (defaults to exception message)
+        **attributes: Additional structured fields
+
+    Returns:
+        LogEntry with ERROR level, exception details, and traceback
+    """
+    exc_type, exc_value, _ = sys.exc_info()
+
+    exc_type_name = exc_type.__name__ if exc_type else "Unknown"
+    exc_message = str(exc_value) if exc_value else ""
+    tb = traceback.format_exc()
+
+    return LogEntry(
+        timestamp=time.time(),
+        level="ERROR",
+        message=message if message is not None else exc_message,
+        attributes={
+            "exception_type": exc_type_name,
+            "exception_message": exc_message,
+            "traceback": tb,
+            **attributes,
+        },
+    )

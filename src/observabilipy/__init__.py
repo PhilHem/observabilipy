@@ -28,6 +28,7 @@ from observabilipy.core.logs import (
     error,
     info,
     log,
+    log_exception,
     timed_log,
     warn,
 )
@@ -59,6 +60,7 @@ __all__ = [
     "error",
     "info",
     "log",
+    "log_exception",
     "timed_log",
     "TimedLogResult",
     "warn",
