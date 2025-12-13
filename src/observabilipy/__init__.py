@@ -1,15 +1,38 @@
 """Observabilipy - Metrics and structured log collection for Python.
 
-This module re-exports the most commonly used classes for convenient imports:
+Quickstart
+----------
+1. Create storage (adapter layer - choose one):
 
-    from observabilipy import LogEntry, MetricSample, InMemoryLogStorage
+    from observabilipy import InMemoryLogStorage, InMemoryMetricsStorage
 
-For framework adapters, import from the submodules:
+    log_storage = InMemoryLogStorage()
+    metrics_storage = InMemoryMetricsStorage()
+
+2. Start the runtime (wires core to adapters):
+
+    from observabilipy import EmbeddedRuntime
+
+    runtime = EmbeddedRuntime(
+        log_storage=log_storage,
+        metrics_storage=metrics_storage,
+    )
+    await runtime.start()
+
+3. Use the fluent API (core layer):
+
+    from observabilipy import log, counter
+
+    log("info", "User logged in", user_id=123)
+    counter("logins_total", labels={"method": "oauth"})
+
+4. Framework integration (optional - exposes /logs and /metrics endpoints):
 
     from observabilipy.adapters.frameworks.fastapi import create_observability_router
-    from observabilipy.adapters.frameworks.django import (
-        create_observability_urlpatterns,
-    )
+
+    app.include_router(create_observability_router(log_storage, metrics_storage))
+
+For more examples, see the examples/ directory.
 """
 
 from observabilipy.adapters.logging import ContextProvider, ObservabilipyHandler

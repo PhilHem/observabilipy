@@ -184,7 +184,7 @@ Make `ObservabilipyHandler` work inside existing async event loops (e.g., FastAP
 - [x] Write test: logs are written even when event loop is busy
 - [x] Write test: handler shutdown flushes pending writes
 - [x] Implement: optional background thread with queue for fire-and-forget writes
-- [ ] Add `flush()` method that blocks until queue is drained (uses `queue.join()`)
+- [x] Add `flush()` method that blocks until queue is drained (uses `queue.join()`)
 
 **TDD Cycle 3: Integration with FastAPI TestClient** ✅
 - [x] Write test: `ObservabilipyHandler` works with FastAPI `TestClient` and middleware
@@ -192,7 +192,7 @@ Make `ObservabilipyHandler` work inside existing async event loops (e.g., FastAP
 - [x] Update `test_middleware_log_context.py` to use actual TestClient instead of simulation
 
 ### Documentation & Discoverability
-- [ ] Module-level docstring in `__init__.py` with quickstart example
+- [x] Module-level docstring in `__init__.py` with quickstart example
 - [ ] Inline docstring examples for all public functions
 - [ ] Interactive examples in documentation (Jupyter notebook or similar)
 
