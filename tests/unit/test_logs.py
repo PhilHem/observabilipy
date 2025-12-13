@@ -4,7 +4,15 @@ import time
 
 import pytest
 
-from observabilipy.core.logs import debug, error, info, log, warn
+from observabilipy.core.logs import (
+    TimedLogResult,
+    debug,
+    error,
+    info,
+    log,
+    timed_log,
+    warn,
+)
 from observabilipy.core.models import LogEntry
 
 
@@ -128,6 +136,75 @@ class TestWarnHelper:
         assert entry.attributes == {"usage_pct": 85.5}
 
 
+class TestTimedLogResult:
+    """Tests for TimedLogResult class."""
+
+    @pytest.mark.core
+    def test_timed_log_result_has_logs_list(self) -> None:
+        """TimedLogResult has an empty logs list by default."""
+        result = TimedLogResult()
+        assert result.logs == []
+
+
+class TestTimedLog:
+    """Tests for timed_log() context manager."""
+
+    @pytest.mark.core
+    def test_timed_log_yields_result(self) -> None:
+        """timed_log yields a TimedLogResult."""
+        with timed_log("test operation") as result:
+            assert isinstance(result, TimedLogResult)
+
+    @pytest.mark.core
+    def test_timed_log_creates_entry_log(self) -> None:
+        """timed_log creates entry log with [entry] suffix."""
+        with timed_log("processing order") as result:
+            pass
+        assert len(result.logs) >= 1
+        entry = result.logs[0]
+        assert entry.message == "processing order [entry]"
+        assert entry.attributes.get("phase") == "entry"
+
+    @pytest.mark.core
+    def test_timed_log_creates_exit_log_with_elapsed(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """timed_log creates exit log with elapsed time."""
+        times = iter([100.0, 100.5])  # 0.5 second elapsed
+        monkeypatch.setattr(time, "perf_counter", lambda: next(times))
+
+        with timed_log("task") as result:
+            pass
+
+        assert len(result.logs) == 2
+        exit_log = result.logs[1]
+        assert exit_log.message == "task [exit]"
+        assert exit_log.attributes["phase"] == "exit"
+        assert exit_log.attributes["elapsed_seconds"] == 0.5
+
+    @pytest.mark.core
+    def test_timed_log_with_custom_level(self) -> None:
+        """timed_log accepts custom log level."""
+        with timed_log("debug task", level="DEBUG") as result:
+            pass
+        assert result.logs[0].level == "DEBUG"
+        assert result.logs[1].level == "DEBUG"
+
+    @pytest.mark.core
+    def test_timed_log_with_attributes(self) -> None:
+        """timed_log passes attributes to both entry and exit logs."""
+        with timed_log("order", order_id=123, customer="alice") as result:
+            pass
+        # Entry log has custom attributes
+        assert result.logs[0].attributes["order_id"] == 123
+        assert result.logs[0].attributes["customer"] == "alice"
+        assert result.logs[0].attributes["phase"] == "entry"
+        # Exit log also has them
+        assert result.logs[1].attributes["order_id"] == 123
+        assert result.logs[1].attributes["customer"] == "alice"
+        assert result.logs[1].attributes["phase"] == "exit"
+
+
 class TestPackageExports:
     """Tests for package-level exports."""
 
@@ -144,3 +221,11 @@ class TestPackageExports:
         from observabilipy import debug, error, info, warn
 
         assert all(callable(fn) for fn in [info, error, debug, warn])
+
+    @pytest.mark.core
+    def test_timed_log_importable_from_package(self) -> None:
+        """timed_log and TimedLogResult are importable from observabilipy package."""
+        from observabilipy import TimedLogResult, timed_log
+
+        assert callable(timed_log)
+        assert TimedLogResult is not None

@@ -22,7 +22,15 @@ from observabilipy.adapters.storage import (
 )
 from observabilipy.core.encoding.ndjson import encode_ndjson
 from observabilipy.core.exceptions import ConfigurationError, ObservabilityError
-from observabilipy.core.logs import debug, error, info, log, warn
+from observabilipy.core.logs import (
+    TimedLogResult,
+    debug,
+    error,
+    info,
+    log,
+    timed_log,
+    warn,
+)
 from observabilipy.core.metrics import (
     DEFAULT_HISTOGRAM_BUCKETS,
     TimerResult,
@@ -51,6 +59,8 @@ __all__ = [
     "error",
     "info",
     "log",
+    "timed_log",
+    "TimedLogResult",
     "warn",
     # Metric helpers
     "counter",

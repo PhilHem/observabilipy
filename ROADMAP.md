@@ -85,7 +85,7 @@
 - [x] `timer()` context manager for histogram (auto-records elapsed time)
 - [x] Log helper function `log(level, message, **attributes)`
 - [x] Level-specific log helpers: `info()`, `error()`, `debug()`, `warn()`
-- [ ] `timed_log()` context manager (logs entry/exit with elapsed time)
+- [x] `timed_log()` context manager (logs entry/exit with elapsed time)
 - [ ] `log_exception()` helper (captures exception info and traceback)
 - [x] Re-export common symbols from root `__init__.py` for simpler imports
 - [x] Rename package directory from `observability/` to `observabilipy/` (match PyPI name)
