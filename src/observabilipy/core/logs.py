@@ -32,6 +32,16 @@ def timed_log(
 
     Yields:
         TimedLogResult containing entry and exit LogEntry objects
+
+    Example:
+        >>> with timed_log("Processing order", order_id=123) as result:
+        ...     pass  # do work here
+        >>> len(result.logs)
+        2
+        >>> result.logs[0].message
+        'Processing order [entry]'
+        >>> "elapsed_seconds" in result.logs[1].attributes
+        True
     """
     result = TimedLogResult()
     start = time.perf_counter()
@@ -67,6 +77,15 @@ def log(
 
     Returns:
         LogEntry with current timestamp
+
+    Example:
+        >>> entry = log("INFO", "User logged in", user_id=123)
+        >>> entry.level
+        'INFO'
+        >>> entry.message
+        'User logged in'
+        >>> entry.attributes["user_id"]
+        123
     """
     return LogEntry(
         timestamp=time.time(),
@@ -85,6 +104,13 @@ def info(message: str, **attributes: str | int | float | bool) -> LogEntry:
 
     Returns:
         LogEntry with INFO level and current timestamp
+
+    Example:
+        >>> entry = info("Server started", port=8080)
+        >>> entry.level
+        'INFO'
+        >>> entry.attributes["port"]
+        8080
     """
     return log("INFO", message, **attributes)
 
@@ -98,6 +124,11 @@ def error(message: str, **attributes: str | int | float | bool) -> LogEntry:
 
     Returns:
         LogEntry with ERROR level and current timestamp
+
+    Example:
+        >>> entry = error("Connection failed", host="db.example.com")
+        >>> entry.level
+        'ERROR'
     """
     return log("ERROR", message, **attributes)
 
@@ -111,6 +142,11 @@ def debug(message: str, **attributes: str | int | float | bool) -> LogEntry:
 
     Returns:
         LogEntry with DEBUG level and current timestamp
+
+    Example:
+        >>> entry = debug("Cache hit", key="user:123")
+        >>> entry.level
+        'DEBUG'
     """
     return log("DEBUG", message, **attributes)
 
@@ -124,6 +160,11 @@ def warn(message: str, **attributes: str | int | float | bool) -> LogEntry:
 
     Returns:
         LogEntry with WARN level and current timestamp
+
+    Example:
+        >>> entry = warn("Disk usage high", percent=85)
+        >>> entry.level
+        'WARN'
     """
     return log("WARN", message, **attributes)
 
@@ -142,6 +183,18 @@ def log_exception(
 
     Returns:
         LogEntry with ERROR level, exception details, and traceback
+
+    Example:
+        >>> try:
+        ...     raise ValueError("Something went wrong")
+        ... except ValueError:
+        ...     entry = log_exception(request_id="abc123")
+        >>> entry.level
+        'ERROR'
+        >>> entry.attributes["exception_type"]
+        'ValueError'
+        >>> "request_id" in entry.attributes
+        True
     """
     exc_type, exc_value, _ = sys.exc_info()
 

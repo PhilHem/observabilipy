@@ -387,6 +387,81 @@ class TestBackgroundWriter:
         assert not hasattr(handler, "_queue") or handler._queue is None
         assert not hasattr(handler, "_writer_thread") or handler._writer_thread is None
 
+    def test_flush_blocks_until_queue_drained(self) -> None:
+        """flush() blocks until all queued writes complete."""
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(storage, background_writer=True)
+
+        # Log several messages
+        for i in range(10):
+            record = logging.LogRecord(
+                name="test",
+                level=logging.INFO,
+                pathname="test.py",
+                lineno=1,
+                msg=f"message {i}",
+                args=(),
+                exc_info=None,
+            )
+            handler.emit(record)
+
+        # Flush (should block until queue drained)
+        handler.flush()
+
+        # All entries should be present immediately after flush
+        entries = _run_async(_collect_entries(storage))
+        assert len(entries) == 10
+
+        handler.close()
+
+    def test_flush_noop_without_background_writer(self) -> None:
+        """flush() is safe to call when background_writer=False."""
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(storage, background_writer=False)
+
+        record = logging.LogRecord(
+            name="test",
+            level=logging.INFO,
+            pathname="test.py",
+            lineno=1,
+            msg="test message",
+            args=(),
+            exc_info=None,
+        )
+        handler.emit(record)
+
+        # Should not raise
+        handler.flush()
+
+        entries = _run_async(_collect_entries(storage))
+        assert len(entries) == 1
+
+        handler.close()
+
+    def test_flush_can_be_called_multiple_times(self) -> None:
+        """flush() can be called repeatedly without issues."""
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(storage, background_writer=True)
+
+        for batch in range(3):
+            for i in range(5):
+                record = logging.LogRecord(
+                    name="test",
+                    level=logging.INFO,
+                    pathname="test.py",
+                    lineno=1,
+                    msg=f"batch {batch} message {i}",
+                    args=(),
+                    exc_info=None,
+                )
+                handler.emit(record)
+            handler.flush()
+
+        entries = _run_async(_collect_entries(storage))
+        assert len(entries) == 15
+
+        handler.close()
+
 
 @pytest.mark.core
 class TestPackageExports:

@@ -7,6 +7,14 @@ class ObservabilityError(Exception):
     All custom exceptions in this library inherit from this class,
     allowing callers to catch all library-specific errors with a
     single except clause.
+
+    Example:
+        >>> from observabilipy import ObservabilityError, ConfigurationError
+        >>> try:
+        ...     raise ConfigurationError("Invalid config")
+        ... except ObservabilityError as e:
+        ...     print("Caught library error")
+        Caught library error
     """
 
 
@@ -18,6 +26,9 @@ class ConfigurationError(ObservabilityError):
     field that failed, the constraint violated, and the actual value.
 
     Example:
-        >>> RetentionPolicy(max_age_seconds=-1.0)
-        ConfigurationError: max_age_seconds must be positive, got -1.0
+        >>> from observabilipy import RetentionPolicy
+        >>> RetentionPolicy(max_age_seconds=-1.0)  # doctest: +ELLIPSIS
+        Traceback (most recent call last):
+        ...
+        observabilipy.core.exceptions.ConfigurationError: ...
     """

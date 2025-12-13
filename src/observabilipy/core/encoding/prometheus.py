@@ -22,6 +22,13 @@ def encode_metrics_sync(samples: Iterable[MetricSample]) -> str:
     Returns:
         Prometheus text format string with one metric per line.
         Empty string if no samples.
+
+    Example:
+        >>> from observabilipy import MetricSample
+        >>> s = MetricSample(name="req", timestamp=1.0, value=42.0, labels={"m": "GET"})
+        >>> output = encode_metrics_sync([s])
+        >>> 'req{m="GET"} 42.0' in output
+        True
     """
     lines = []
     for sample in samples:
@@ -59,6 +66,16 @@ def encode_current_sync(samples: Iterable[MetricSample]) -> str:
     Returns:
         Prometheus text format string with one line per unique metric.
         Empty string if no samples.
+
+    Example:
+        >>> from observabilipy import MetricSample
+        >>> samples = [
+        ...     MetricSample(name="temp", timestamp=1.0, value=20.0, labels={}),
+        ...     MetricSample(name="temp", timestamp=2.0, value=25.0, labels={}),
+        ... ]
+        >>> output = encode_current_sync(samples)
+        >>> "25.0" in output and "20.0" not in output
+        True
     """
     latest: dict[tuple[str, frozenset[tuple[str, str]]], MetricSample] = {}
 

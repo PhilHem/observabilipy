@@ -188,6 +188,17 @@ class ObservabilipyHandler(logging.Handler):
 
         loop.close()
 
+    def flush(self) -> None:
+        """Block until all queued writes are drained.
+
+        For background_writer=True, this blocks until the queue is empty
+        and all writes have completed. For background_writer=False, this
+        is a no-op since writes are synchronous.
+        """
+        if self._background_writer and self._queue is not None:
+            self._queue.join()
+        super().flush()
+
     def close(self) -> None:
         """Close the handler, flushing any pending writes."""
         if self._background_writer and self._queue is not None:

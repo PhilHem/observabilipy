@@ -193,8 +193,11 @@ Make `ObservabilipyHandler` work inside existing async event loops (e.g., FastAP
 
 ### Documentation & Discoverability
 - [x] Module-level docstring in `__init__.py` with quickstart example
-- [ ] Inline docstring examples for all public functions
+- [x] Inline docstring examples for all public functions
 - [ ] Interactive examples in documentation (Jupyter notebook or similar)
+
+### Doctest Infrastructure
+- [ ] Async encoding docstring examples (`encode_logs`, `encode_ndjson`, `encode_metrics`, `encode_current`)
 
 ---
 

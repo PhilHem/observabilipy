@@ -45,6 +45,12 @@ def get_log_context() -> dict[str, LogAttribute]:
     Returns:
         A copy of the current context dict. Modifications to the returned
         dict do not affect the stored context.
+
+    Example:
+        >>> set_log_context(request_id="abc", user_id=1)
+        >>> get_log_context()
+        {'request_id': 'abc', 'user_id': 1}
+        >>> clear_log_context()
     """
     ctx = _log_context.get()
     if ctx is None:
@@ -60,6 +66,15 @@ def set_log_context(**attrs: LogAttribute) -> None:
 
     Args:
         **attrs: Keyword arguments become the new context attributes.
+
+    Example:
+        >>> set_log_context(request_id="abc", user_id=1)
+        >>> get_log_context()
+        {'request_id': 'abc', 'user_id': 1}
+        >>> set_log_context(trace_id="xyz")  # Replaces, doesn't merge
+        >>> get_log_context()
+        {'trace_id': 'xyz'}
+        >>> clear_log_context()
     """
     _log_context.set(dict(attrs))
 
@@ -71,13 +86,27 @@ def update_log_context(**attrs: LogAttribute) -> None:
 
     Args:
         **attrs: Keyword arguments to merge into the current context.
+
+    Example:
+        >>> set_log_context(request_id="abc")
+        >>> update_log_context(user_id=42)
+        >>> get_log_context()
+        {'request_id': 'abc', 'user_id': 42}
+        >>> clear_log_context()
     """
     current = _log_context.get() or {}
     _log_context.set({**current, **attrs})
 
 
 def clear_log_context() -> None:
-    """Clear all attributes from the current log context."""
+    """Clear all attributes from the current log context.
+
+    Example:
+        >>> set_log_context(foo="bar")
+        >>> clear_log_context()
+        >>> get_log_context()
+        {}
+    """
     _log_context.set(None)
 
 
@@ -93,11 +122,12 @@ def log_context(**attrs: LogAttribute) -> Generator[None]:
             of the block.
 
     Example:
-        ```python
-        with log_context(request_id="abc123", user_id=42):
-            logger.info("Processing request")  # includes request_id, user_id
-        logger.info("Done")  # no longer has request_id, user_id
-        ```
+        >>> with log_context(request_id="abc123", user_id=42):
+        ...     ctx = get_log_context()
+        >>> ctx["request_id"]
+        'abc123'
+        >>> get_log_context()  # Restored after block
+        {}
     """
     current = _log_context.get() or {}
     token = _log_context.set({**current, **attrs})

@@ -14,6 +14,18 @@ class LogEntry:
         level: Log level (e.g., INFO, ERROR, DEBUG).
         message: The log message.
         attributes: Additional structured fields.
+
+    Example:
+        >>> entry = LogEntry(
+        ...     timestamp=1702300000.0,
+        ...     level="INFO",
+        ...     message="User logged in",
+        ...     attributes={"user_id": 123, "ip": "192.168.1.1"}
+        ... )
+        >>> entry.level
+        'INFO'
+        >>> entry.attributes["user_id"]
+        123
     """
 
     timestamp: float
@@ -31,6 +43,18 @@ class MetricSample:
         timestamp: Unix timestamp in seconds.
         value: The metric value.
         labels: Key-value pairs for metric dimensions.
+
+    Example:
+        >>> sample = MetricSample(
+        ...     name="http_requests_total",
+        ...     timestamp=1702300000.0,
+        ...     value=42.0,
+        ...     labels={"method": "GET", "status": "200"}
+        ... )
+        >>> sample.name
+        'http_requests_total'
+        >>> sample.labels["method"]
+        'GET'
     """
 
     name: str
@@ -52,6 +76,17 @@ class RetentionPolicy:
                         None means no age limit.
         max_count: Maximum number of entries to keep.
                   None means no count limit.
+
+    Example:
+        >>> # Age-based retention: delete after 1 hour
+        >>> policy = RetentionPolicy(max_age_seconds=3600)
+        >>> policy.max_age_seconds
+        3600
+
+        >>> # Count-based retention: keep last 1000 entries
+        >>> policy = RetentionPolicy(max_count=1000)
+        >>> policy.max_count
+        1000
     """
 
     max_age_seconds: float | None = None
@@ -79,6 +114,19 @@ class LevelRetentionPolicy:
     Attributes:
         policies: Mapping of log level (e.g., "ERROR", "INFO") to RetentionPolicy.
         default: Optional fallback policy for levels not in the policies mapping.
+
+    Example:
+        >>> policy = LevelRetentionPolicy(
+        ...     policies={
+        ...         "ERROR": RetentionPolicy(max_age_seconds=86400 * 30),  # 30 days
+        ...         "DEBUG": RetentionPolicy(max_age_seconds=86400),       # 1 day
+        ...     },
+        ...     default=RetentionPolicy(max_age_seconds=86400 * 7),  # 7 days
+        ... )
+        >>> policy.get_policy_for_level("ERROR").max_age_seconds
+        2592000
+        >>> policy.get_policy_for_level("INFO").max_age_seconds  # Falls back to default
+        604800
     """
 
     policies: dict[str, RetentionPolicy] = field(default_factory=dict)

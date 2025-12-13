@@ -10,6 +10,17 @@ class InMemoryLogStorage:
 
     Stores log entries in a list. Suitable for testing and
     low-volume applications where persistence is not required.
+
+    Example:
+        >>> import asyncio
+        >>> from observabilipy import InMemoryLogStorage, LogEntry
+        >>> async def demo():
+        ...     storage = InMemoryLogStorage()
+        ...     entry = LogEntry(timestamp=1.0, level="INFO", message="test")
+        ...     await storage.write(entry)
+        ...     return await storage.count()
+        >>> asyncio.run(demo())
+        1
     """
 
     def __init__(self) -> None:
@@ -65,6 +76,17 @@ class InMemoryMetricsStorage:
 
     Stores metric samples in a list. Suitable for testing and
     low-volume applications where persistence is not required.
+
+    Example:
+        >>> import asyncio
+        >>> from observabilipy import InMemoryMetricsStorage, MetricSample
+        >>> async def demo():
+        ...     storage = InMemoryMetricsStorage()
+        ...     sample = MetricSample(name="test", timestamp=1.0, value=1.0, labels={})
+        ...     await storage.write(sample)
+        ...     return await storage.count()
+        >>> asyncio.run(demo())
+        1
     """
 
     def __init__(self) -> None:

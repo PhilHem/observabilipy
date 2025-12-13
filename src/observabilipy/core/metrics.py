@@ -21,6 +21,15 @@ def counter(
 
     Returns:
         MetricSample with current timestamp
+
+    Example:
+        >>> sample = counter("http_requests_total", labels={"method": "GET"})
+        >>> sample.name
+        'http_requests_total'
+        >>> sample.value
+        1.0
+        >>> sample.labels
+        {'method': 'GET'}
     """
     return MetricSample(
         name=name,
@@ -44,6 +53,13 @@ def gauge(
 
     Returns:
         MetricSample with current timestamp
+
+    Example:
+        >>> sample = gauge("cpu_percent", 45.2, labels={"host": "server1"})
+        >>> sample.name
+        'cpu_percent'
+        >>> sample.value
+        45.2
     """
     return MetricSample(
         name=name,
@@ -72,6 +88,13 @@ def histogram(
 
     Returns:
         List of MetricSample objects (bucket samples + sum + count)
+
+    Example:
+        >>> samples = histogram("request_duration", 0.25, buckets=[0.1, 0.5, 1.0])
+        >>> len(samples)
+        6
+        >>> samples[-2].name, samples[-1].name
+        ('request_duration_sum', 'request_duration_count')
     """
     timestamp = time.time()
     base_labels = labels or {}
@@ -150,9 +173,12 @@ def timer(
         TimerResult with samples populated after context exits
 
     Example:
-        with timer("request_duration", labels={"method": "GET"}) as t:
-            process_request()
-        # t.samples contains histogram samples
+        >>> with timer("request_duration", labels={"method": "GET"}) as t:
+        ...     pass  # do work here
+        >>> len(t.samples) > 0
+        True
+        >>> any(s.name == "request_duration_sum" for s in t.samples)
+        True
     """
     result = TimerResult()
     start = time.perf_counter()

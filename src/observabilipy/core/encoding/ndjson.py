@@ -15,6 +15,16 @@ def encode_logs_sync(entries: Iterable[LogEntry]) -> str:
     Returns:
         NDJSON string with one JSON object per line.
         Empty string if no entries.
+
+    Example:
+        >>> from observabilipy import LogEntry
+        >>> entries = [
+        ...     LogEntry(timestamp=1.0, level="INFO", message="Hello", attributes={}),
+        ...     LogEntry(timestamp=2.0, level="ERROR", message="Oops", attributes={}),
+        ... ]
+        >>> output = encode_logs_sync(entries)
+        >>> len(output.strip().split("\\n"))
+        2
     """
     lines = []
     for entry in entries:
@@ -67,6 +77,13 @@ def encode_ndjson_sync(samples: Iterable[MetricSample]) -> str:
     Returns:
         NDJSON string with one JSON object per line.
         Empty string if no samples.
+
+    Example:
+        >>> from observabilipy import MetricSample
+        >>> samples = [MetricSample(name="cpu", timestamp=1.0, value=50.0, labels={})]
+        >>> output = encode_ndjson_sync(samples)
+        >>> "cpu" in output
+        True
     """
     lines = []
     for sample in samples:

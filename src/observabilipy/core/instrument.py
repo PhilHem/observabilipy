@@ -22,6 +22,13 @@ class InstrumentResult:
         value: The return value from the wrapped function.
         samples: List of MetricSample objects generated during execution.
         error: The exception raised by the wrapped function, if any.
+
+    Example:
+        >>> result = InstrumentResult(value="ok", samples=[], error=None)
+        >>> result.value
+        'ok'
+        >>> result.error is None
+        True
     """
 
     value: Any
@@ -76,6 +83,16 @@ def instrument(
 
     Works with both sync and async functions. For async functions, the wrapper
     is also async and must be awaited.
+
+    Example:
+        >>> @instrument("process_order", labels={"service": "orders"})
+        ... def process(order_id: int) -> str:
+        ...     return f"processed-{order_id}"
+        >>> result = process(123)
+        >>> result.value
+        'processed-123'
+        >>> any(s.name == "process_order_total" for s in result.samples)
+        True
     """
     base_labels = labels or {}
 

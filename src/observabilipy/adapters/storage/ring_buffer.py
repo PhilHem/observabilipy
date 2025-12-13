@@ -21,6 +21,18 @@ class RingBufferLogStorage:
 
     Args:
         max_size: Maximum number of entries to store.
+
+    Example:
+        >>> import asyncio
+        >>> from observabilipy import RingBufferLogStorage, LogEntry
+        >>> async def demo():
+        ...     storage = RingBufferLogStorage(max_size=2)
+        ...     for i in range(3):
+        ...         entry = LogEntry(timestamp=float(i), level="INFO", message=f"m{i}")
+        ...         await storage.write(entry)
+        ...     return await storage.count()  # Only 2 kept due to max_size
+        >>> asyncio.run(demo())
+        2
     """
 
     def __init__(self, max_size: int) -> None:
@@ -85,6 +97,18 @@ class RingBufferMetricsStorage:
 
     Args:
         max_size: Maximum number of samples to store.
+
+    Example:
+        >>> import asyncio
+        >>> from observabilipy import RingBufferMetricsStorage, MetricSample
+        >>> async def demo():
+        ...     storage = RingBufferMetricsStorage(max_size=2)
+        ...     for i in range(3):
+        ...         s = MetricSample(name="m", timestamp=float(i), value=float(i))
+        ...         await storage.write(s)
+        ...     return await storage.count()  # Only 2 kept due to max_size
+        >>> asyncio.run(demo())
+        2
     """
 
     def __init__(self, max_size: int) -> None:
