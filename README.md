@@ -1,65 +1,99 @@
 # observabilipy
 
-Framework-agnostic metrics and structured log collection with hexagonal architecture.
+**Start with observability built in.**
 
-Develop observability features decoupled from your infrastructure. Use embedded storage (SQLite, in-memory) during development, then optionally expose endpoints for scraping by Prometheus, Grafana Alloy, or other observability platforms when you're ready.
+Build microservices that come with metrics, logs, and a dashboard from day one. No Prometheus or Grafana required — but ready to integrate when your infrastructure catches up.
 
-## Features
+## Why observabilipy?
 
-- **Prometheus-style metrics** - `/metrics` endpoint in text format
-- **Structured logs** - `/logs` endpoint in NDJSON (Grafana Alloy compatible)
-- **Framework adapters** - FastAPI, Django, ASGI, WSGI
-- **Storage backends** - In-memory, SQLite (with WAL), Ring buffer
-- **Retention policies** - Automatic cleanup with EmbeddedRuntime
+**The problem:** You're building a service but your org doesn't have centralized observability yet. Or you're deploying to client environments where you don't control the infrastructure. You still need to understand what your service is doing — and you don't want to wait for the platform team.
 
-## Installation
+**The solution:** Develop your observability features decoupled from the observability stack:
 
-```bash
-git clone https://github.com/PhilHem/observabilipy.git
-cd observabilipy
-uv sync
-```
+- **Your code** defines metrics, logs, and dashboards
+- **The infrastructure** (Prometheus, Grafana, Loki) is optional and can come later
+- **Standard endpoints** (`/metrics`, `/logs`) work standalone and integrate seamlessly when infra arrives
 
-For framework support:
-
-```bash
-uv sync --extra fastapi
-uv sync --extra django
-```
+This means you can ship observable services today. When central infrastructure catches up, just point scrapers at your existing endpoints — no code changes needed.
 
 ## Quick Start
 
 ```python
+from contextlib import asynccontextmanager
 from fastapi import FastAPI
-from observabilipy import InMemoryLogStorage, InMemoryMetricsStorage
+from observabilipy import (
+    SQLiteLogStorage, SQLiteMetricsStorage,
+    EmbeddedRuntime, RetentionPolicy, info, counter
+)
 from observabilipy.adapters.frameworks.fastapi import create_observability_router
 
-app = FastAPI()
-log_storage = InMemoryLogStorage()
-metrics_storage = InMemoryMetricsStorage()
+# Storage with automatic retention
+log_storage = SQLiteLogStorage("app.db")
+metrics_storage = SQLiteMetricsStorage("app.db")
+runtime = EmbeddedRuntime(
+    log_storage=log_storage,
+    metrics_storage=metrics_storage,
+    log_retention=RetentionPolicy(max_age_seconds=86400),  # 24 hours
+)
 
+@asynccontextmanager
+async def lifespan(app):
+    await runtime.start()
+    yield
+    await runtime.stop()
+
+app = FastAPI(lifespan=lifespan)
 app.include_router(create_observability_router(log_storage, metrics_storage))
+
+@app.get("/users/{user_id}")
+async def get_user(user_id: int):
+    await log_storage.write(info("User requested", user_id=user_id))
+    await metrics_storage.write(counter("api_requests_total", endpoint="get_user"))
+    return {"user_id": user_id}
 ```
 
-Run with `uvicorn` and visit:
-- `/logs` - NDJSON logs (with optional `?since=<timestamp>&level=<level>`)
-- `/metrics` - NDJSON metrics (with optional `?since=<timestamp>`)
-- `/metrics/prometheus` - Prometheus text format (latest value per metric)
+Run it and you get:
+- `GET /logs` — structured logs in NDJSON
+- `GET /metrics/prometheus` — Prometheus text format
+- `GET /metrics` — metrics in NDJSON (for custom dashboards)
+
+## Use Cases
+
+| Scenario | How observabilipy helps |
+|----------|------------------------|
+| **Decoupled development** | Build observability features without waiting for platform team to set up Prometheus/Grafana |
+| **Internal tools & microservices** | Ship with observability included, no external dependencies required |
+| **Client/on-prem deployments** | Works standalone in unknown environments, integrates when infrastructure exists |
+| **Prototypes & MVPs** | Production-ready observability patterns from the start — no rework later |
+
+## Features
+
+- **Prometheus-compatible** — `/metrics/prometheus` endpoint, ready for scraping
+- **Grafana Alloy/Loki compatible** — `/logs` endpoint in NDJSON format
+- **Embedded dashboard** — Live charts and log viewer ([see example](examples/dashboard_example.py))
+- **Persistent storage** — SQLite with WAL mode, logs survive restarts
+- **Automatic retention** — Background cleanup with configurable policies
+- **Framework support** — FastAPI, Django, ASGI, WSGI
+
+## Installation
+
+```bash
+pip install observabilipy[fastapi]  # or [django]
+```
 
 ## Recording Metrics and Logs
 
-Use the helper functions for a cleaner API:
-
 ```python
-from observabilipy import info, error, counter, gauge
+from observabilipy import info, error, warn, counter, gauge, histogram
 
-# Log entries with level-specific helpers
-await log_storage.write(info("User logged in", user_id=123, ip="192.168.1.1"))
+# Structured logs
+await log_storage.write(info("User logged in", user_id=123, ip="10.0.0.1"))
 await log_storage.write(error("Payment failed", order_id=456, reason="timeout"))
 
-# Metrics with semantic helpers
-await metrics_storage.write(counter("http_requests_total", method="GET", path="/api/users"))
+# Metrics
+await metrics_storage.write(counter("requests_total", method="GET", status=200))
 await metrics_storage.write(gauge("active_connections", value=42))
+await metrics_storage.write(histogram("request_duration_seconds", value=0.125))
 ```
 
 ### Context Managers
@@ -69,73 +103,87 @@ from observabilipy import timer, timed_log
 
 # Auto-record timing to histogram
 async with timer(metrics_storage, "request_duration_seconds", method="GET"):
-    await handle_request()
+    response = await handle_request()
 
-# Log entry and exit with elapsed time
+# Log entry/exit with elapsed time
 async with timed_log(log_storage, "Processing order", order_id=123):
     await process_order()
 ```
 
-### Exception Logging
+### Python Logging Integration
 
 ```python
-from observabilipy import log_exception
+import logging
+from observabilipy import ObservabilipyHandler
 
-try:
-    risky_operation()
-except Exception:
-    await log_storage.write(log_exception("Operation failed", operation="risky"))
+logging.getLogger().addHandler(ObservabilipyHandler(log_storage))
+
+# All logging calls now captured
+logging.info("Starting up", extra={"version": "1.0.0"})
 ```
 
-### Raw Model Access
-
-For full control, use the models directly:
-
-```python
-import time
-from observabilipy import LogEntry, MetricSample
-
-await log_storage.write(
-    LogEntry(
-        timestamp=time.time(),
-        level="INFO",
-        message="User logged in",
-        attributes={"user_id": 123},
-    )
-)
-
-await metrics_storage.write(
-    MetricSample(
-        name="http_requests_total",
-        timestamp=time.time(),
-        value=1.0,
-        labels={"method": "GET"},
-    )
-)
-```
-
-## Storage Backends
+## Storage Options
 
 | Backend | Use Case |
 |---------|----------|
+| `SQLiteLogStorage` / `SQLiteMetricsStorage` | **Recommended** — persistent, survives restarts |
 | `InMemoryLogStorage` / `InMemoryMetricsStorage` | Development and testing |
-| `SQLiteLogStorage` / `SQLiteMetricsStorage` | Persistent storage with WAL mode for concurrent access |
-| `RingBufferLogStorage` / `RingBufferMetricsStorage` | Fixed-size buffer for memory-constrained environments |
+| `RingBufferLogStorage` / `RingBufferMetricsStorage` | Memory-constrained environments |
 
-All backends implement the same port interfaces and are interchangeable.
+## Embedded Dashboard
+
+Build admin visibility into your service:
+
+```bash
+# Run the dashboard example
+uvicorn examples.dashboard_example:app --reload
+# Visit http://localhost:8000/
+```
+
+See [dashboard_example.py](examples/dashboard_example.py) for a complete implementation with live CPU/memory charts and log viewer.
+
+## Integration with Central Infrastructure
+
+When your org sets up Prometheus/Grafana, no code changes needed:
+
+```yaml
+# prometheus.yml
+scrape_configs:
+  - job_name: 'my-service'
+    static_configs:
+      - targets: ['my-service:8000']
+    metrics_path: '/metrics/prometheus'
+```
+
+```yaml
+# grafana-alloy config
+loki.source.api "my_service" {
+  http { listen_address = "0.0.0.0:3100" }
+  forward_to = [loki.write.default.receiver]
+}
+```
 
 ## Examples
 
-See the [examples/](examples/) directory:
-
 | Example | Description |
 |---------|-------------|
-| [minimal_example.py](examples/minimal_example.py) | Dummy metrics and logs generator for testing |
-| [cgroups_example.py](examples/cgroups_example.py) | Container CPU and memory metrics from cgroups v2 |
-| [fastapi_example.py](examples/fastapi_example.py) | Basic FastAPI setup with in-memory storage |
-| [django_example.py](examples/django_example.py) | Django integration |
-| [asgi_example.py](examples/asgi_example.py) | Generic ASGI middleware |
-| [sqlite_example.py](examples/sqlite_example.py) | Persistent storage with SQLite |
-| [ring_buffer_example.py](examples/ring_buffer_example.py) | Fixed-size storage for constrained environments |
+| [dashboard_example.py](examples/dashboard_example.py) | Embedded admin dashboard with live charts |
+| [fastapi_example.py](examples/fastapi_example.py) | Basic FastAPI setup |
+| [sqlite_example.py](examples/sqlite_example.py) | Persistent storage |
+| [logging_handler_example.py](examples/logging_handler_example.py) | Python logging integration |
 | [embedded_runtime_example.py](examples/embedded_runtime_example.py) | Background retention cleanup |
 
+## When to use observabilipy
+
+| observabilipy | OpenTelemetry |
+|---------------|---------------|
+| No central infrastructure yet | Prometheus/Grafana/Jaeger already set up |
+| Self-contained microservices | Distributed tracing across services |
+| Simple, lightweight | Full CNCF observability stack |
+| Works offline | Cloud-native environments |
+
+They can coexist — use observabilipy for services not yet connected to central infrastructure.
+
+## License
+
+MIT

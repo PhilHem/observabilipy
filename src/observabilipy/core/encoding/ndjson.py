@@ -51,6 +51,17 @@ async def encode_logs(entries: AsyncIterable[LogEntry]) -> str:
     Returns:
         NDJSON string with one JSON object per line.
         Empty string if no entries.
+
+    Example:
+        >>> import asyncio
+        >>> from observabilipy import LogEntry
+        >>> from observabilipy.core.encoding.ndjson import encode_logs
+        >>> async def make_entries():
+        ...     yield LogEntry(timestamp=1.0, level="INFO", message="Hi")
+        ...     yield LogEntry(timestamp=2.0, level="ERROR", message="Oops")
+        >>> result = asyncio.run(encode_logs(make_entries()))
+        >>> len(result.strip().split("\\n"))
+        2
     """
     lines = []
     async for entry in entries:
@@ -110,6 +121,16 @@ async def encode_ndjson(samples: AsyncIterable[MetricSample]) -> str:
     Returns:
         NDJSON string with one JSON object per line.
         Empty string if no samples.
+
+    Example:
+        >>> import asyncio
+        >>> from observabilipy import MetricSample
+        >>> from observabilipy.core.encoding.ndjson import encode_ndjson
+        >>> async def make_samples():
+        ...     yield MetricSample(name="cpu", timestamp=1.0, value=50.0, labels={})
+        >>> result = asyncio.run(encode_ndjson(make_samples()))
+        >>> "cpu" in result
+        True
     """
     lines = []
     async for sample in samples:

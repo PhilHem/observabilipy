@@ -194,15 +194,188 @@ Make `ObservabilipyHandler` work inside existing async event loops (e.g., FastAP
 ### Documentation & Discoverability
 - [x] Module-level docstring in `__init__.py` with quickstart example
 - [x] Inline docstring examples for all public functions
-- [ ] Interactive examples in documentation (Jupyter notebook or similar)
 
 ### Doctest Infrastructure
-- [ ] Async encoding docstring examples (`encode_logs`, `encode_ndjson`, `encode_metrics`, `encode_current`)
+- [x] Async encoding docstring examples (`encode_logs`, `encode_ndjson`, `encode_metrics`, `encode_current`)
+
+---
+
+## v1.x Complete ✓
+
+Phases 1-11 complete. The library provides a solid foundation for standalone observability with logs, metrics, multiple storage backends, and framework adapters.
+
+---
+
+# v2.0.0: Standalone Experience & Integration Ready
+
+**Core positioning:** Observability without the infrastructure. Works standalone today, integrates with central infrastructure when available.
+
+v2.0 priorities:
+1. Make standalone mode genuinely useful (built-in dashboard, CLI)
+2. Enable sync to central infrastructure (push exporters, OTLP)
+3. Keep it simple — avoid feature creep
+
+---
+
+## Phase 12: Built-in Dashboard
+
+Make the dashboard a first-class feature, not just an example.
+
+### 12.1 Dashboard Router
+
+- [ ] Create `create_dashboard_router()` in `adapters/frameworks/fastapi.py`
+- [ ] Generic dashboard HTML/JS as package data (not inline string)
+- [ ] Auto-discover available metrics and render appropriate charts
+- [ ] Configuration: title, refresh interval, metrics to display
+- [ ] Unit tests for dashboard router
+
+### 12.2 Dashboard for All Frameworks
+
+- [ ] Django: `create_dashboard_urlpatterns()` with dashboard view
+- [ ] ASGI: Dashboard endpoint in generic adapter
+- [ ] WSGI: Dashboard endpoint in sync adapter
+- [ ] Integration tests for dashboard endpoints
+
+### 12.3 Dashboard Customization
+
+- [ ] Pluggable chart configurations (line, gauge, counter display)
+- [ ] Custom metric groupings
+- [ ] Log level filters in UI
+- [ ] Dark/light theme toggle
+- [ ] Integration tests
+
+---
+
+## Phase 13: CLI Tools
+
+Local debugging without a browser.
+
+### 13.1 Core CLI
+
+- [ ] `observabilipy` CLI entry point (using `click` or `typer`)
+- [ ] `observabilipy tail <url>` — stream logs from `/logs` endpoint
+- [ ] `observabilipy metrics <url>` — show current metrics from `/metrics/prometheus`
+- [ ] `--level` filter for tail command
+- [ ] `--follow` mode with polling
+- [ ] Unit tests for CLI
+
+### 13.2 SQLite Direct Access
+
+- [ ] `observabilipy query <db-path>` — query SQLite storage directly
+- [ ] `--since`, `--level`, `--limit` filters
+- [ ] JSON and table output formats
+- [ ] Integration tests
+
+### 13.3 Optional: TUI Dashboard
+
+- [ ] Terminal UI using `rich` or `textual`
+- [ ] Live-updating metrics display
+- [ ] Log viewer with scrolling
+- [ ] Integration tests
+
+---
+
+## Phase 14: Push Exporters
+
+Sync to central infrastructure when it becomes available.
+
+### 14.1 Exporter Port
+
+- [ ] Define `ExporterPort` protocol in `core/ports.py`
+  - `export_logs(logs: AsyncIterable[LogEntry]) -> None`
+  - `export_metrics(metrics: AsyncIterable[MetricSample]) -> None`
+- [ ] Unit tests for exporter interface
+
+### 14.2 HTTP Push Exporters
+
+- [ ] Prometheus Pushgateway exporter (`adapters/exporters/pushgateway.py`)
+- [ ] Grafana Loki push exporter (for logs)
+- [ ] Generic HTTP/JSON exporter (configurable endpoint)
+- [ ] Integration tests with mock HTTP server
+
+### 14.3 OTLP Exporter
+
+- [ ] OTLP/HTTP exporter for logs (`adapters/exporters/otlp.py`)
+- [ ] OTLP/HTTP exporter for metrics
+- [ ] JSON encoding (no protobuf dependency by default)
+- [ ] Optional `opentelemetry-proto` extra for binary encoding
+- [ ] Integration tests
+
+### 14.4 Background Export Runtime
+
+- [ ] Add `exporters` parameter to `EmbeddedRuntime`
+- [ ] Add `export_interval` option (default: 60 seconds)
+- [ ] Background task that periodically pushes to configured exporters
+- [ ] Configurable batch sizes
+- [ ] Retry with exponential backoff on failure
+- [ ] Unit tests for export scheduling
+
+---
+
+## Phase 15: Operational Polish
+
+Production-readiness improvements.
+
+### 15.1 Health Endpoint
+
+- [ ] Add `/health` endpoint to all framework adapters
+- [ ] Storage connectivity checks
+- [ ] Configurable health check logic (custom checks)
+- [ ] Return JSON with component status
+- [ ] Integration tests
+
+### 15.2 Gzip Compression
+
+- [ ] Gzip compression for `/logs` and `/metrics` responses
+- [ ] `Accept-Encoding` header detection
+- [ ] Configurable (enabled by default)
+- [ ] Integration tests
+
+### 15.3 Request Metrics Middleware
+
+- [ ] Optional middleware that auto-records request metrics
+- [ ] `http_requests_total` counter with method, path, status labels
+- [ ] `http_request_duration_seconds` histogram
+- [ ] FastAPI, Django, ASGI, WSGI variants
+- [ ] Integration tests
+
+---
+
+## Future Ideas (Post v2.0)
+
+To be considered after v2.0 is stable. These are lower priority given the core positioning.
+
+### Tracing (if needed)
+
+- `Span` model with W3C Trace Context compatible IDs
+- Span storage adapters
+- `@traced` decorator
+- `/traces` endpoint
+- OTLP trace export
+
+*Note: Most users without central infrastructure aren't doing distributed tracing. Add this only if there's clear demand.*
+
+### Enhanced Metrics
+
+- Typed metrics (Counter, Gauge, Histogram as distinct types)
+- Metric registry for pre-declaration
+- Histogram aggregation and quantiles
+
+### Streaming
+
+- WebSocket endpoints for live updates
+- Server-Sent Events (SSE) alternative
+- `subscribe()` method on storage ports
+
+### Remote Storage
+
+- Redis storage adapter
+- PostgreSQL storage adapter
 
 ---
 
 ## Current Focus
 
-**Phase 11: API Redesign** → Complete!
+**v1.x complete.** Starting v2.0.0.
 
-All phases complete. See Future section for potential enhancements.
+Next step: Phase 12.1 (Built-in dashboard router)

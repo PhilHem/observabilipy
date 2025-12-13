@@ -97,6 +97,16 @@ async def encode_metrics(samples: AsyncIterable[MetricSample]) -> str:
     Returns:
         Prometheus text format string with one metric per line.
         Empty string if no samples.
+
+    Example:
+        >>> import asyncio
+        >>> from observabilipy import MetricSample
+        >>> from observabilipy.core.encoding.prometheus import encode_metrics
+        >>> async def make_samples():
+        ...     yield MetricSample(name="req", timestamp=1.0, value=42.0)
+        >>> result = asyncio.run(encode_metrics(make_samples()))
+        >>> "req 42.0" in result
+        True
     """
     lines = []
     async for sample in samples:
@@ -134,6 +144,17 @@ async def encode_current(samples: AsyncIterable[MetricSample]) -> str:
     Returns:
         Prometheus text format string with one line per unique metric.
         Empty string if no samples.
+
+    Example:
+        >>> import asyncio
+        >>> from observabilipy import MetricSample
+        >>> from observabilipy.core.encoding.prometheus import encode_current
+        >>> async def make_samples():
+        ...     yield MetricSample(name="temp", timestamp=1.0, value=20.0, labels={})
+        ...     yield MetricSample(name="temp", timestamp=2.0, value=25.0, labels={})
+        >>> result = asyncio.run(encode_current(make_samples()))
+        >>> "25.0" in result and "20.0" not in result
+        True
     """
     latest: dict[tuple[str, frozenset[tuple[str, str]]], MetricSample] = {}
 
