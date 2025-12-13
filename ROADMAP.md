@@ -217,32 +217,30 @@ v2.0 priorities:
 
 ---
 
-## Phase 12: Built-in Dashboard
+## Phase 12: Dashboard Integration Guides
 
-Make the dashboard a first-class feature, not just an example.
+Provide integration patterns for embedding observabilipy data into existing dashboards using established charting libraries. We expose standard endpoints; users choose their visualization tools.
 
-### 12.1 Dashboard Router
+### 12.1 Documentation
 
-- [ ] Create `create_dashboard_router()` in `adapters/frameworks/fastapi.py`
-- [ ] Generic dashboard HTML/JS as package data (not inline string)
-- [ ] Auto-discover available metrics and render appropriate charts
-- [ ] Configuration: title, refresh interval, metrics to display
-- [ ] Unit tests for dashboard router
+- [ ] Integration guide: Chart.js with `chartjs-plugin-datasource-prometheus`
+- [ ] Integration guide: Using `/metrics?since=` NDJSON with vanilla JS
+- [ ] Integration guide: Log viewer component patterns (polling, incremental fetch)
+- [ ] Integration guide: Embedding in React admin dashboards
+- [ ] Integration guide: Embedding in Django admin
 
-### 12.2 Dashboard for All Frameworks
+### 12.2 Example Patterns
 
-- [ ] Django: `create_dashboard_urlpatterns()` with dashboard view
-- [ ] ASGI: Dashboard endpoint in generic adapter
-- [ ] WSGI: Dashboard endpoint in sync adapter
-- [ ] Integration tests for dashboard endpoints
+- [ ] `examples/chartjs_dashboard.html` — standalone HTML using Chart.js + prometheus plugin
+- [ ] `examples/react_dashboard/` — minimal React app with metrics chart and log table
+- [ ] `examples/django_admin_integration.py` — adding observabilipy widgets to Django admin
 
-### 12.3 Dashboard Customization
+### 12.3 JSON API Improvements
 
-- [ ] Pluggable chart configurations (line, gauge, counter display)
-- [ ] Custom metric groupings
-- [ ] Log level filters in UI
-- [ ] Dark/light theme toggle
-- [ ] Integration tests
+- [ ] Add `/metrics/json` endpoint (structured JSON instead of NDJSON for easier JS consumption)
+- [ ] Add `/logs/json` endpoint (array format for simpler frontend parsing)
+- [ ] Pagination support (`?limit=` and `?offset=`) for log endpoints
+- [ ] Integration tests for new endpoints
 
 ---
 
@@ -378,4 +376,4 @@ To be considered after v2.0 is stable. These are lower priority given the core p
 
 **v1.x complete.** Starting v2.0.0.
 
-Next step: Phase 12.1 (Built-in dashboard router)
+Next step: Phase 12.1 (Dashboard integration documentation)
