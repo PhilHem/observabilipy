@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.0.0] - 2025-12-13
+
+### Breaking Changes
+- **BREAKING**: Removed `scrape()` method from `MetricsStoragePort` protocol and all storage adapters
+  - Use `read()` instead, which provides identical functionality with optional `since` parameter for timestamp filtering
+  - Migration: Replace `storage.scrape()` with `storage.read()`
+
+### Added
+- `log_exception()` helper for capturing exception info and traceback
+- `timed_log()` context manager for logging entry/exit with elapsed time
+- Level-specific log helpers: `info()`, `error()`, `debug()`, `warn()`
+
 ## [0.15.0] - 2025-12-13
 
 ### Added
