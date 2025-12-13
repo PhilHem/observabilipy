@@ -168,7 +168,27 @@ Ideas for improving developer experience. To be prioritized later.
 - [x] Automatic attribute extraction from `LogRecord` (module, funcName, lineno)
 - [x] Optional structured context via `context_provider` callback and `log_context()` helper
 - [x] Export `ContextProvider` type alias from package root for user type hints
-- [ ] Example showing `log_context` with FastAPI middleware (request ID injection)
+- [x] Example showing `log_context` with FastAPI middleware (request ID injection)
+
+### Async-Aware ObservabilipyHandler
+
+Make `ObservabilipyHandler` work inside existing async event loops (e.g., FastAPI TestClient).
+Currently `emit()` uses `asyncio.run()` which fails when nested in a running loop.
+
+**TDD Cycle 1: Detect running event loop**
+- [ ] Write test: `emit()` works when no event loop is running (current behavior)
+- [ ] Write test: `emit()` works when called from inside a running event loop
+- [ ] Implement: detect running loop with `asyncio.get_running_loop()`, use `loop.create_task()` or queue
+
+**TDD Cycle 2: Background writer thread (optional fallback)**
+- [ ] Write test: logs are written even when event loop is busy
+- [ ] Write test: handler shutdown flushes pending writes
+- [ ] Implement: optional background thread with queue for fire-and-forget writes
+
+**TDD Cycle 3: Integration with FastAPI TestClient**
+- [ ] Write test: `ObservabilipyHandler` works with FastAPI `TestClient` and middleware
+- [ ] Write test: `log_context` attributes appear in logs during TestClient requests
+- [ ] Update `test_middleware_log_context.py` to use actual TestClient instead of simulation
 
 ### Documentation & Discoverability
 - [ ] Module-level docstring in `__init__.py` with quickstart example
