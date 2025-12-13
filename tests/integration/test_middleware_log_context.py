@@ -4,10 +4,8 @@ These tests verify that the log_context context manager works correctly
 when used to inject request-scoped attributes (like request IDs) into all
 logs within a request lifecycle.
 
-Note: These tests simulate the middleware pattern using async tasks rather
-than FastAPI's TestClient because ObservabilipyHandler.emit() uses asyncio.run()
-which cannot be nested inside an existing event loop. The actual middleware
-works correctly when running under a real ASGI server like uvicorn.
+Includes both simulation tests (fast, isolated) and real TestClient tests
+that prove the async-aware ObservabilipyHandler works end-to-end.
 """
 
 import asyncio
@@ -242,3 +240,128 @@ class TestAsyncContextIsolation:
         assert len(captured_contexts) == 1
         assert captured_contexts[0]["request_id"] == "outer-test"
         assert captured_contexts[0]["handler"] == "outer"
+
+
+@pytest.mark.fastapi
+class TestFastAPITestClientIntegration:
+    """Tests proving ObservabilipyHandler works with FastAPI TestClient.
+
+    These tests use the real FastAPI TestClient to validate that the
+    async-aware emit() implementation works correctly end-to-end.
+    """
+
+    def test_handler_works_with_testclient(self) -> None:
+        """ObservabilipyHandler can be used with FastAPI TestClient."""
+        from fastapi import FastAPI
+        from fastapi.testclient import TestClient
+
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(storage, context_provider=get_log_context)
+
+        logger = logging.getLogger("testclient_handler")
+        logger.handlers.clear()
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+
+        app = FastAPI()
+
+        @app.get("/")
+        async def root():
+            logger.info("Handler processing request")
+            return {"status": "ok"}
+
+        client = TestClient(app)
+        response = client.get("/")
+
+        assert response.status_code == 200
+
+        entries = _run_async(_collect_entries(storage))
+        assert len(entries) >= 1
+        assert any("Handler processing request" in e.message for e in entries)
+
+    def test_log_context_attributes_in_testclient_requests(self) -> None:
+        """log_context attributes appear in logs during TestClient requests."""
+        from fastapi import FastAPI, Request
+        from fastapi.testclient import TestClient
+        from starlette.middleware.base import BaseHTTPMiddleware
+
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(storage, context_provider=get_log_context)
+
+        logger = logging.getLogger("testclient_context")
+        logger.handlers.clear()
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+
+        class TestMiddleware(BaseHTTPMiddleware):
+            async def dispatch(self, request: Request, call_next):
+                with log_context(request_id="test-123", path=str(request.url.path)):
+                    logger.info("Request started")
+                    response = await call_next(request)
+                    logger.info("Request completed")
+                    return response
+
+        app = FastAPI()
+        app.add_middleware(TestMiddleware)
+
+        @app.get("/test")
+        async def test_endpoint():
+            logger.info("Inside handler")
+            return {"status": "ok"}
+
+        client = TestClient(app)
+        response = client.get("/test")
+
+        assert response.status_code == 200
+
+        entries = _run_async(_collect_entries(storage))
+
+        # All log entries should have the context attributes
+        assert len(entries) >= 3
+        for entry in entries:
+            assert entry.attributes.get("request_id") == "test-123"
+            assert entry.attributes.get("path") == "/test"
+
+    def test_multiple_requests_have_isolated_context(self) -> None:
+        """Multiple sequential requests via TestClient have isolated context."""
+        from fastapi import FastAPI, Request
+        from fastapi.testclient import TestClient
+        from starlette.middleware.base import BaseHTTPMiddleware
+
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(storage, context_provider=get_log_context)
+
+        logger = logging.getLogger("testclient_isolation")
+        logger.handlers.clear()
+        logger.addHandler(handler)
+        logger.setLevel(logging.INFO)
+
+        request_counter = [0]
+
+        class CountingMiddleware(BaseHTTPMiddleware):
+            async def dispatch(self, request: Request, call_next):
+                request_counter[0] += 1
+                req_id = f"req-{request_counter[0]}"
+                with log_context(request_id=req_id):
+                    logger.info(f"Processing {req_id}")
+                    response = await call_next(request)
+                    return response
+
+        app = FastAPI()
+        app.add_middleware(CountingMiddleware)
+
+        @app.get("/")
+        async def root():
+            return {"ok": True}
+
+        client = TestClient(app)
+        client.get("/")
+        client.get("/")
+        client.get("/")
+
+        entries = _run_async(_collect_entries(storage))
+
+        assert len(entries) == 3
+        assert entries[0].attributes["request_id"] == "req-1"
+        assert entries[1].attributes["request_id"] == "req-2"
+        assert entries[2].attributes["request_id"] == "req-3"

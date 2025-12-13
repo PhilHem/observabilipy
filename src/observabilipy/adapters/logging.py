@@ -6,6 +6,8 @@ LogStoragePort, allowing logs to be captured and stored via observabilipy.
 
 import asyncio
 import logging
+import queue
+import threading
 import traceback
 from collections.abc import Callable
 
@@ -67,6 +69,7 @@ class ObservabilipyHandler(logging.Handler):
         storage: LogStoragePort,
         include_attrs: list[str] | None = None,
         context_provider: ContextProvider | None = None,
+        background_writer: bool = False,
     ) -> None:
         """Initialize the handler with a log storage backend.
 
@@ -77,11 +80,27 @@ class ObservabilipyHandler(logging.Handler):
             context_provider: Optional callable that returns a dict of context
                 attributes to include in every log entry. Useful for adding
                 request IDs, user IDs, or other request-scoped context.
+            background_writer: If True, writes are queued and processed by a
+                background thread. This guarantees log delivery even when the
+                event loop is busy. Default is False (direct writes).
         """
         super().__init__()
         self._storage = storage
         self._include_attrs = include_attrs or _DEFAULT_INCLUDE_ATTRS
         self._context_provider = context_provider
+        self._background_writer = background_writer
+
+        # Background writer state
+        self._queue: queue.Queue[LogEntry | None] | None = None
+        self._writer_thread: threading.Thread | None = None
+
+        if background_writer:
+            self._queue = queue.Queue()
+            self._writer_thread = threading.Thread(
+                target=self._background_write_loop,
+                daemon=False,  # Ensure graceful shutdown
+            )
+            self._writer_thread.start()
 
     def emit(self, record: logging.LogRecord) -> None:
         """Emit a log record to the storage backend.
@@ -132,4 +151,47 @@ class ObservabilipyHandler(logging.Handler):
             message=record.getMessage(),
             attributes=attributes,
         )
-        asyncio.run(self._storage.write(entry))
+
+        if self._background_writer and self._queue is not None:
+            self._queue.put(entry)
+        else:
+            self._write_to_storage(entry)
+
+    def _write_to_storage(self, entry: LogEntry) -> None:
+        """Write entry to storage, handling sync/async contexts.
+
+        Detects whether we're inside a running event loop and schedules
+        the write appropriately.
+        """
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            # No running event loop - use asyncio.run() (sync context)
+            asyncio.run(self._storage.write(entry))
+        else:
+            # Inside a running event loop - schedule as a task
+            loop.create_task(self._storage.write(entry))
+
+    def _background_write_loop(self) -> None:
+        """Background thread that processes the write queue."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        while True:
+            assert self._queue is not None
+            entry = self._queue.get()
+            if entry is None:  # Shutdown signal
+                self._queue.task_done()
+                break
+            loop.run_until_complete(self._storage.write(entry))
+            self._queue.task_done()
+
+        loop.close()
+
+    def close(self) -> None:
+        """Close the handler, flushing any pending writes."""
+        if self._background_writer and self._queue is not None:
+            self._queue.put(None)  # Shutdown signal
+            if self._writer_thread is not None:
+                self._writer_thread.join(timeout=5.0)
+        super().close()

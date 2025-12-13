@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import threading
 from typing import Any
 
 import pytest
@@ -218,6 +219,173 @@ class TestObservabilipyHandler:
 
         entries = _run_async(_collect_entries(storage))
         assert len(entries) == 1
+
+
+@pytest.mark.core
+class TestAsyncAwareEmit:
+    """Tests for async-aware emit() behavior."""
+
+    def test_emit_works_without_running_event_loop(self) -> None:
+        """emit() works when called outside any event loop (regression test)."""
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(storage)
+
+        record = logging.LogRecord(
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="sync context message",
+            args=(),
+            exc_info=None,
+        )
+        handler.emit(record)
+
+        entries = _run_async(_collect_entries(storage))
+        assert len(entries) == 1
+        assert entries[0].message == "sync context message"
+
+    def test_emit_works_inside_running_event_loop(self) -> None:
+        """emit() works when called from inside an already-running event loop."""
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(storage)
+        emit_called = threading.Event()
+        emit_error: list[Exception] = []
+
+        def run_in_loop() -> None:
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+
+            async def async_main() -> None:
+                # We are now inside a running event loop
+                record = logging.LogRecord(
+                    name="test",
+                    level=logging.INFO,
+                    pathname="",
+                    lineno=0,
+                    msg="async context message",
+                    args=(),
+                    exc_info=None,
+                )
+                try:
+                    handler.emit(record)
+                except Exception as e:
+                    emit_error.append(e)
+                emit_called.set()
+                # Give time for any scheduled tasks to complete
+                await asyncio.sleep(0.1)
+
+            loop.run_until_complete(async_main())
+            loop.close()
+
+        thread = threading.Thread(target=run_in_loop)
+        thread.start()
+        thread.join(timeout=2.0)
+
+        assert emit_called.is_set(), "emit() was never called"
+        assert len(emit_error) == 0, f"emit() raised: {emit_error[0]}"
+
+        # Verify the entry was written
+        entries = _run_async(_collect_entries(storage))
+        assert len(entries) == 1
+        assert entries[0].message == "async context message"
+
+
+@pytest.mark.core
+class TestBackgroundWriter:
+    """Tests for optional background writer mode."""
+
+    def test_background_writer_handles_high_volume(self) -> None:
+        """Background writer queues logs and writes them asynchronously."""
+        import time
+
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(storage, background_writer=True)
+
+        # Log many messages rapidly
+        for i in range(100):
+            record = logging.LogRecord(
+                name="test",
+                level=logging.INFO,
+                pathname="",
+                lineno=0,
+                msg=f"message {i}",
+                args=(),
+                exc_info=None,
+            )
+            handler.emit(record)
+
+        # Give background thread time to process
+        time.sleep(0.5)
+        handler.close()
+
+        entries = _run_async(_collect_entries(storage))
+        assert len(entries) == 100
+
+    def test_handler_close_flushes_pending_writes(self) -> None:
+        """handler.close() flushes all pending writes before returning."""
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(storage, background_writer=True)
+
+        # Log several messages
+        for i in range(10):
+            record = logging.LogRecord(
+                name="test",
+                level=logging.INFO,
+                pathname="",
+                lineno=0,
+                msg=f"message {i}",
+                args=(),
+                exc_info=None,
+            )
+            handler.emit(record)
+
+        # Close handler (should flush)
+        handler.close()
+
+        # All entries should be present immediately after close
+        entries = _run_async(_collect_entries(storage))
+        assert len(entries) == 10
+
+    def test_background_writer_thread_safety(self) -> None:
+        """Background writer handles concurrent emit() from multiple threads."""
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(storage, background_writer=True)
+
+        def log_from_thread(thread_id: int) -> None:
+            for i in range(10):
+                record = logging.LogRecord(
+                    name="test",
+                    level=logging.INFO,
+                    pathname="",
+                    lineno=0,
+                    msg=f"thread-{thread_id}-message-{i}",
+                    args=(),
+                    exc_info=None,
+                )
+                handler.emit(record)
+
+        threads = [
+            threading.Thread(target=log_from_thread, args=(i,)) for i in range(5)
+        ]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+
+        handler.close()
+
+        entries = _run_async(_collect_entries(storage))
+        assert len(entries) == 50  # 5 threads * 10 messages
+
+    def test_background_writer_default_is_false(self) -> None:
+        """background_writer defaults to False (sync behavior)."""
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(storage)
+
+        # Should not have background writer attributes
+        assert not hasattr(handler, "_queue") or handler._queue is None
+        assert not hasattr(handler, "_writer_thread") or handler._writer_thread is None
 
 
 @pytest.mark.core

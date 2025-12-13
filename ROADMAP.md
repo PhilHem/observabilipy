@@ -173,22 +173,23 @@ Ideas for improving developer experience. To be prioritized later.
 ### Async-Aware ObservabilipyHandler
 
 Make `ObservabilipyHandler` work inside existing async event loops (e.g., FastAPI TestClient).
-Currently `emit()` uses `asyncio.run()` which fails when nested in a running loop.
+~~Currently `emit()` uses `asyncio.run()` which fails when nested in a running loop.~~
 
-**TDD Cycle 1: Detect running event loop**
-- [ ] Write test: `emit()` works when no event loop is running (current behavior)
-- [ ] Write test: `emit()` works when called from inside a running event loop
-- [ ] Implement: detect running loop with `asyncio.get_running_loop()`, use `loop.create_task()` or queue
+**TDD Cycle 1: Detect running event loop** ✅
+- [x] Write test: `emit()` works when no event loop is running (current behavior)
+- [x] Write test: `emit()` works when called from inside a running event loop
+- [x] Implement: detect running loop with `asyncio.get_running_loop()`, use `loop.create_task()` or queue
 
-**TDD Cycle 2: Background writer thread (optional fallback)**
-- [ ] Write test: logs are written even when event loop is busy
-- [ ] Write test: handler shutdown flushes pending writes
-- [ ] Implement: optional background thread with queue for fire-and-forget writes
+**TDD Cycle 2: Background writer thread (optional fallback)** ✅
+- [x] Write test: logs are written even when event loop is busy
+- [x] Write test: handler shutdown flushes pending writes
+- [x] Implement: optional background thread with queue for fire-and-forget writes
+- [ ] Add `flush()` method that blocks until queue is drained (uses `queue.join()`)
 
-**TDD Cycle 3: Integration with FastAPI TestClient**
-- [ ] Write test: `ObservabilipyHandler` works with FastAPI `TestClient` and middleware
-- [ ] Write test: `log_context` attributes appear in logs during TestClient requests
-- [ ] Update `test_middleware_log_context.py` to use actual TestClient instead of simulation
+**TDD Cycle 3: Integration with FastAPI TestClient** ✅
+- [x] Write test: `ObservabilipyHandler` works with FastAPI `TestClient` and middleware
+- [x] Write test: `log_context` attributes appear in logs during TestClient requests
+- [x] Update `test_middleware_log_context.py` to use actual TestClient instead of simulation
 
 ### Documentation & Discoverability
 - [ ] Module-level docstring in `__init__.py` with quickstart example
