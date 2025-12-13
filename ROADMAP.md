@@ -148,7 +148,7 @@ Unify storage and HTTP API design for consistency and clarity.
 ### 11.4 Examples & Documentation
 
 - [x] Update `dashboard_example.py` to use `/metrics?since=` with NDJSON parsing
-- [ ] Fix `dashboard_example.py` metrics display with Browser
+- [x] Fix `dashboard_example.py` metrics display with Browser
 - [x] Update `fastapi_example.py` to demonstrate new endpoints
 - [x] Update README with new API documentation
 
@@ -177,6 +177,6 @@ Ideas for improving developer experience. To be prioritized later.
 
 ## Current Focus
 
-**Phase 11: API Redesign** → 11.4 Examples & Documentation in progress
+**Phase 11: API Redesign** → Complete!
 
-Next action: Fix `dashboard_example.py` metrics display with Browser.
+All phases complete. See Future section for potential enhancements.

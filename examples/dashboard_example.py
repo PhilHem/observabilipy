@@ -511,7 +511,7 @@ DASHBOARD_HTML = """<!DOCTYPE html>
         // NDJSON parsing helpers
         function parseNDJSON(text) {
             if (!text || !text.trim()) return [];
-            return text.trim().split('\n')
+            return text.trim().split('\\n')
                 .filter(line => line)
                 .map(line => JSON.parse(line));
         }
