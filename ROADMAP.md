@@ -166,7 +166,9 @@ Ideas for improving developer experience. To be prioritized later.
 ### Python Logging Integration
 - [x] `ObservabilipyHandler` - logging handler that writes to `LogStoragePort`
 - [x] Automatic attribute extraction from `LogRecord` (module, funcName, lineno)
-- [ ] Optional structured context via `logging.setLogRecordFactory` or filters
+- [x] Optional structured context via `context_provider` callback and `log_context()` helper
+- [x] Export `ContextProvider` type alias from package root for user type hints
+- [ ] Example showing `log_context` with FastAPI middleware (request ID injection)
 
 ### Documentation & Discoverability
 - [ ] Module-level docstring in `__init__.py` with quickstart example

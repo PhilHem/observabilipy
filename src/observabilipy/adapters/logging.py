@@ -7,9 +7,13 @@ LogStoragePort, allowing logs to be captured and stored via observabilipy.
 import asyncio
 import logging
 import traceback
+from collections.abc import Callable
 
 from observabilipy.core.models import LogEntry
 from observabilipy.core.ports import LogStoragePort
+
+# Type alias for context provider callable
+ContextProvider = Callable[[], dict[str, str | int | float | bool]]
 
 # Standard LogRecord attributes that should not be treated as extra fields
 _STANDARD_LOGRECORD_ATTRS = frozenset(
@@ -62,6 +66,7 @@ class ObservabilipyHandler(logging.Handler):
         self,
         storage: LogStoragePort,
         include_attrs: list[str] | None = None,
+        context_provider: ContextProvider | None = None,
     ) -> None:
         """Initialize the handler with a log storage backend.
 
@@ -69,10 +74,14 @@ class ObservabilipyHandler(logging.Handler):
             storage: Storage adapter implementing LogStoragePort.
             include_attrs: List of LogRecord attributes to include. Defaults to
                 ["module", "funcName", "lineno", "pathname"].
+            context_provider: Optional callable that returns a dict of context
+                attributes to include in every log entry. Useful for adding
+                request IDs, user IDs, or other request-scoped context.
         """
         super().__init__()
         self._storage = storage
         self._include_attrs = include_attrs or _DEFAULT_INCLUDE_ATTRS
+        self._context_provider = context_provider
 
     def emit(self, record: logging.LogRecord) -> None:
         """Emit a log record to the storage backend.
@@ -88,12 +97,17 @@ class ObservabilipyHandler(logging.Handler):
             "pathname": record.pathname,
         }
 
-        # Build attributes based on include_attrs configuration
-        attributes: dict[str, str | int | float | bool] = {
-            key: attr_mapping[key] for key in self._include_attrs if key in attr_mapping
-        }
+        # Start with context provider attributes (lowest precedence)
+        attributes: dict[str, str | int | float | bool] = {}
+        if self._context_provider is not None:
+            attributes = self._context_provider().copy()
 
-        # Add any extra attributes passed via logging call
+        # Add attributes based on include_attrs configuration (overrides context)
+        for key in self._include_attrs:
+            if key in attr_mapping:
+                attributes[key] = attr_mapping[key]
+
+        # Add any extra attributes passed via logging call (highest precedence)
         for key, value in record.__dict__.items():
             if key not in _STANDARD_LOGRECORD_ATTRS and isinstance(
                 value, (str, int, float, bool)

@@ -135,3 +135,98 @@ class TestObservabilipyHandler:
         assert "lineno" in entries[0].attributes
         assert "funcName" not in entries[0].attributes
         assert "pathname" not in entries[0].attributes
+
+    def test_context_provider_merges_attributes(self) -> None:
+        """Context provider attributes are merged into log entry."""
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(
+            storage,
+            context_provider=lambda: {"request_id": "abc", "env": "test"},
+        )
+
+        record = logging.LogRecord(
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="test message",
+            args=(),
+            exc_info=None,
+        )
+        handler.emit(record)
+
+        entries = _run_async(_collect_entries(storage))
+        assert entries[0].attributes["request_id"] == "abc"
+        assert entries[0].attributes["env"] == "test"
+
+    def test_extra_overrides_context_provider(self) -> None:
+        """Extra attributes override context provider values."""
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(
+            storage,
+            context_provider=lambda: {"user_id": "from_context"},
+        )
+        logger = logging.getLogger("test_override")
+        logger.handlers.clear()
+        logger.addHandler(handler)
+        logger.setLevel(logging.DEBUG)
+
+        logger.info("test", extra={"user_id": "from_extra"})
+
+        entries = _run_async(_collect_entries(storage))
+        assert entries[0].attributes["user_id"] == "from_extra"
+
+    def test_context_provider_not_called_when_none(self) -> None:
+        """Handler works normally when context_provider is None."""
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(storage)  # No context_provider
+
+        record = logging.LogRecord(
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="no context",
+            args=(),
+            exc_info=None,
+        )
+        handler.emit(record)
+
+        entries = _run_async(_collect_entries(storage))
+        assert len(entries) == 1
+        # Only standard attrs, no context
+        assert "request_id" not in entries[0].attributes
+
+    def test_context_provider_empty_dict(self) -> None:
+        """Context provider returning empty dict works correctly."""
+        storage = InMemoryLogStorage()
+        handler = ObservabilipyHandler(
+            storage,
+            context_provider=lambda: {},
+        )
+
+        record = logging.LogRecord(
+            name="test",
+            level=logging.INFO,
+            pathname="",
+            lineno=0,
+            msg="empty context",
+            args=(),
+            exc_info=None,
+        )
+        handler.emit(record)
+
+        entries = _run_async(_collect_entries(storage))
+        assert len(entries) == 1
+
+
+@pytest.mark.core
+class TestPackageExports:
+    """Tests for package-level exports."""
+
+    def test_context_provider_importable_from_package(self) -> None:
+        """ContextProvider type alias is importable from observabilipy."""
+        from observabilipy import ContextProvider as PkgContextProvider
+        from observabilipy.adapters.logging import ContextProvider
+
+        assert PkgContextProvider is ContextProvider

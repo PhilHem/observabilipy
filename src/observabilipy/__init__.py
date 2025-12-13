@@ -12,7 +12,14 @@ For framework adapters, import from the submodules:
     )
 """
 
-from observabilipy.adapters.logging import ObservabilipyHandler
+from observabilipy.adapters.logging import ContextProvider, ObservabilipyHandler
+from observabilipy.adapters.logging_context import (
+    clear_log_context,
+    get_log_context,
+    log_context,
+    set_log_context,
+    update_log_context,
+)
 from observabilipy.adapters.storage import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
@@ -92,7 +99,14 @@ __all__ = [
     "SQLiteLogStorage",
     "SQLiteMetricsStorage",
     # Logging integration
+    "ContextProvider",
     "ObservabilipyHandler",
+    # Logging context helpers
+    "clear_log_context",
+    "get_log_context",
+    "log_context",
+    "set_log_context",
+    "update_log_context",
     # Runtime
     "EmbeddedRuntime",
 ]
