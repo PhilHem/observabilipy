@@ -150,8 +150,7 @@ Unify storage and HTTP API design for consistency and clarity.
 - [x] Update `dashboard_example.py` to use `/metrics?since=` with NDJSON parsing
 - [ ] Fix `dashboard_example.py` metrics display with Browser
 - [x] Update `fastapi_example.py` to demonstrate new endpoints
-- [ ] Update README with new API documentation
-- [ ] Add migration guide for users upgrading from `scrape()` API
+- [x] Update README with new API documentation
 
 ---
 
