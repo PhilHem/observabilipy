@@ -12,6 +12,7 @@ For framework adapters, import from the submodules:
     )
 """
 
+from observabilipy.adapters.logging import ObservabilipyHandler
 from observabilipy.adapters.storage import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
@@ -90,6 +91,8 @@ __all__ = [
     "RingBufferMetricsStorage",
     "SQLiteLogStorage",
     "SQLiteMetricsStorage",
+    # Logging integration
+    "ObservabilipyHandler",
     # Runtime
     "EmbeddedRuntime",
 ]

@@ -15,9 +15,14 @@ Then visit:
 Instrumentation:
     This example demonstrates automatic metrics collection using the
     `@instrument_view` decorator for Django async views.
+
+Logging Integration:
+    Python's standard logging is bridged to observabilipy using
+    ObservabilipyHandler, so all logs appear in /logs endpoint.
 """
 
 import asyncio
+import logging
 
 import django
 from django.conf import settings
@@ -35,6 +40,7 @@ if not settings.configured:
 
 from django.urls import path
 
+from observabilipy import ObservabilipyHandler
 from observabilipy.adapters.frameworks.django import (
     create_observability_urlpatterns,
     instrument_view,
@@ -48,6 +54,15 @@ from observabilipy.adapters.storage.in_memory import (
 log_storage = InMemoryLogStorage()
 metrics_storage = InMemoryMetricsStorage()
 
+# Bridge Python logging to observabilipy
+logging.basicConfig(level=logging.INFO)
+handler = ObservabilipyHandler(log_storage)
+logging.getLogger().addHandler(handler)
+
+# Application logger
+logger = logging.getLogger("django_example")
+logger.info("Django application initialized")
+
 
 @instrument_view(metrics_storage, name="root")
 async def root(request: HttpRequest) -> HttpResponse:
@@ -57,6 +72,7 @@ async def root(request: HttpRequest) -> HttpResponse:
     - root_total counter (incremented on each request, with method and status labels)
     - root_duration_seconds histogram (request timing)
     """
+    logger.info("Root endpoint called")
     # Simulate some work
     await asyncio.sleep(0.01)
     return HttpResponse("Hello! Check /metrics and /logs endpoints.")
@@ -69,6 +85,7 @@ async def users_list(request: HttpRequest) -> JsonResponse:
     The decorator adds the HTTP method automatically. Custom labels like
     'version' are included in all metrics for this view.
     """
+    logger.info("Fetching users", extra={"endpoint": "users"})
     # Simulate database fetch
     await asyncio.sleep(0.05)
     return JsonResponse({
@@ -85,8 +102,13 @@ async def error_demo(request: HttpRequest) -> HttpResponse:
 
     When the view name is not specified, the function name is used.
     When an exception occurs, the counter records status=error.
+    The exception is also captured in the logs via logger.exception().
     """
-    raise ValueError("Intentional error for demonstration")
+    try:
+        raise ValueError("Intentional error for demonstration")
+    except ValueError:
+        logger.exception("Error in error_demo endpoint")
+        raise
 
 
 # URL patterns

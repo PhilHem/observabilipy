@@ -164,8 +164,8 @@ Ideas for improving developer experience. To be prioritized later.
 - [x] Framework-specific variants (FastAPI dependency, Django decorator)
 
 ### Python Logging Integration
-- [ ] `ObservabilipyHandler` - logging handler that writes to `LogStoragePort`
-- [ ] Automatic attribute extraction from `LogRecord` (module, funcName, lineno)
+- [x] `ObservabilipyHandler` - logging handler that writes to `LogStoragePort`
+- [x] Automatic attribute extraction from `LogRecord` (module, funcName, lineno)
 - [ ] Optional structured context via `logging.setLogRecordFactory` or filters
 
 ### Documentation & Discoverability

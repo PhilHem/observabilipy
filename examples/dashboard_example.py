@@ -18,9 +18,14 @@ Then visit:
     http://localhost:8000/metrics - NDJSON metrics (with ?since= support)
     http://localhost:8000/metrics/prometheus - Prometheus text format
     http://localhost:8000/logs - NDJSON logs
+
+Logging Integration:
+    Python's standard logging is bridged to observabilipy using
+    ObservabilipyHandler, so all logs appear in the dashboard and /logs endpoint.
 """
 
 import asyncio
+import logging
 import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
@@ -28,12 +33,13 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
 
+from observabilipy import ObservabilipyHandler
 from observabilipy.adapters.frameworks.fastapi import create_observability_router
 from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
 )
-from observabilipy.core.models import LogEntry, MetricSample, RetentionPolicy
+from observabilipy.core.models import MetricSample, RetentionPolicy
 from observabilipy.runtime.embedded import EmbeddedRuntime
 
 try:
@@ -45,6 +51,14 @@ except ImportError:
 # Storage (in-memory for this example, use SQLite for persistence)
 log_storage = InMemoryLogStorage()
 metrics_storage = InMemoryMetricsStorage()
+
+# Bridge Python logging to observabilipy
+logging.basicConfig(level=logging.DEBUG)
+handler = ObservabilipyHandler(log_storage)
+logging.getLogger().addHandler(handler)
+
+# Application logger
+logger = logging.getLogger("dashboard")
 
 # Retention: keep 10 minutes of data, max 1000 samples
 log_retention = RetentionPolicy(max_age_seconds=600, max_count=1000)
@@ -63,14 +77,7 @@ runtime = EmbeddedRuntime(
 async def collect_system_metrics() -> None:
     """Collect system CPU and memory metrics every second."""
     if psutil is None:
-        await log_storage.write(
-            LogEntry(
-                timestamp=time.time(),
-                level="ERROR",
-                message="psutil not installed - cannot collect system metrics",
-                attributes={},
-            )
-        )
+        logger.error("psutil not installed - cannot collect system metrics")
         return
 
     while True:
@@ -193,13 +200,11 @@ async def collect_system_metrics() -> None:
             pass
 
         # Log collection event periodically
-        await log_storage.write(
-            LogEntry(
-                timestamp=now,
-                level="DEBUG",
-                message=f"Collected metrics: CPU={cpu_percent}%, Memory={mem.percent}%",
-                attributes={"cpu_count": str(cpu_count)},
-            )
+        logger.debug(
+            "Collected metrics: CPU=%.1f%%, Memory=%.1f%%",
+            cpu_percent,
+            mem.percent,
+            extra={"cpu_count": cpu_count},
         )
 
         await asyncio.sleep(1)
@@ -210,15 +215,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Start runtime and metrics collection on startup."""
     await runtime.start()
     asyncio.create_task(collect_system_metrics())
-    await log_storage.write(
-        LogEntry(
-            timestamp=time.time(),
-            level="INFO",
-            message="Dashboard started - collecting system metrics",
-            attributes={"retention_seconds": "600"},
-        )
+    logger.info(
+        "Dashboard started - collecting system metrics",
+        extra={"retention_seconds": 600},
     )
     yield
+    logger.info("Dashboard shutting down")
     await runtime.stop()
 
 
