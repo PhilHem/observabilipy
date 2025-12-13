@@ -106,7 +106,7 @@ Unify storage and HTTP API design for consistency and clarity.
 **Deprecate and remove `scrape()`:**
 - [x] Mark `scrape()` as deprecated (keep for one release)
 - [x] Update all internal usage to use `read()` instead
-- [ ] Remove `scrape()` in next major version
+- [x] Remove `scrape()` in next major version
 
 ### 11.2 Encoding Layer
 

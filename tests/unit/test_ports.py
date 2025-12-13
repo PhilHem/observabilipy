@@ -58,11 +58,6 @@ class TestMetricsStoragePort:
         assert hasattr(MetricsStoragePort, "write")
 
     @pytest.mark.core
-    def test_protocol_has_scrape_method(self) -> None:
-        """MetricsStoragePort must define scrape() -> AsyncIterable[MetricSample]."""
-        assert hasattr(MetricsStoragePort, "scrape")
-
-    @pytest.mark.core
     def test_protocol_has_read_method(self) -> None:
         """MetricsStoragePort must define read(since) -> AsyncIterable."""
         assert hasattr(MetricsStoragePort, "read")
@@ -74,10 +69,6 @@ class TestMetricsStoragePort:
         class FakeMetricsStorage:
             async def write(self, sample: MetricSample) -> None:
                 pass
-
-            async def scrape(self) -> AsyncGenerator[MetricSample]:
-                return
-                yield  # Make this an async generator
 
             async def read(self, since: float = 0) -> AsyncGenerator[MetricSample]:
                 return

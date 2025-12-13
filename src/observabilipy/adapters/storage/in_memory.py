@@ -1,6 +1,5 @@
 """In-memory storage adapters for logs and metrics."""
 
-import warnings
 from collections.abc import AsyncIterable
 
 from observabilipy.core.models import LogEntry, MetricSample
@@ -74,21 +73,6 @@ class InMemoryMetricsStorage:
     async def write(self, sample: MetricSample) -> None:
         """Write a metric sample to storage."""
         self._samples.append(sample)
-
-    async def scrape(self) -> AsyncIterable[MetricSample]:
-        """Scrape all current metric samples.
-
-        .. deprecated::
-            `scrape()` is deprecated and will be removed in the next major version.
-            Use `read()` instead.
-        """
-        warnings.warn(
-            "scrape() is deprecated, use read() instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        for sample in self._samples:
-            yield sample
 
     async def read(self, since: float = 0) -> AsyncIterable[MetricSample]:
         """Read metric samples since the given timestamp.

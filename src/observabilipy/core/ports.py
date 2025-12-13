@@ -91,18 +91,6 @@ class MetricsStoragePort(Protocol):
         """Write a metric sample to storage."""
         ...
 
-    def scrape(self) -> AsyncIterable[MetricSample]:
-        """Scrape all current metric samples.
-
-        .. deprecated::
-            `scrape()` is deprecated and will be removed in the next major version.
-            Use `read()` instead, which provides the same functionality.
-
-        Returns:
-            AsyncIterable of MetricSample objects representing current state.
-        """
-        ...
-
     def read(self, since: float = 0) -> AsyncIterable[MetricSample]:
         """Read metric samples since the given timestamp.
 

@@ -2,7 +2,6 @@
 
 import asyncio
 import json
-import warnings
 from collections.abc import AsyncIterable
 
 import aiosqlite
@@ -52,10 +51,6 @@ ORDER BY timestamp ASC
 
 _INSERT_METRIC = """
 INSERT INTO metrics (name, timestamp, value, labels) VALUES (?, ?, ?, ?)
-"""
-
-_SELECT_METRICS = """
-SELECT name, timestamp, value, labels FROM metrics
 """
 
 _SELECT_METRICS_SINCE = """
@@ -297,32 +292,6 @@ class SQLiteMetricsStorage:
                 ),
             )
             await db.commit()
-        finally:
-            if self._db_path != ":memory:":
-                await db.close()
-
-    async def scrape(self) -> AsyncIterable[MetricSample]:
-        """Scrape all current metric samples.
-
-        .. deprecated::
-            `scrape()` is deprecated and will be removed in the next major version.
-            Use `read()` instead.
-        """
-        warnings.warn(
-            "scrape() is deprecated, use read() instead",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        db = await self._get_connection()
-        try:
-            async with db.execute(_SELECT_METRICS) as cursor:
-                async for row in cursor:
-                    yield MetricSample(
-                        name=row[0],
-                        timestamp=row[1],
-                        value=row[2],
-                        labels=json.loads(row[3]),
-                    )
         finally:
             if self._db_path != ":memory:":
                 await db.close()
