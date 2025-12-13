@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.1.0] - 2025-12-13
+
+### Added
+- Instrumentation decorators (`@timed`, `@counted`, `@timed_with_histogram`) for automatic metrics collection
+- `ObservabilipyHandler` - Python `logging.Handler` integration for capturing logs to observabilipy storage
+- Async-aware logging handler that properly handles both sync and async contexts
+- `context_provider` and `log_context()` for structured context in middleware
+- Doctest examples for all public functions
+- Quickstart example in module docstring
+
 ## [1.0.0] - 2025-12-13
 
 ### Breaking Changes
