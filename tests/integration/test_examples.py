@@ -24,23 +24,26 @@ class TestFastAPIExample:
         assert client.get("/metrics").status_code == 200
         assert client.get("/logs").status_code == 200
 
-    def test_root_endpoint_records_data(self) -> None:
-        """Root endpoint records metrics and logs."""
-        from examples.fastapi_example import app, log_storage, metrics_storage
+    def test_root_endpoint_records_metrics(self) -> None:
+        """Root endpoint records metrics via instrumentation."""
+        from examples.fastapi_example import app, metrics_storage
 
         client = TestClient(app)
 
         # Clear any existing data
-        log_storage._entries.clear()
         metrics_storage._samples.clear()
 
         # Hit root endpoint
         response = client.get("/")
         assert response.status_code == 200
 
-        # Verify data was recorded
-        assert client.get("/logs").text != ""
+        # Verify metrics were recorded by instrumentation
         assert client.get("/metrics").text != ""
+
+        # Should have counter and histogram samples
+        metrics_text = client.get("/metrics/prometheus").text
+        assert "root_total" in metrics_text
+        assert "root_duration_seconds" in metrics_text
 
 
 @pytest.mark.examples

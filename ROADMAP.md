@@ -159,9 +159,9 @@ Unify storage and HTTP API design for consistency and clarity.
 Ideas for improving developer experience. To be prioritized later.
 
 ### Instrumentation Decorators
-- [ ] `@instrument` decorator for automatic request metrics (counter + timer)
-- [ ] Configurable metric names and labels via decorator arguments
-- [ ] Framework-specific variants (FastAPI dependency, Django middleware)
+- [x] `@instrument` decorator for automatic request metrics (counter + timer)
+- [x] Configurable metric names and labels via decorator arguments
+- [x] Framework-specific variants (FastAPI dependency, Django decorator)
 
 ### Python Logging Integration
 - [ ] `ObservabilipyHandler` - logging handler that writes to `LogStoragePort`

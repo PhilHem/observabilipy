@@ -22,6 +22,7 @@ from observabilipy.adapters.storage import (
 )
 from observabilipy.core.encoding.ndjson import encode_ndjson
 from observabilipy.core.exceptions import ConfigurationError, ObservabilityError
+from observabilipy.core.instrument import InstrumentResult, instrument
 from observabilipy.core.logs import (
     TimedLogResult,
     debug,
@@ -71,6 +72,9 @@ __all__ = [
     "histogram",
     "timer",
     "TimerResult",
+    # Instrumentation
+    "instrument",
+    "InstrumentResult",
     # Ports
     "LogStoragePort",
     "MetricsStoragePort",

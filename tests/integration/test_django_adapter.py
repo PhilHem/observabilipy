@@ -9,7 +9,10 @@ django = pytest.importorskip("django", reason="django not installed")
 from django.conf import settings
 from django.test import AsyncClient
 
-from observabilipy.adapters.frameworks.django import create_observability_urlpatterns
+from observabilipy.adapters.frameworks.django import (
+    create_observability_urlpatterns,
+    instrument_view,
+)
 from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
@@ -357,3 +360,154 @@ class TestDjangoLogsEndpoint:
 
         assert response.status_code == 200
         assert response.content.decode() == ""
+
+
+class TestDjangoInstrumentView:
+    """Tests for instrument_view decorator."""
+
+    @pytest.mark.django
+    async def test_instrument_view_writes_metrics(
+        self, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
+        """instrument_view writes metrics to storage."""
+        from django.http import HttpRequest, HttpResponse
+
+        @instrument_view(metrics_storage, name="test_view")
+        async def my_view(request: HttpRequest) -> HttpResponse:
+            return HttpResponse("OK")
+
+        request = HttpRequest()
+        request.method = "GET"
+        request.path = "/test"
+
+        await my_view(request)
+
+        count = await metrics_storage.count()
+        assert count > 0
+
+    @pytest.mark.django
+    async def test_instrument_view_writes_counter(
+        self, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
+        """instrument_view writes counter with _total suffix."""
+        from django.http import HttpRequest, HttpResponse
+
+        @instrument_view(metrics_storage, name="my_view")
+        async def my_view(request: HttpRequest) -> HttpResponse:
+            return HttpResponse("OK")
+
+        request = HttpRequest()
+        request.method = "GET"
+        request.path = "/test"
+
+        await my_view(request)
+
+        samples = [s async for s in metrics_storage.read()]
+        counter_samples = [s for s in samples if s.name == "my_view_total"]
+        assert len(counter_samples) == 1
+
+    @pytest.mark.django
+    async def test_instrument_view_writes_histogram(
+        self, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
+        """instrument_view writes histogram duration samples."""
+        from django.http import HttpRequest, HttpResponse
+
+        @instrument_view(metrics_storage, name="my_view")
+        async def my_view(request: HttpRequest) -> HttpResponse:
+            return HttpResponse("OK")
+
+        request = HttpRequest()
+        request.method = "GET"
+        request.path = "/test"
+
+        await my_view(request)
+
+        samples = [s async for s in metrics_storage.read()]
+        histogram_samples = [s for s in samples if "duration_seconds" in s.name]
+        assert len(histogram_samples) > 0
+
+    @pytest.mark.django
+    async def test_instrument_view_uses_function_name_as_default(
+        self, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
+        """instrument_view uses function name as default metric name."""
+        from django.http import HttpRequest, HttpResponse
+
+        @instrument_view(metrics_storage)
+        async def user_list(request: HttpRequest) -> HttpResponse:
+            return HttpResponse("[]")
+
+        request = HttpRequest()
+        request.method = "GET"
+        request.path = "/users"
+
+        await user_list(request)
+
+        samples = [s async for s in metrics_storage.read()]
+        counter = next(s for s in samples if "_total" in s.name)
+        assert counter.name == "user_list_total"
+
+    @pytest.mark.django
+    async def test_instrument_view_adds_method_label(
+        self, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
+        """instrument_view adds HTTP method as label."""
+        from django.http import HttpRequest, HttpResponse
+
+        @instrument_view(metrics_storage, name="my_view")
+        async def my_view(request: HttpRequest) -> HttpResponse:
+            return HttpResponse("OK")
+
+        request = HttpRequest()
+        request.method = "POST"
+        request.path = "/items"
+
+        await my_view(request)
+
+        samples = [s async for s in metrics_storage.read()]
+        counter = next(s for s in samples if s.name == "my_view_total")
+        assert counter.labels.get("method") == "POST"
+
+    @pytest.mark.django
+    async def test_instrument_view_accepts_custom_labels(
+        self, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
+        """instrument_view accepts custom labels."""
+        from django.http import HttpRequest, HttpResponse
+
+        @instrument_view(metrics_storage, name="my_view", labels={"env": "prod"})
+        async def my_view(request: HttpRequest) -> HttpResponse:
+            return HttpResponse("OK")
+
+        request = HttpRequest()
+        request.method = "GET"
+        request.path = "/test"
+
+        await my_view(request)
+
+        samples = [s async for s in metrics_storage.read()]
+        counter = next(s for s in samples if s.name == "my_view_total")
+        assert counter.labels.get("env") == "prod"
+
+    @pytest.mark.django
+    async def test_instrument_view_captures_exception(
+        self, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
+        """instrument_view captures exceptions and sets error status."""
+        from django.http import HttpRequest, HttpResponse
+
+        @instrument_view(metrics_storage, name="my_view")
+        async def my_view(request: HttpRequest) -> HttpResponse:
+            raise ValueError("test error")
+
+        request = HttpRequest()
+        request.method = "GET"
+        request.path = "/test"
+
+        with pytest.raises(ValueError):
+            await my_view(request)
+
+        samples = [s async for s in metrics_storage.read()]
+        counter = next(s for s in samples if s.name == "my_view_total")
+        assert counter.labels.get("status") == "error"

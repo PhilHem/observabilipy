@@ -6,16 +6,22 @@ Run with:
     uvicorn examples.django_example:application --reload
 
 Then visit:
-    http://localhost:8000/metrics - Prometheus metrics
-    http://localhost:8000/logs - NDJSON logs
-    http://localhost:8000/logs?since=0 - Logs since timestamp
+    http://localhost:8000/           - Root endpoint (instrumented)
+    http://localhost:8000/users      - Users endpoint (instrumented)
+    http://localhost:8000/metrics    - NDJSON metrics
+    http://localhost:8000/metrics/prometheus - Prometheus text format
+    http://localhost:8000/logs       - NDJSON logs
+
+Instrumentation:
+    This example demonstrates automatic metrics collection using the
+    `@instrument_view` decorator for Django async views.
 """
 
-import time
+import asyncio
 
 import django
 from django.conf import settings
-from django.http import HttpRequest, HttpResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 
 # Configure Django settings
 if not settings.configured:
@@ -29,46 +35,65 @@ if not settings.configured:
 
 from django.urls import path
 
-from observabilipy.adapters.frameworks.django import create_observability_urlpatterns
+from observabilipy.adapters.frameworks.django import (
+    create_observability_urlpatterns,
+    instrument_view,
+)
 from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
 )
-from observabilipy.core.models import LogEntry, MetricSample
 
 # Create storage instances
 log_storage = InMemoryLogStorage()
 metrics_storage = InMemoryMetricsStorage()
 
 
+@instrument_view(metrics_storage, name="root")
 async def root(request: HttpRequest) -> HttpResponse:
-    """Root endpoint that logs a message and increments a counter."""
-    # Log the request
-    await log_storage.write(
-        LogEntry(
-            timestamp=time.time(),
-            level="INFO",
-            message="Root endpoint called",
-            attributes={"path": "/"},
-        )
-    )
+    """Root endpoint with automatic metrics instrumentation.
 
-    # Record a metric
-    await metrics_storage.write(
-        MetricSample(
-            name="http_requests_total",
-            timestamp=time.time(),
-            value=1.0,
-            labels={"method": "GET", "path": "/"},
-        )
-    )
-
+    The @instrument_view decorator automatically records:
+    - root_total counter (incremented on each request, with method and status labels)
+    - root_duration_seconds histogram (request timing)
+    """
+    # Simulate some work
+    await asyncio.sleep(0.01)
     return HttpResponse("Hello! Check /metrics and /logs endpoints.")
+
+
+@instrument_view(metrics_storage, name="users_api", labels={"version": "v1"})
+async def users_list(request: HttpRequest) -> JsonResponse:
+    """Users endpoint demonstrating instrumentation with custom labels.
+
+    The decorator adds the HTTP method automatically. Custom labels like
+    'version' are included in all metrics for this view.
+    """
+    # Simulate database fetch
+    await asyncio.sleep(0.05)
+    return JsonResponse({
+        "users": [
+            {"id": "1", "name": "Alice"},
+            {"id": "2", "name": "Bob"},
+        ]
+    })
+
+
+@instrument_view(metrics_storage)
+async def error_demo(request: HttpRequest) -> HttpResponse:
+    """Error endpoint demonstrating error status in metrics.
+
+    When the view name is not specified, the function name is used.
+    When an exception occurs, the counter records status=error.
+    """
+    raise ValueError("Intentional error for demonstration")
 
 
 # URL patterns
 urlpatterns = [
     path("", root, name="root"),
+    path("users", users_list, name="users"),
+    path("error", error_demo, name="error"),
     *create_observability_urlpatterns(log_storage, metrics_storage),
 ]
 

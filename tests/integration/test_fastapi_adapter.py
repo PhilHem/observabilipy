@@ -1,14 +1,19 @@
 """Integration tests for FastAPI adapter."""
 
 import json
+from typing import Annotated
 
 import pytest
 
 fastapi = pytest.importorskip("fastapi", reason="fastapi not installed")
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.testclient import TestClient
 
-from observabilipy.adapters.frameworks.fastapi import create_observability_router
+from observabilipy.adapters.frameworks.fastapi import (
+    Instrumented,
+    create_instrumented_dependency,
+    create_observability_router,
+)
 from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
@@ -358,3 +363,123 @@ class TestFastAPILogsEndpoint:
 
         assert response.status_code == 200
         assert response.text == ""
+
+
+class TestFastAPIInstrumentedDependency:
+    """Tests for create_instrumented_dependency."""
+
+    @pytest.mark.fastapi
+    async def test_create_instrumented_dependency_returns_callable(self) -> None:
+        """create_instrumented_dependency returns a callable."""
+        storage = InMemoryMetricsStorage()
+        get_instrumented = create_instrumented_dependency(storage)
+        assert callable(get_instrumented)
+
+    @pytest.mark.fastapi
+    async def test_instrumented_context_writes_metrics_to_storage(self) -> None:
+        """Instrumented context manager writes metrics to storage."""
+        storage = InMemoryMetricsStorage()
+        get_instrumented = create_instrumented_dependency(storage)
+
+        app = FastAPI()
+
+        @app.get("/test")
+        async def test_endpoint(
+            instr: Annotated[Instrumented, Depends(get_instrumented)],
+        ) -> dict[str, str]:
+            async with instr("test_operation"):
+                return {"status": "ok"}
+
+        client = TestClient(app)
+        client.get("/test")
+
+        count = await storage.count()
+        assert count > 0  # Counter + histogram samples
+
+    @pytest.mark.fastapi
+    async def test_instrumented_writes_counter_sample(self) -> None:
+        """Instrumented writes counter with _total suffix."""
+        storage = InMemoryMetricsStorage()
+        get_instrumented = create_instrumented_dependency(storage)
+
+        app = FastAPI()
+
+        @app.get("/test")
+        async def test_endpoint(
+            instr: Annotated[Instrumented, Depends(get_instrumented)],
+        ) -> dict[str, str]:
+            async with instr("my_operation"):
+                return {"status": "ok"}
+
+        client = TestClient(app)
+        client.get("/test")
+
+        samples = [s async for s in storage.read()]
+        counter_samples = [s for s in samples if s.name == "my_operation_total"]
+        assert len(counter_samples) == 1
+
+    @pytest.mark.fastapi
+    async def test_instrumented_writes_histogram_samples(self) -> None:
+        """Instrumented writes histogram duration samples."""
+        storage = InMemoryMetricsStorage()
+        get_instrumented = create_instrumented_dependency(storage)
+
+        app = FastAPI()
+
+        @app.get("/test")
+        async def test_endpoint(
+            instr: Annotated[Instrumented, Depends(get_instrumented)],
+        ) -> dict[str, str]:
+            async with instr("my_operation"):
+                return {"status": "ok"}
+
+        client = TestClient(app)
+        client.get("/test")
+
+        samples = [s async for s in storage.read()]
+        histogram_samples = [s for s in samples if "duration_seconds" in s.name]
+        assert len(histogram_samples) > 0
+
+    @pytest.mark.fastapi
+    async def test_instrumented_accepts_custom_labels(self) -> None:
+        """Instrumented accepts custom labels."""
+        storage = InMemoryMetricsStorage()
+        get_instrumented = create_instrumented_dependency(storage)
+
+        app = FastAPI()
+
+        @app.get("/test")
+        async def test_endpoint(
+            instr: Annotated[Instrumented, Depends(get_instrumented)],
+        ) -> dict[str, str]:
+            async with instr("my_operation", labels={"source": "db"}):
+                return {"status": "ok"}
+
+        client = TestClient(app)
+        client.get("/test")
+
+        samples = [s async for s in storage.read()]
+        counter = next(s for s in samples if s.name == "my_operation_total")
+        assert counter.labels.get("source") == "db"
+
+    @pytest.mark.fastapi
+    async def test_instrumented_captures_exception(self) -> None:
+        """Instrumented captures exceptions and sets error status."""
+        storage = InMemoryMetricsStorage()
+        get_instrumented = create_instrumented_dependency(storage)
+
+        app = FastAPI()
+
+        @app.get("/test")
+        async def test_endpoint(
+            instr: Annotated[Instrumented, Depends(get_instrumented)],
+        ) -> dict[str, str]:
+            async with instr("my_operation"):
+                raise ValueError("test error")
+
+        client = TestClient(app, raise_server_exceptions=False)
+        client.get("/test")
+
+        samples = [s async for s in storage.read()]
+        counter = next(s for s in samples if s.name == "my_operation_total")
+        assert counter.labels.get("status") == "error"
