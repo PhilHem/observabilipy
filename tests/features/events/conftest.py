@@ -76,7 +76,6 @@ class ScenarioContext:
     non_callable_value: Any | None = None
     exception: Exception | None = None
     validation_errors: list[str] = field(default_factory=list)
-    use_async: bool = False
     expected_outputs: list[dict[str, str]] = field(default_factory=list)
 
 
@@ -251,14 +250,14 @@ def given_registered_mapping(ctx: ScenarioContext, name: str) -> None:
 
 @given("no running asyncio event loop")
 def given_no_event_loop(ctx: ScenarioContext) -> None:
-    """Mark context for sync execution."""
-    ctx.use_async = False
+    """Context for sync execution - no special setup needed."""
+    pass  # Sync context is the default in pytest
 
 
 @given("a running asyncio event loop")
 def given_running_event_loop(ctx: ScenarioContext) -> None:
-    """Mark context for async execution."""
-    ctx.use_async = True
+    """Context for async execution - no special setup needed."""
+    pass  # The When step handles async execution
 
 
 @given("a value that is not callable")
