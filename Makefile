@@ -1,7 +1,7 @@
 # Makefile for observabilipy
 # CI parity: these commands match what CI runs
 
-.PHONY: test test-unit test-integration lint lint-fix typecheck format install clean
+.PHONY: test test-unit test-events test-bdd test-integration lint lint-fix typecheck format install clean
 
 # Run all tests
 test:

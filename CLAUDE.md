@@ -209,6 +209,27 @@ This keeps the roadmap fresh with achievable next steps that leverage recent wor
 - **Unit tests** (`tests/unit/`): Core only, use `InMemoryLogStorage`/`InMemoryMetricsStorage`, no I/O
 - **Integration tests** (`tests/integration/`): Test adapters (SQLite, framework endpoints, encoders)
 - **E2E tests** (`tests/e2e/`): Full app with real framework and scrape endpoints
+- **BDD tests** (`tests/features/`): Gherkin scenarios with pytest-bdd step definitions
+
+### BDD Tests with pytest-bdd
+
+Feature files live in `tests/features/` with step definitions in `conftest.py`:
+
+```
+tests/features/
+└── events/
+    ├── conftest.py           # Step definitions + fixtures
+    ├── test_events.py        # scenarios() loader + markers
+    ├── event_mappings.feature
+    ├── event_recording.feature
+    └── event_validation.feature
+```
+
+**Key conventions:**
+- `scenarios()` must be in `test_*.py` files (not conftest.py) - pytest only collects from test files
+- Data tables use `datatable` parameter: `def step(datatable: list[list[str]])`
+- Apply TRA markers via `pytestmark` at module level in the test file
+- Run with `make test-bdd`
 
 ### Pytest Marks & CI
 
