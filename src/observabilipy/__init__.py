@@ -35,6 +35,7 @@ Quickstart
 For more examples, see the examples/ directory.
 """
 
+from observabilipy.adapters.events import EventObservability
 from observabilipy.adapters.logging import ContextProvider, ObservabilipyHandler
 from observabilipy.adapters.logging_context import (
     clear_log_context,
@@ -52,6 +53,7 @@ from observabilipy.adapters.storage import (
     SQLiteMetricsStorage,
 )
 from observabilipy.core.encoding.ndjson import encode_ndjson
+from observabilipy.core.events.registry import MappingRegistry
 from observabilipy.core.exceptions import ConfigurationError, ObservabilityError
 from observabilipy.core.instrument import InstrumentResult, instrument
 from observabilipy.core.logs import (
@@ -132,4 +134,7 @@ __all__ = [
     "update_log_context",
     # Runtime
     "EmbeddedRuntime",
+    # Event observability
+    "EventObservability",
+    "MappingRegistry",
 ]

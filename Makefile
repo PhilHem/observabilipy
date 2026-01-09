@@ -11,6 +11,10 @@ test:
 test-unit:
 	uv run pytest tests/unit/
 
+# Run event unit tests
+test-events:
+	uv run pytest tests/unit/events/ -v
+
 # Run integration tests only
 test-integration:
 	uv run pytest tests/integration/

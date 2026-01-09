@@ -5,9 +5,11 @@ from observabilipy.core.events.models import (
     LogTemplate,
     MetricTemplate,
 )
+from observabilipy.core.events.registry import MappingRegistry
 
 __all__ = [
     "EventDescriptor",
     "LogTemplate",
+    "MappingRegistry",
     "MetricTemplate",
 ]
