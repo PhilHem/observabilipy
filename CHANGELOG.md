@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.2.0] - 2026-01-09
+
+### Added
+- Event descriptor models (`EventDescriptor`, `FieldDescriptor`) for defining observable events
+- `MappingRegistry` for registering and looking up event-to-metric mappings
+- `EventObservability` adapter for recording events with automatic metric generation
+- BDD test infrastructure with pytest-bdd for event feature specifications
+- Gherkin feature files for event mapping, recording, and validation scenarios
+
+### Fixed
+- CI now skips FastAPI modules gracefully when the dependency is unavailable
+
+### Changed
+- Documentation repositioned to emphasize standalone observability scaffold use case
+- Replaced built-in dashboard examples with integration guides for external charting libraries
+
 ## [1.1.0] - 2025-12-13
 
 ### Added
