@@ -1,35 +1,19 @@
-Feature: Event Descriptor Validation
+Feature: Mapping Registry Validation
   As a library user
-  I want invalid descriptors to fail fast at startup
-  So that I catch configuration errors before production
+  I want to catch configuration errors at startup
+  So that I don't discover problems in production
 
-  Scenario: Validation fails for missing log field
-    Given a domain event class "SimpleEvent" with attributes:
-      | attribute | type |
-      | id        | str  |
-    And a log template that references field "missing_field"
-    When I validate the EventDescriptor
-    Then validation should fail with error containing "missing_field"
+  Scenario: Registering a non-callable raises TypeError
+    Given a value that is not callable
+    When I try to register it as a mapping
+    Then a TypeError should be raised
 
-  Scenario: Validation fails for missing metric label
-    Given a domain event class "SimpleEvent" with attributes:
-      | attribute | type |
-      | id        | str  |
-    And a counter metric template with label "nonexistent_attr"
-    When I validate the EventDescriptor
-    Then validation should fail with error containing "nonexistent_attr"
+  Scenario: Duplicate registration for same event type raises ValueError
+    Given a mapping already registered for "OrderPlaced"
+    When I try to register another mapping for "OrderPlaced"
+    Then a ValueError should be raised with message containing "already registered"
 
-  Scenario: Validation fails for histogram without value_field
-    Given a histogram metric template without value_field
-    When I validate the EventDescriptor
-    Then validation should fail with error containing "value_field"
-
-  Scenario: Validation passes for valid descriptor
-    Given a domain event class "ValidEvent" with attributes:
-      | attribute | type  |
-      | id        | str   |
-      | amount    | float |
-    And a log template that references field "id"
-    And a histogram metric template with value_field "amount"
-    When I validate the EventDescriptor
-    Then validation should pass with no errors
+  Scenario: Validate all mappings returns errors for invalid mappers
+    Given a mapping function that returns invalid output types
+    When I call validate_mappings()
+    Then validation should return errors describing the invalid outputs

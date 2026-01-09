@@ -1,7 +1,7 @@
 # Makefile for observabilipy
 # CI parity: these commands match what CI runs
 
-.PHONY: test test-unit test-integration lint typecheck format install clean
+.PHONY: test test-unit test-integration lint lint-fix typecheck format install clean
 
 # Run all tests
 test:
@@ -15,6 +15,10 @@ test-unit:
 test-events:
 	uv run pytest tests/unit/events/ -v
 
+# Run BDD feature tests
+test-bdd:
+	uv run pytest tests/features/ -v
+
 # Run integration tests only
 test-integration:
 	uv run pytest tests/integration/
@@ -22,6 +26,10 @@ test-integration:
 # Run linting
 lint:
 	uv run ruff check src/ tests/
+
+# Fix linting errors automatically
+lint-fix:
+	uv run ruff check --fix src/ tests/
 
 # Run type checking
 typecheck:
