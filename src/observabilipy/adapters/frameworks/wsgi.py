@@ -3,6 +3,10 @@
 This adapter provides a framework-agnostic WSGI application that can be used
 with any WSGI server (gunicorn, uWSGI, waitress) or framework (Flask, Bottle)
 without requiring additional dependencies.
+
+Note: The event loop is created once per app instance (at factory time) and
+reused across requests. This moves concurrency control to the application
+boundary rather than creating a new loop per request.
 """
 
 import asyncio
@@ -30,6 +34,9 @@ def create_wsgi_app(
 ) -> WSGIApp:
     """Create a WSGI app with /metrics, /metrics/prometheus, and /logs endpoints.
 
+    The event loop is created once at factory time and reused for all requests,
+    avoiding the overhead of creating a new loop per request.
+
     Args:
         log_storage: Storage adapter implementing LogStoragePort.
         metrics_storage: Storage adapter implementing MetricsStoragePort.
@@ -37,6 +44,8 @@ def create_wsgi_app(
     Returns:
         WSGI application callable.
     """
+    # Create event loop once at factory time (concurrency at the edge)
+    loop = asyncio.new_event_loop()
 
     def app(environ: dict[str, Any], start_response: StartResponse) -> Iterable[bytes]:
         path = environ.get("PATH_INFO", "/")
@@ -46,13 +55,15 @@ def create_wsgi_app(
             query_string = environ.get("QUERY_STRING", "")
             params = parse_qs(query_string)
             since = float(params.get("since", ["0"])[0])
-            samples = asyncio.run(_collect_async(metrics_storage.read(since=since)))
+            samples = loop.run_until_complete(
+                _collect_async(metrics_storage.read(since=since))
+            )
             body = encode_ndjson_sync(samples)
             start_response("200 OK", headers)
             return [body.encode()]
         if path == "/metrics/prometheus":
             headers = [("Content-Type", "text/plain; version=0.0.4; charset=utf-8")]
-            samples = asyncio.run(_collect_async(metrics_storage.read()))
+            samples = loop.run_until_complete(_collect_async(metrics_storage.read()))
             body = encode_current_sync(samples)
             start_response("200 OK", headers)
             return [body.encode()]
@@ -64,7 +75,7 @@ def create_wsgi_app(
             level_list = params.get("level", [None])
             level = level_list[0] if level_list else None
             log_entries = log_storage.read(since=since, level=level)
-            entries = asyncio.run(_collect_async(log_entries))
+            entries = loop.run_until_complete(_collect_async(log_entries))
             body = encode_logs_sync(entries)
             start_response("200 OK", headers)
             return [body.encode()]
