@@ -5,23 +5,23 @@
 
 # Run all tests
 test:
-	uv run pytest
+	uv run pytest --timeout=30 -x
 
 # Run unit tests only
 test-unit:
-	uv run pytest tests/unit/
+	uv run pytest tests/unit/ --timeout=30 -x
 
 # Run event unit tests
 test-events:
-	uv run pytest tests/unit/events/ -v
+	uv run pytest tests/unit/events/ -v --timeout=30 -x
 
 # Run BDD feature tests
 test-bdd:
-	uv run pytest tests/features/ -v
+	uv run pytest tests/features/ -v --timeout=30 -x
 
 # Run integration tests only
 test-integration:
-	uv run pytest tests/integration/
+	uv run pytest tests/integration/ --timeout=30 -x
 
 # Run linting
 lint:

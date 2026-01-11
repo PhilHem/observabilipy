@@ -505,7 +505,7 @@ class TestDjangoInstrumentView:
         request.method = "GET"
         request.path = "/test"
 
-        with pytest.raises(ValueError):
+        with pytest.raises(ValueError, match="test error"):
             await my_view(request)
 
         samples = [s async for s in metrics_storage.read()]

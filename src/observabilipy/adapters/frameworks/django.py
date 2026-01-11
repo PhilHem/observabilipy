@@ -121,8 +121,7 @@ def instrument_view(
             start = time.perf_counter()
 
             try:
-                response = await view_func(request, *args, **kwargs)
-                return response
+                return await view_func(request, *args, **kwargs)
             except BaseException:
                 status = "error"
                 raise

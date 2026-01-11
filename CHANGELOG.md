@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.0] - 2026-01-11
+
+### Added
+- `MappingRegistry.merge(other)` method for composing multiple registries
+- `MappingRegistry.__len__()` to get count of registered mappings via `len(registry)`
+
 ## [1.2.0] - 2026-01-09
 
 ### Added

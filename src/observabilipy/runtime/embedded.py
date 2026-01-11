@@ -212,9 +212,8 @@ class EmbeddedRuntime:
         """Collect all entries from storage."""
         # Both LogStoragePort and MetricsStoragePort have read() method
         if is_logs:
-            return cast(list[LogEntry], [e async for e in storage.read()])
-        else:
-            return cast(list[MetricSample], [s async for s in storage.read()])
+            return cast("list[LogEntry]", [e async for e in storage.read()])
+        return cast("list[MetricSample]", [s async for s in storage.read()])
 
     async def _cleanup_loop(self) -> None:
         """Background loop that periodically runs cleanup."""

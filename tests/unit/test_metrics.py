@@ -175,7 +175,7 @@ class TestHistogram:
         """Histogram uses default Prometheus buckets when none specified."""
         samples = histogram("request_duration", value=0.25)
         bucket_samples = [s for s in samples if "_bucket" in s.name]
-        # Default: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10] + Inf
+        # 11 default buckets + Inf = 12 total
         assert len(bucket_samples) == 12
 
     @pytest.mark.core

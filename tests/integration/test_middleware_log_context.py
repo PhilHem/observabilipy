@@ -344,8 +344,7 @@ class TestFastAPITestClientIntegration:
                 req_id = f"req-{request_counter[0]}"
                 with log_context(request_id=req_id):
                     logger.info(f"Processing {req_id}")
-                    response = await call_next(request)
-                    return response
+                    return await call_next(request)
 
         app = FastAPI()
         app.add_middleware(CountingMiddleware)

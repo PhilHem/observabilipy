@@ -121,27 +121,26 @@ def instrument(
                 return InstrumentResult(value=value, samples=samples, error=error)
 
             return cast(
-                Callable[P, Coroutine[Any, Any, InstrumentResult]], async_wrapper
+                "Callable[P, Coroutine[Any, Any, InstrumentResult]]", async_wrapper
             )
-        else:
 
-            @wraps(func)
-            def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> InstrumentResult:
-                value: Any = None
-                error: BaseException | None = None
-                status = "success"
+        @wraps(func)
+        def sync_wrapper(*args: P.args, **kwargs: P.kwargs) -> InstrumentResult:
+            value: Any = None
+            error: BaseException | None = None
+            status = "success"
 
-                start = time.perf_counter()
-                try:
-                    value = func(*args, **kwargs)
-                except BaseException as e:
-                    error = e
-                    status = "error"
-                elapsed = time.perf_counter() - start
+            start = time.perf_counter()
+            try:
+                value = func(*args, **kwargs)
+            except BaseException as e:
+                error = e
+                status = "error"
+            elapsed = time.perf_counter() - start
 
-                samples = _build_samples(name, base_labels, status, elapsed, buckets)
-                return InstrumentResult(value=value, samples=samples, error=error)
+            samples = _build_samples(name, base_labels, status, elapsed, buckets)
+            return InstrumentResult(value=value, samples=samples, error=error)
 
-            return cast(Callable[P, InstrumentResult], sync_wrapper)
+        return cast("Callable[P, InstrumentResult]", sync_wrapper)
 
     return decorator

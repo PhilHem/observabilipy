@@ -131,3 +131,105 @@ class TestMappingRegistryPropertyBased:
         result = registry.lookup(event_class)
 
         assert result is mapper
+
+
+class TestMappingRegistryLen:
+    """Tests for MappingRegistry.__len__()."""
+
+    @pytest.mark.tra("Events.MappingRegistry.Len")
+    @pytest.mark.tier(0)
+    def test_len_returns_mapping_count(self) -> None:
+        """len() returns the number of registered mappings."""
+        registry = MappingRegistry()
+
+        def mapper(event: object) -> list[LogEntry]:
+            return []
+
+        registry.register("Event1", mapper)
+        registry.register("Event2", mapper)
+        registry.register("Event3", mapper)
+
+        assert len(registry) == 3
+
+    @pytest.mark.tra("Events.MappingRegistry.Len.Empty")
+    @pytest.mark.tier(0)
+    def test_len_empty_registry(self) -> None:
+        """len() returns 0 for empty registry."""
+        registry = MappingRegistry()
+
+        assert len(registry) == 0
+
+
+class TestMappingRegistryMerge:
+    """Tests for MappingRegistry.merge()."""
+
+    @pytest.mark.tra("Events.MappingRegistry.Merge")
+    @pytest.mark.tier(0)
+    def test_merge_copies_all_mappings(self) -> None:
+        """merge() copies all mappings from source registry."""
+        registry = MappingRegistry()
+        other = MappingRegistry()
+
+        def mapper1(event: object) -> list[LogEntry]:
+            return []
+
+        def mapper2(event: object) -> list[LogEntry]:
+            return []
+
+        other.register("Event1", mapper1)
+        other.register("Event2", mapper2)
+
+        registry.merge(other)
+
+        assert registry.lookup("Event1") is mapper1
+        assert registry.lookup("Event2") is mapper2
+
+    @pytest.mark.tra("Events.MappingRegistry.Merge.Duplicate")
+    @pytest.mark.tier(0)
+    def test_merge_raises_on_duplicate(self) -> None:
+        """merge() raises ValueError when event names conflict."""
+        registry = MappingRegistry()
+        other = MappingRegistry()
+
+        def mapper(event: object) -> list[LogEntry]:
+            return []
+
+        registry.register("ConflictEvent", mapper)
+        other.register("ConflictEvent", mapper)
+
+        with pytest.raises(ValueError, match="duplicate event names"):
+            registry.merge(other)
+
+    @pytest.mark.tra("Events.MappingRegistry.Merge.FromEmpty")
+    @pytest.mark.tier(0)
+    def test_merge_from_empty_registry(self) -> None:
+        """merge() from empty registry is a no-op."""
+        registry = MappingRegistry()
+        other = MappingRegistry()
+
+        def mapper(event: object) -> list[LogEntry]:
+            return []
+
+        registry.register("ExistingEvent", mapper)
+
+        registry.merge(other)
+
+        assert len(registry) == 1
+        assert registry.lookup("ExistingEvent") is mapper
+
+    @pytest.mark.tra("Events.MappingRegistry.Merge.IntoEmpty")
+    @pytest.mark.tier(0)
+    def test_merge_into_empty_registry(self) -> None:
+        """merge() into empty registry copies all mappings."""
+        registry = MappingRegistry()
+        other = MappingRegistry()
+
+        def mapper(event: object) -> list[LogEntry]:
+            return []
+
+        other.register("Event1", mapper)
+        other.register("Event2", mapper)
+
+        registry.merge(other)
+
+        assert len(registry) == 2

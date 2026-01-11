@@ -50,13 +50,13 @@ def create_wsgi_app(
             body = encode_ndjson_sync(samples)
             start_response("200 OK", headers)
             return [body.encode()]
-        elif path == "/metrics/prometheus":
+        if path == "/metrics/prometheus":
             headers = [("Content-Type", "text/plain; version=0.0.4; charset=utf-8")]
             samples = asyncio.run(_collect_async(metrics_storage.read()))
             body = encode_current_sync(samples)
             start_response("200 OK", headers)
             return [body.encode()]
-        elif path == "/logs":
+        if path == "/logs":
             headers = [("Content-Type", "application/x-ndjson")]
             query_string = environ.get("QUERY_STRING", "")
             params = parse_qs(query_string)
@@ -68,8 +68,7 @@ def create_wsgi_app(
             body = encode_logs_sync(entries)
             start_response("200 OK", headers)
             return [body.encode()]
-        else:
-            start_response("404 Not Found", [])
-            return [b"Not Found"]
+        start_response("404 Not Found", [])
+        return [b"Not Found"]
 
     return app

@@ -113,3 +113,42 @@ class MappingRegistry:
                 errors.append(f"'{event_class}' mapper raised exception: {e}")
 
         return errors
+
+    def __len__(self) -> int:
+        """Return the number of registered mappings.
+
+        Example:
+            >>> registry = MappingRegistry()
+            >>> len(registry)
+            0
+            >>> registry.register("Event1", lambda e: [])
+            >>> len(registry)
+            1
+        """
+        return len(self._mappings)
+
+    def merge(self, other: "MappingRegistry") -> None:
+        """Merge all mappings from another registry into this one.
+
+        Copies all mappings from the source registry. The source registry
+        is not modified.
+
+        Args:
+            other: Registry to copy mappings from.
+
+        Raises:
+            ValueError: If any event names conflict with existing mappings.
+
+        Example:
+            >>> registry1 = MappingRegistry()
+            >>> registry1.register("Event1", lambda e: [])
+            >>> registry2 = MappingRegistry()
+            >>> registry2.register("Event2", lambda e: [])
+            >>> registry1.merge(registry2)
+            >>> len(registry1)
+            2
+        """
+        conflicts = set(self._mappings.keys()) & set(other._mappings.keys())
+        if conflicts:
+            raise ValueError(f"duplicate event names: {', '.join(sorted(conflicts))}")
+        self._mappings.update(other._mappings)
