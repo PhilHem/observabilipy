@@ -13,6 +13,9 @@ import logging
 
 import pytest
 
+# All tests in this file are integration tests
+pytestmark = pytest.mark.tier(1)
+
 from observabilipy import (
     ObservabilipyHandler,
     get_log_context,
@@ -32,6 +35,7 @@ async def _collect_entries(storage: InMemoryLogStorage) -> list[LogEntry]:
     return [e async for e in storage.read()]
 
 
+@pytest.mark.tra("Adapters.LogContext.Middleware")
 @pytest.mark.fastapi
 class TestMiddlewareLogContextPattern:
     """Tests for log_context integration with middleware-like patterns.
@@ -184,6 +188,7 @@ class TestMiddlewareLogContextPattern:
         assert "request_id" not in entries[2].attributes
 
 
+@pytest.mark.tra("Adapters.LogContext.AsyncIsolation")
 @pytest.mark.fastapi
 class TestAsyncContextIsolation:
     """Tests for context isolation between concurrent async tasks.
@@ -242,6 +247,7 @@ class TestAsyncContextIsolation:
         assert captured_contexts[0]["handler"] == "outer"
 
 
+@pytest.mark.tra("Adapters.LogContext.TestClient")
 @pytest.mark.fastapi
 class TestFastAPITestClientIntegration:
     """Tests proving ObservabilipyHandler works with FastAPI TestClient.

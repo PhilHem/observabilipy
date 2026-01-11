@@ -5,6 +5,9 @@ import sys
 
 import pytest
 
+# All tests in this file are integration tests
+pytestmark = pytest.mark.tier(1)
+
 django = pytest.importorskip("django", reason="django not installed")
 from django.conf import settings
 from django.test import AsyncClient
@@ -67,6 +70,7 @@ def metrics_storage() -> InMemoryMetricsStorage:
     return _metrics_storage
 
 
+@pytest.mark.tra("Adapters.Django.Metrics")
 class TestDjangoMetricsEndpoint:
     """Tests for the /metrics endpoint."""
 
@@ -137,6 +141,7 @@ class TestDjangoMetricsEndpoint:
         assert parsed["value"] == 2.0
 
 
+@pytest.mark.tra("Adapters.Django.MetricsPrometheus")
 class TestDjangoMetricsPrometheusEndpoint:
     """Tests for the /metrics/prometheus endpoint."""
 
@@ -207,6 +212,7 @@ class TestDjangoMetricsPrometheusEndpoint:
         assert "5.0" in lines[0]
 
 
+@pytest.mark.tra("Adapters.Django.Logs")
 class TestDjangoLogsEndpoint:
     """Tests for the /logs endpoint."""
 
@@ -362,6 +368,7 @@ class TestDjangoLogsEndpoint:
         assert response.content.decode() == ""
 
 
+@pytest.mark.tra("Adapters.Django.InstrumentView")
 class TestDjangoInstrumentView:
     """Tests for instrument_view decorator."""
 
