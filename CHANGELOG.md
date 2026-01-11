@@ -8,6 +8,9 @@ All notable changes to this project will be documented in this file.
 - `MappingRegistry.merge(other)` method for composing multiple registries
 - `MappingRegistry.__len__()` to get count of registered mappings via `len(registry)`
 
+### Changed
+- WSGI adapter now creates event loop once at factory time (not per-request)
+
 ## [1.2.0] - 2026-01-09
 
 ### Added
