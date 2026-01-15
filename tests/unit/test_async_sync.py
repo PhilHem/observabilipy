@@ -5,7 +5,11 @@ from typing import Any
 
 import pytest
 
-pytestmark = [pytest.mark.unit, pytest.mark.tier(1)]
+pytestmark = [
+    pytest.mark.unit,
+    pytest.mark.tier(1),
+    pytest.mark.tra("Adapter.AsyncSync.SyncBridge"),
+]
 
 
 async def async_add(a: int, b: int) -> int:
