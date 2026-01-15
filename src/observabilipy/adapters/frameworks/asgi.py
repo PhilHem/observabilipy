@@ -20,6 +20,49 @@ Send = Callable[[dict[str, Any]], Coroutine[Any, Any, None]]
 ASGIApp = Callable[[Scope, Receive, Send], Coroutine[Any, Any, None]]
 
 
+# @tra: Adapter.ASGI.Middleware.Init
+# @tra: Adapter.ASGI.Middleware.Interface
+# @tra: Adapter.ASGI.Middleware.Passthrough
+class ASGIObservabilityMiddleware:
+    """ASGI middleware that wraps applications to capture observability.
+
+    This middleware intercepts ASGI requests to automatically log request
+    details and capture timing metrics.
+    """
+
+    def __init__(
+        self,
+        app: ASGIApp,
+        log_storage: LogStoragePort,
+        metrics_storage: MetricsStoragePort,
+    ) -> None:
+        """Initialize the middleware with a wrapped app and storage adapters.
+
+        Args:
+            app: The ASGI application to wrap.
+            log_storage: Storage adapter for logs.
+            metrics_storage: Storage adapter for metrics.
+        """
+        self.app = app
+        self.log_storage = log_storage
+        self.metrics_storage = metrics_storage
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        """ASGI callable interface that processes requests through the wrapped app.
+
+        For now, this simply passes through to the wrapped application.
+        Future enhancements will add request timing and logging.
+
+        Args:
+            scope: ASGI scope dictionary containing request metadata.
+            receive: ASGI receive callable for reading request body.
+            send: ASGI send callable for writing response.
+        """
+        # For now, just pass through to wrapped app
+        # Future: Add timing, logging, and metrics capture here
+        await self.app(scope, receive, send)
+
+
 def create_asgi_app(
     log_storage: LogStoragePort,
     metrics_storage: MetricsStoragePort,
