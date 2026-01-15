@@ -31,12 +31,14 @@ async def memory_log_storage() -> AsyncGenerator[SQLiteLogStorage]:
 class TestSQLiteLogStorage:
     """Tests for SQLiteLogStorage adapter."""
 
+    @pytest.mark.tra("Adapter.SQLiteStorage.ImplementsLogStoragePort")
     @pytest.mark.storage
     def test_implements_log_storage_port(self) -> None:
         """SQLiteLogStorage must satisfy LogStoragePort protocol."""
         storage = SQLiteLogStorage(":memory:")
         assert isinstance(storage, LogStoragePort)
 
+    @pytest.mark.tra("Adapter.SQLiteStorage.ImplementsLogStoragePort")
     @pytest.mark.storage
     async def test_memory_database_write_and_read(
         self, memory_log_storage: SQLiteLogStorage
@@ -48,6 +50,7 @@ class TestSQLiteLogStorage:
         assert len(result) == 1
         assert result[0].message == "test"
 
+    @pytest.mark.tra("Adapter.SQLiteStorage.ImplementsLogStoragePort")
     @pytest.mark.storage
     async def test_memory_database_multiple_operations(
         self, memory_log_storage: SQLiteLogStorage
@@ -60,6 +63,7 @@ class TestSQLiteLogStorage:
             await memory_log_storage.write(entry)
         assert await memory_log_storage.count() == 3
 
+    @pytest.mark.tra("Adapter.SQLiteStorage.ImplementsLogStoragePort")
     @pytest.mark.storage
     async def test_memory_database_close(
         self, memory_log_storage: SQLiteLogStorage
@@ -76,6 +80,7 @@ class TestSQLiteLogStorage:
         result = [e async for e in memory_log_storage.read()]
         assert len(result) == 1  # Only new entry, old DB was closed
 
+    @pytest.mark.tra("Adapter.SQLiteStorage.ImplementsLogStoragePort")
     @pytest.mark.storage
     async def test_write_and_read_single_entry(self, log_db_path: str) -> None:
         """Can write a log entry and read it back."""
@@ -425,9 +430,11 @@ class TestSQLiteLogPersistence:
         assert result == [entry]
 
 
+@pytest.mark.tra("Adapter.SQLiteStorage.ImplementsLogStoragePort")
 class TestSQLiteLogStorageCorruptedJSON:
     """Tests for handling corrupted JSON in log storage."""
 
+    @pytest.mark.tra("Adapter.SQLiteStorage.ImplementsLogStoragePort")
     @pytest.mark.storage
     async def test_read_handles_corrupted_attributes_json(self, tmp_path: Path) -> None:
         """Read falls back to empty dict when attributes JSON is corrupted."""
@@ -460,6 +467,7 @@ class TestSQLiteLogStorageCorruptedJSON:
         assert result[1].attributes == {}  # Corrupted entry falls back to empty dict
         assert result[1].message == "corrupted"
 
+    @pytest.mark.tra("Adapter.SQLiteStorage.ImplementsLogStoragePort")
     @pytest.mark.storage
     def test_read_sync_handles_corrupted_attributes_json(self, tmp_path: Path) -> None:
         """Sync read falls back to empty dict when attributes JSON is corrupted."""

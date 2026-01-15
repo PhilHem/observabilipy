@@ -301,9 +301,11 @@ class TestSQLiteMetricsPersistence:
         assert result == [sample]
 
 
+@pytest.mark.tra("Adapter.SQLiteStorage.ImplementsMetricsStoragePort")
 class TestSQLiteMetricsStorageCorruptedJSON:
     """Tests for handling corrupted JSON in metrics storage."""
 
+    @pytest.mark.tra("Adapter.SQLiteStorage.ImplementsMetricsStoragePort")
     @pytest.mark.storage
     async def test_read_handles_corrupted_labels_json(self, tmp_path: Path) -> None:
         """Read falls back to empty dict when labels JSON is corrupted."""
@@ -338,6 +340,7 @@ class TestSQLiteMetricsStorageCorruptedJSON:
         assert result[1].labels == {}  # Corrupted sample falls back to empty dict
         assert result[1].name == "corrupted_metric"
 
+    @pytest.mark.tra("Adapter.SQLiteStorage.ImplementsMetricsStoragePort")
     @pytest.mark.storage
     def test_read_sync_handles_corrupted_labels_json(self, tmp_path: Path) -> None:
         """Sync read falls back to empty dict when labels JSON is corrupted."""
