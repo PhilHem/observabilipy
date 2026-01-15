@@ -9,6 +9,9 @@ import httpx
 import pytest
 from fastapi import FastAPI
 
+# All tests in this module are E2E adapter tests (tier 3)
+pytestmark = [pytest.mark.tra("adapter"), pytest.mark.tier(3)]
+
 from observabilipy.adapters.frameworks.fastapi import create_observability_router
 from observabilipy.adapters.storage import SQLiteLogStorage, SQLiteMetricsStorage
 from observabilipy.core.models import LogEntry, MetricSample
