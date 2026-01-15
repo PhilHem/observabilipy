@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from observabilipy.adapters.storage.sqlite import SQLiteLogStorage, SQLiteMetricsStorage
+from observabilipy.adapters.storage import SQLiteLogStorage, SQLiteMetricsStorage
 from observabilipy.core.models import LogEntry, MetricSample
 
 # All tests in this module are tier 2 (integration tests with file I/O)

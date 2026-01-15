@@ -17,7 +17,7 @@ import time
 from fastapi import FastAPI
 
 from observabilipy.adapters.frameworks.fastapi import create_observability_router
-from observabilipy.adapters.storage.sqlite import SQLiteLogStorage, SQLiteMetricsStorage
+from observabilipy.adapters.storage import SQLiteLogStorage, SQLiteMetricsStorage
 from observabilipy.core.models import LogEntry, MetricSample
 
 # SQLite storage (persists to files in working directory)

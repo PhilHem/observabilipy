@@ -17,11 +17,11 @@ try:
 except ImportError:
     HAS_FASTAPI = False
 
+from observabilipy.adapters.storage import SQLiteLogStorage, SQLiteMetricsStorage
 from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
 )
-from observabilipy.adapters.storage.sqlite import SQLiteLogStorage, SQLiteMetricsStorage
 from observabilipy.core.models import RetentionPolicy
 
 

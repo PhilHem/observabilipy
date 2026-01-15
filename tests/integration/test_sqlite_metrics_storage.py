@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from observabilipy.adapters.storage.sqlite import SQLiteMetricsStorage
+from observabilipy.adapters.storage import SQLiteMetricsStorage
 from observabilipy.core.models import MetricSample
 from observabilipy.core.ports import MetricsStoragePort
 

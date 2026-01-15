@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from observabilipy.adapters.storage.sqlite import SQLiteLogStorage
+from observabilipy.adapters.storage import SQLiteLogStorage
 from observabilipy.core.models import LogEntry
 from observabilipy.core.ports import LogStoragePort
 
