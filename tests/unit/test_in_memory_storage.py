@@ -487,3 +487,57 @@ class TestInMemoryMetricsStorage:
 
         assert results[0].timestamp == 100.0
         assert results[1].timestamp == 300.0
+
+
+class TestInMemoryLogStorageSync:
+    """Tests for synchronous write methods on InMemoryLogStorage."""
+
+    @pytest.mark.storage
+    def test_write_sync_writes_single_entry(self) -> None:
+        """write_sync() appends a single entry synchronously."""
+        storage = InMemoryLogStorage()
+        entry = LogEntry(timestamp=1000.0, level="INFO", message="test")
+
+        storage.write_sync(entry)
+
+        assert storage._entries == [entry]
+
+    @pytest.mark.storage
+    def test_write_sync_batch_writes_multiple_entries(self) -> None:
+        """write_sync_batch() extends entries with multiple items."""
+        storage = InMemoryLogStorage()
+        entries = [
+            LogEntry(timestamp=1000.0, level="INFO", message="first"),
+            LogEntry(timestamp=1001.0, level="DEBUG", message="second"),
+        ]
+
+        storage.write_sync_batch(entries)
+
+        assert storage._entries == entries
+
+
+class TestInMemoryMetricsStorageSync:
+    """Tests for synchronous write methods on InMemoryMetricsStorage."""
+
+    @pytest.mark.storage
+    def test_write_sync_writes_single_sample(self) -> None:
+        """write_sync() appends a single sample synchronously."""
+        storage = InMemoryMetricsStorage()
+        sample = MetricSample(name="test_metric", timestamp=1000.0, value=42.0)
+
+        storage.write_sync(sample)
+
+        assert storage._samples == [sample]
+
+    @pytest.mark.storage
+    def test_write_sync_batch_writes_multiple_samples(self) -> None:
+        """write_sync_batch() extends samples with multiple items."""
+        storage = InMemoryMetricsStorage()
+        samples = [
+            MetricSample(name="metric_a", timestamp=1000.0, value=1.0),
+            MetricSample(name="metric_b", timestamp=1001.0, value=2.0),
+        ]
+
+        storage.write_sync_batch(samples)
+
+        assert storage._samples == samples

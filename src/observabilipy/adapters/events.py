@@ -106,13 +106,13 @@ class EventObservability:
         schedules the write appropriately.
         """
         if self._sync:
-            # Synchronous write - directly append to storage lists
+            # Synchronous write - uses write_sync() method
             # Only works with InMemoryStorage (intended for testing)
             for output in outputs:
                 if isinstance(output, LogEntry):
-                    self._log_storage._entries.append(output)  # type: ignore[attr-defined]
+                    self._log_storage.write_sync(output)  # type: ignore[attr-defined]
                 elif isinstance(output, MetricSample):
-                    self._metrics_storage._samples.append(output)  # type: ignore[attr-defined]
+                    self._metrics_storage.write_sync(output)  # type: ignore[attr-defined]
             return
 
         try:

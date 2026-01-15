@@ -30,6 +30,14 @@ class InMemoryLogStorage:
         """Write a log entry to storage."""
         self._entries.append(entry)
 
+    def write_sync(self, entry: LogEntry) -> None:
+        """Synchronous write for testing contexts."""
+        self._entries.append(entry)
+
+    def write_sync_batch(self, entries: list[LogEntry]) -> None:
+        """Synchronous batch write for testing contexts."""
+        self._entries.extend(entries)
+
     async def read(
         self, since: float = 0, level: str | None = None
     ) -> AsyncIterable[LogEntry]:
@@ -95,6 +103,14 @@ class InMemoryMetricsStorage:
     async def write(self, sample: MetricSample) -> None:
         """Write a metric sample to storage."""
         self._samples.append(sample)
+
+    def write_sync(self, sample: MetricSample) -> None:
+        """Synchronous write for testing contexts."""
+        self._samples.append(sample)
+
+    def write_sync_batch(self, samples: list[MetricSample]) -> None:
+        """Synchronous batch write for testing contexts."""
+        self._samples.extend(samples)
 
     async def read(self, since: float = 0) -> AsyncIterable[MetricSample]:
         """Read metric samples since the given timestamp.
