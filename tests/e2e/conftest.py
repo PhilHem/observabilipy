@@ -1,7 +1,6 @@
 """Shared fixtures for E2E tests."""
 
 from collections.abc import AsyncGenerator
-from pathlib import Path
 
 import pytest
 
@@ -38,27 +37,15 @@ def metrics_storage() -> InMemoryMetricsStorage:
 
 
 @pytest.fixture
-def sqlite_log_db_path(tmp_path: Path) -> str:
-    """Temporary path for SQLite log database."""
-    return str(tmp_path / "logs.db")
-
-
-@pytest.fixture
-def sqlite_metrics_db_path(tmp_path: Path) -> str:
-    """Temporary path for SQLite metrics database."""
-    return str(tmp_path / "metrics.db")
-
-
-@pytest.fixture
-def sqlite_log_storage(sqlite_log_db_path: str) -> SQLiteLogStorage:
+def sqlite_log_storage(log_db_path: str) -> SQLiteLogStorage:
     """SQLite log storage with temp database."""
-    return SQLiteLogStorage(sqlite_log_db_path)
+    return SQLiteLogStorage(log_db_path)
 
 
 @pytest.fixture
-def sqlite_metrics_storage(sqlite_metrics_db_path: str) -> SQLiteMetricsStorage:
+def sqlite_metrics_storage(metrics_db_path: str) -> SQLiteMetricsStorage:
     """SQLite metrics storage with temp database."""
-    return SQLiteMetricsStorage(sqlite_metrics_db_path)
+    return SQLiteMetricsStorage(metrics_db_path)
 
 
 # FastAPI-dependent fixtures - only defined when fastapi is available

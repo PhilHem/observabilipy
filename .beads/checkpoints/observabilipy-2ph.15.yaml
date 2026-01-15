@@ -1,0 +1,39 @@
+task_id: observabilipy-2ph.15
+phase: complete
+started_at: "2025-01-15T15:00:00Z"
+updated_at: "2025-01-15T15:15:00Z"
+
+plan:
+  files_to_modify:
+    - src/observabilipy/adapters/storage/sqlite_logs.py
+    - src/observabilipy/adapters/storage/sqlite_metrics.py
+    - src/observabilipy/adapters/storage/sqlite_base.py
+  files_to_read:
+    - tests/integration/test_sqlite_log_storage.py
+    - tests/integration/test_sqlite_metrics_storage.py
+  test_cases: []
+  pbt_decision: "SKIP: Pure refactor task"
+  pct_decision: "SKIP: No new concurrency"
+  tra_compliance: "na - refactor only"
+
+progress:
+  tests_written: []
+  implementation_written:
+    - path: src/observabilipy/adapters/storage/sqlite_base.py
+      complete: true
+      last_item: "SQLiteStorageGeneric"
+    - path: src/observabilipy/adapters/storage/sqlite_logs.py
+      complete: true
+      last_item: "SQLiteLogStorage refactored"
+    - path: src/observabilipy/adapters/storage/sqlite_metrics.py
+      complete: true
+      last_item: "SQLiteMetricsStorage refactored"
+
+verification:
+  tests_run: true
+  tests_passed: true
+  mypy_run: true
+  mypy_passed: true
+
+errors: []
+resumed_from: null

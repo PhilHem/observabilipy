@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/examples/dashboard_example.py
+# hypothesis_version: 6.150.0
+
+[100, 600, 1000, 5000, '/', '/api/logs', 'attributes', 'core', 'cpu_count', 'dashboard', 'level', 'message', 'retention_seconds', 'system_cpu_percent', 'system_swap_percent', 'timestamp']

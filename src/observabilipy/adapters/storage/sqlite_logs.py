@@ -1,10 +1,14 @@
 """SQLite storage adapter for logs."""
 
 import json
+import sqlite3
 from collections.abc import AsyncIterable
+from typing import Any
+
+import aiosqlite
 
 from observabilipy.adapters.storage.sqlite_base import (
-    SQLiteStorageBase,
+    SQLiteStorageGeneric,
     _safe_json_loads,
 )
 from observabilipy.core.models import LogEntry
@@ -57,7 +61,7 @@ SELECT COUNT(*) FROM logs WHERE level = ?
 
 
 # @tra: Adapter.SQLiteStorage.ImplementsLogStoragePort
-class SQLiteLogStorage(SQLiteStorageBase):
+class SQLiteLogStorage(SQLiteStorageGeneric):
     """SQLite implementation of LogStoragePort.
 
     Stores log entries in a SQLite database using aiosqlite for
@@ -72,23 +76,38 @@ class SQLiteLogStorage(SQLiteStorageBase):
     For :memory: databases, sync and async have separate in-memory DBs.
     """
 
+    _table_name = "logs"
+    _insert_query = _INSERT_LOG
+    _select_query = _SELECT_LOGS
+    _count_query = _COUNT_LOGS
+    _delete_before_query = _DELETE_LOGS_BEFORE
+    _clear_query = "DELETE FROM logs"
+
     def __init__(self, db_path: str) -> None:
         super().__init__(db_path, _LOGS_SCHEMA)
+
+    def _to_row(self, item: LogEntry) -> tuple[Any, ...]:
+        """Convert LogEntry to database row."""
+        return (
+            item.timestamp,
+            item.level,
+            item.message,
+            json.dumps(item.attributes),
+        )
+
+    def _from_row(self, row: sqlite3.Row | aiosqlite.Row) -> LogEntry:
+        """Convert database row to LogEntry."""
+        return LogEntry(
+            timestamp=row[0],
+            level=row[1],
+            message=row[2],
+            attributes=_safe_json_loads(row[3]),
+        )
 
     # @tra: Adapter.SQLiteStorage.PersistsAcrossInstances
     async def write(self, entry: LogEntry) -> None:
         """Write a log entry to storage."""
-        async with self.async_connection() as db:
-            await db.execute(
-                _INSERT_LOG,
-                (
-                    entry.timestamp,
-                    entry.level,
-                    entry.message,
-                    json.dumps(entry.attributes),
-                ),
-            )
-            await db.commit()
+        await self._write(entry)
 
     async def read(
         self, since: float = 0, level: str | None = None
@@ -98,36 +117,25 @@ class SQLiteLogStorage(SQLiteStorageBase):
         If level is provided, only entries with matching level (case-insensitive)
         are returned.
         """
-        async with self.async_connection() as db:
-            if level is not None:
-                query = _SELECT_LOGS_BY_LEVEL
-                params: tuple[float] | tuple[float, str] = (since, level)
-            else:
-                query = _SELECT_LOGS
-                params = (since,)
-            async with db.execute(query, params) as cursor:
-                async for row in cursor:
-                    yield LogEntry(
-                        timestamp=row[0],
-                        level=row[1],
-                        message=row[2],
-                        attributes=_safe_json_loads(row[3]),
-                    )
+        if level is not None:
+            # Use level-specific query
+            async with self.async_connection() as db:
+                params: tuple[float, str] = (since, level)
+                async with db.execute(_SELECT_LOGS_BY_LEVEL, params) as cursor:
+                    async for row in cursor:
+                        yield self._from_row(row)
+        else:
+            # Use base class implementation
+            async for entry in self._read(since):
+                yield entry
 
     async def count(self) -> int:
         """Return total number of log entries in storage."""
-        async with self.async_connection() as db:
-            async with db.execute(_COUNT_LOGS) as cursor:
-                row = await cursor.fetchone()
-                return row[0] if row else 0
+        return await self._count()
 
     async def delete_before(self, timestamp: float) -> int:
         """Delete log entries with timestamp < given value."""
-        async with self.async_connection() as db:
-            cursor = await db.execute(_DELETE_LOGS_BEFORE, (timestamp,))
-            deleted = cursor.rowcount
-            await db.commit()
-            return deleted
+        return await self._delete_before(timestamp)
 
     async def delete_by_level_before(self, level: str, timestamp: float) -> int:
         """Delete log entries matching level with timestamp < given value."""
@@ -148,48 +156,23 @@ class SQLiteLogStorage(SQLiteStorageBase):
 
     def write_sync(self, entry: LogEntry) -> None:
         """Synchronous write for non-async contexts (testing, WSGI)."""
-        with self.sync_connection() as conn:
-            conn.execute(
-                _INSERT_LOG,
-                (
-                    entry.timestamp,
-                    entry.level,
-                    entry.message,
-                    json.dumps(entry.attributes),
-                ),
-            )
-            conn.commit()
+        self._write_sync(entry)
 
     def read_sync(self, since: float = 0, level: str | None = None) -> list[LogEntry]:
         """Synchronous read for non-async contexts (testing, WSGI)."""
-        with self.sync_connection() as conn:
-            if level is not None:
-                query = _SELECT_LOGS_BY_LEVEL
-                params: tuple[float] | tuple[float, str] = (since, level)
-            else:
-                query = _SELECT_LOGS
-                params = (since,)
-            cursor = conn.execute(query, params)
-            entries = []
-            for row in cursor:
-                entries.append(
-                    LogEntry(
-                        timestamp=row[0],
-                        level=row[1],
-                        message=row[2],
-                        attributes=_safe_json_loads(row[3]),
-                    )
-                )
-            return entries
+        if level is not None:
+            # Use level-specific query
+            with self.sync_connection() as conn:
+                params: tuple[float, str] = (since, level)
+                cursor = conn.execute(_SELECT_LOGS_BY_LEVEL, params)
+                return [self._from_row(row) for row in cursor]
+        else:
+            return self._read_sync(since)
 
     async def clear(self) -> None:
         """Clear all entries from storage."""
-        async with self.async_connection() as db:
-            await db.execute("DELETE FROM logs")
-            await db.commit()
+        await self._clear()
 
     def clear_sync(self) -> None:
         """Synchronous clear for non-async contexts (testing, WSGI)."""
-        with self.sync_connection() as conn:
-            conn.execute("DELETE FROM logs")
-            conn.commit()
+        self._clear_sync()

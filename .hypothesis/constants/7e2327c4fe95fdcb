@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/examples/wsgi_example.py
+# hypothesis_version: 6.150.0
+
+[1.0, 8000, '0.0.0.0', '1.0.0', 'Application started', 'INFO', '__main__', 'app_info', 'version']

@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/src/observabilipy/adapters/logging.py
+# hypothesis_version: 6.150.0
+
+[5.0, 'args', 'asctime', 'created', 'exc_info', 'exc_message', 'exc_text', 'exc_traceback', 'exc_type', 'filename', 'funcName', 'levelname', 'levelno', 'lineno', 'message', 'module', 'msecs', 'msg', 'name', 'pathname', 'process', 'processName', 'relativeCreated', 'stack_info', 'taskName', 'thread', 'threadName']

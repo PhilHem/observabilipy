@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/examples/minimal_example.py
+# hypothesis_version: 6.150.0
+
+[0.01, 0.5, 1.0, 100, 500, '/api/orders', '/api/products', '/api/users', '/health', '200', '404', '500', 'DEBUG', 'DELETE', 'ERROR', 'GET', 'INFO', 'POST', 'PUT', 'WARN', 'api', 'http_requests_total', 'method', 'path', 'process_cpu_percent', 'process_memory_mb', 'request_id', 'service', 'status']

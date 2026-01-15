@@ -1,6 +1,5 @@
 """Tests for SQLite metrics storage adapter."""
 
-from collections.abc import AsyncGenerator
 from pathlib import Path
 
 import pytest
@@ -11,20 +10,6 @@ from observabilipy.core.ports import MetricsStoragePort
 
 # All tests in this module are tier 2 (integration tests with file I/O)
 pytestmark = pytest.mark.tier(2)
-
-
-@pytest.fixture
-def metrics_db_path(tmp_path: Path) -> str:
-    """Provide a temporary database path for metrics storage tests."""
-    return str(tmp_path / "metrics.db")
-
-
-@pytest.fixture
-async def memory_metrics_storage() -> AsyncGenerator[SQLiteMetricsStorage]:
-    """In-memory metrics storage with proper cleanup."""
-    storage = SQLiteMetricsStorage(":memory:")
-    yield storage
-    await storage.close()
 
 
 @pytest.mark.tra("Adapter.SQLiteStorage.ImplementsMetricsStoragePort")

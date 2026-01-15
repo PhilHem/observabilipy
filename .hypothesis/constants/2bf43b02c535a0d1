@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/src/observabilipy/adapters/frameworks/asgi.py
+# hypothesis_version: 6.150.0
+
+[b'Not Found', b'application/x-ndjson', b'content-type', b'text/plain; version=0.0.4; charset=utf-8', 200, 404, '/logs', '/metrics', '/metrics/prometheus', '0', 'body', 'headers', 'http', 'http.response.body', 'http.response.start', 'level', 'path', 'query_string', 'since', 'status', 'type']

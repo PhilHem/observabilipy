@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/src/observabilipy/adapters/frameworks/fastapi.py
+# hypothesis_version: 6.150.0
+
+['/logs', '/metrics', '/metrics/prometheus', 'application/x-ndjson', 'error', 'status', 'success']

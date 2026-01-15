@@ -152,3 +152,91 @@ class SQLiteStorageBase:
         finally:
             if self._db_path != ":memory:":
                 conn.close()
+
+
+class SQLiteStorageGeneric(SQLiteStorageBase):
+    """Generic SQLite storage with parameterized queries.
+
+    Provides common CRUD operations for domain models. Subclasses configure
+    schema, queries, table name, and row mapping functions.
+
+    Type Parameters:
+        T: The domain model type (e.g., LogEntry, MetricSample)
+    """
+
+    # Subclasses must define these class attributes
+    _table_name: str
+    _insert_query: str
+    _select_query: str
+    _count_query: str
+    _delete_before_query: str
+    _clear_query: str
+
+    def _to_row(self, item: Any) -> tuple[Any, ...]:
+        """Convert domain model to database row tuple.
+
+        Must be overridden by subclasses.
+        """
+        raise NotImplementedError
+
+    def _from_row(self, row: sqlite3.Row | aiosqlite.Row) -> Any:
+        """Convert database row to domain model.
+
+        Must be overridden by subclasses. Row can be either sqlite3.Row (sync)
+        or aiosqlite.Row (async) - both support index-based access.
+        """
+        raise NotImplementedError
+
+    async def _write(self, item: Any) -> None:
+        """Write an item to storage."""
+        async with self.async_connection() as db:
+            await db.execute(self._insert_query, self._to_row(item))
+            await db.commit()
+
+    async def _read(self, since: float = 0) -> Any:
+        """Read items since the given timestamp."""
+        async with self.async_connection() as db:
+            async with db.execute(self._select_query, (since,)) as cursor:
+                async for row in cursor:
+                    yield self._from_row(row)
+
+    async def _count(self) -> int:
+        """Return total number of items in storage."""
+        async with self.async_connection() as db:
+            async with db.execute(self._count_query) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else 0
+
+    async def _delete_before(self, timestamp: float) -> int:
+        """Delete items with timestamp < given value."""
+        async with self.async_connection() as db:
+            cursor = await db.execute(self._delete_before_query, (timestamp,))
+            deleted = cursor.rowcount
+            await db.commit()
+            return deleted
+
+    async def _clear(self) -> None:
+        """Clear all items from storage."""
+        async with self.async_connection() as db:
+            await db.execute(self._clear_query)
+            await db.commit()
+
+    # --- Sync methods ---
+
+    def _write_sync(self, item: Any) -> None:
+        """Synchronous write for non-async contexts."""
+        with self.sync_connection() as conn:
+            conn.execute(self._insert_query, self._to_row(item))
+            conn.commit()
+
+    def _read_sync(self, since: float = 0) -> list[Any]:
+        """Synchronous read for non-async contexts."""
+        with self.sync_connection() as conn:
+            cursor = conn.execute(self._select_query, (since,))
+            return [self._from_row(row) for row in cursor]
+
+    def _clear_sync(self) -> None:
+        """Synchronous clear for non-async contexts."""
+        with self.sync_connection() as conn:
+            conn.execute(self._clear_query)
+            conn.commit()

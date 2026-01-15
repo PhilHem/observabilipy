@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/examples/cgroups_example.py
+# hypothesis_version: 6.150.0
+
+[0.0, 100, 1000000, '/sys/fs/cgroup', 'INFO', 'WARN', 'cgroups v2 available', 'cpu.stat', 'max', 'memory.current', 'memory.max', 'path', 'usage_usec']

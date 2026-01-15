@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/examples/sqlite_example.py
+# hypothesis_version: 6.150.0
+
+[1.0, '/', 'GET', 'INFO', 'Root endpoint called', 'http_requests_total', 'logs.db', 'message', 'method', 'metrics.db', 'path']

@@ -1,0 +1,38 @@
+task_id: observabilipy-2ph.17
+phase: complete
+started_at: "2026-01-15T14:30:00Z"
+updated_at: "2026-01-15T14:30:00Z"
+plan:
+  files_to_modify:
+    - src/observabilipy/adapters/storage/async_sync.py
+    - src/observabilipy/adapters/storage/__init__.py
+  files_to_read:
+    - src/observabilipy/adapters/storage/__init__.py
+  test_cases:
+    - test_run_sync_executes_coroutine
+    - test_run_sync_returns_coroutine_result
+    - test_collect_async_iterable_returns_list
+    - test_collect_async_iterable_empty
+    - test_collect_async_iterable_preserves_order
+  pbt_decision: "SKIP: utility functions are straightforward wrappers"
+  pct_decision: "SKIP: no shared mutable state"
+  tra_compliance: "tier 1 unit tests"
+progress:
+  tests_written:
+    - path: tests/unit/test_async_sync.py
+      complete: true
+      functions: [test_run_sync_executes_coroutine, test_run_sync_returns_coroutine_result, test_run_sync_propagates_exceptions, test_collect_async_iterable_returns_list, test_collect_async_iterable_empty, test_collect_async_iterable_preserves_order, test_collect_async_iterable_handles_complex_types]
+  implementation_written:
+    - path: src/observabilipy/adapters/storage/async_sync.py
+      complete: true
+      last_item: "collect_async_iterable"
+    - path: src/observabilipy/adapters/storage/__init__.py
+      complete: true
+      last_item: "exports added"
+verification:
+  tests_run: true
+  tests_passed: true
+  mypy_run: true
+  mypy_passed: true
+errors: []
+resumed_from: null

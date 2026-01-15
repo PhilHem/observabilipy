@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/examples/demo_helpers.py
+# hypothesis_version: 6.150.0
+
+[1.0, '/', 'GET', 'INFO', 'Root endpoint called', 'http_requests_total', 'message', 'method', 'path']

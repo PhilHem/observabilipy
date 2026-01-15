@@ -1,6 +1,5 @@
 """Tests for SQLite log storage adapter."""
 
-from collections.abc import AsyncGenerator
 from pathlib import Path
 
 import pytest
@@ -11,20 +10,6 @@ from observabilipy.core.ports import LogStoragePort
 
 # All tests in this module are tier 2 (integration tests with file I/O)
 pytestmark = pytest.mark.tier(2)
-
-
-@pytest.fixture
-def log_db_path(tmp_path: Path) -> str:
-    """Provide a temporary database path for log storage tests."""
-    return str(tmp_path / "logs.db")
-
-
-@pytest.fixture
-async def memory_log_storage() -> AsyncGenerator[SQLiteLogStorage]:
-    """In-memory log storage with proper cleanup."""
-    storage = SQLiteLogStorage(":memory:")
-    yield storage
-    await storage.close()
 
 
 @pytest.mark.tra("Adapter.SQLiteStorage.ImplementsLogStoragePort")

@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/src/observabilipy/adapters/frameworks/wsgi.py
+# hypothesis_version: 6.150.0
+
+[b'Not Found', '/', '/logs', '/metrics', '/metrics/prometheus', '0', '200 OK', '404 Not Found', 'Content-Type', 'PATH_INFO', 'QUERY_STRING', 'application/x-ndjson', 'level', 'since']

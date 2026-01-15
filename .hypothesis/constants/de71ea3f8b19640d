@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/src/observabilipy/core/encoding/ndjson.py
+# hypothesis_version: 6.150.0
+
+['attributes', 'labels', 'level', 'message', 'name', 'timestamp', 'value']

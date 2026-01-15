@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/src/observabilipy/core/logs.py
+# hypothesis_version: 6.150.0
+
+['DEBUG', 'ERROR', 'INFO', 'StructuredLogger', 'Unknown', 'WARN', 'elapsed_seconds', 'entry', 'exception_message', 'exception_type', 'exit', 'phase', 'traceback']

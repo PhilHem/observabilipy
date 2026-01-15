@@ -82,6 +82,7 @@ from observabilipy.core.models import (
     RetentionPolicy,
 )
 from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
+from observabilipy.core.services import LogStorageWithLevelFilter
 from observabilipy.runtime import EmbeddedRuntime
 
 __all__ = [
@@ -113,6 +114,8 @@ __all__ = [
     # Ports
     "LogStoragePort",
     "MetricsStoragePort",
+    # Services
+    "LogStorageWithLevelFilter",
     # Encoding
     "encode_ndjson",
     # Exceptions

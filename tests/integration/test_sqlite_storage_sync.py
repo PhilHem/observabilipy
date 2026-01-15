@@ -1,7 +1,5 @@
 """Tests for SQLite storage adapter synchronous methods."""
 
-from pathlib import Path
-
 import pytest
 
 from observabilipy.adapters.storage import SQLiteLogStorage, SQLiteMetricsStorage
@@ -9,18 +7,6 @@ from observabilipy.core.models import LogEntry, MetricSample
 
 # All tests in this module are tier 2 (integration tests with file I/O)
 pytestmark = pytest.mark.tier(2)
-
-
-@pytest.fixture
-def log_db_path(tmp_path: Path) -> str:
-    """Provide a temporary database path for log storage tests."""
-    return str(tmp_path / "logs.db")
-
-
-@pytest.fixture
-def metrics_db_path(tmp_path: Path) -> str:
-    """Provide a temporary database path for metrics storage tests."""
-    return str(tmp_path / "metrics.db")
 
 
 @pytest.mark.tra("Adapter.SQLiteStorage.ImplementsLogStoragePort")

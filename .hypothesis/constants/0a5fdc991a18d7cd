@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/src/observabilipy/adapters/frameworks/django.py
+# hypothesis_version: 6.150.0
+
+['UNKNOWN', 'ViewFunc', 'application/x-ndjson', 'error', 'level', 'logs', 'method', 'metrics', 'metrics/prometheus', 'observability_logs', 'since', 'status', 'success']

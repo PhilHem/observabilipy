@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/examples/sqlite_example.py
+# hypothesis_version: 6.150.0
+
+['/', 'logs.db', 'metrics.db']

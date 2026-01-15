@@ -1,5 +1,9 @@
 """Storage adapters implementing core ports."""
 
+from observabilipy.adapters.storage.async_sync import (
+    collect_async_iterable,
+    run_sync,
+)
 from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
@@ -18,4 +22,6 @@ __all__ = [
     "RingBufferMetricsStorage",
     "SQLiteLogStorage",
     "SQLiteMetricsStorage",
+    "collect_async_iterable",
+    "run_sync",
 ]

@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/examples/fastapi_example.py
+# hypothesis_version: 6.150.0
+
+[0.01, 0.05, '/', '/error', '/users', '1', '2', 'Alice', 'Bob', 'Fetching users', 'GET', 'Root endpoint called', 'api_request', 'endpoint', 'error_demo', 'fastapi_example', 'id', 'message', 'method', 'name', 'path', 'root', 'users']

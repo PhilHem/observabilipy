@@ -1,0 +1,4 @@
+# file: /Users/philipphematty/Projects/observabilipy/examples/dashboard_metrics_collector.py
+# hypothesis_version: 6.150.0
+
+['MetricsStoragePort', 'core', 'dashboard_metrics', 'system_cpu_percent', 'system_swap_percent']
