@@ -129,7 +129,7 @@ class ObservabilipyHandler(logging.Handler):
         # Add any extra attributes passed via logging call (highest precedence)
         for key, value in record.__dict__.items():
             if key not in _STANDARD_LOGRECORD_ATTRS and isinstance(
-                value, (str, int, float, bool)
+                value, str | int | float | bool
             ):
                 attributes[key] = value
 

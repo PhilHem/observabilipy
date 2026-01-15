@@ -103,8 +103,7 @@ class CpuTracker:
             return 0.0
 
         # Convert microseconds to seconds, then to percentage
-        cpu_percent = (usage_delta / 1_000_000) / time_delta * 100
-        return cpu_percent
+        return (usage_delta / 1_000_000) / time_delta * 100
 
 
 cpu_tracker = CpuTracker()
@@ -178,10 +177,11 @@ async def collect_container_metrics() -> None:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     """Start background metrics collection on startup."""
-    asyncio.create_task(collect_container_metrics())
+    background_task = asyncio.create_task(collect_container_metrics())
     yield
+    background_task.cancel()
 
 
 app = FastAPI(title="Container Metrics Example", lifespan=lifespan)

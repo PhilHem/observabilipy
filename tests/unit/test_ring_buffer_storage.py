@@ -10,7 +10,11 @@ from observabilipy.core.exceptions import ConfigurationError
 from observabilipy.core.models import LogEntry, MetricSample
 from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
+# Unit tests - in-memory only, no I/O
+pytestmark = pytest.mark.tier(1)
 
+
+@pytest.mark.tra("Adapter.RingBufferStorage.ImplementsLogStoragePort")
 class TestRingBufferLogStorage:
     """Tests for RingBufferLogStorage adapter."""
 
@@ -340,6 +344,7 @@ class TestRingBufferLogStorage:
         assert result == []
 
 
+@pytest.mark.tra("Adapter.RingBufferStorage.ImplementsMetricsStoragePort")
 class TestRingBufferMetricsStorage:
     """Tests for RingBufferMetricsStorage adapter."""
 
@@ -537,6 +542,7 @@ class TestRingBufferMetricsStorage:
         assert results[1].timestamp == 300.0
 
 
+@pytest.mark.tra("Adapter.RingBufferStorage.ImplementsLogStoragePort")
 class TestRingBufferLogStorageSync:
     """Tests for synchronous methods on RingBufferLogStorage."""
 
@@ -589,6 +595,7 @@ class TestRingBufferLogStorageSync:
         assert len(storage._buffer) == 0
 
 
+@pytest.mark.tra("Adapter.RingBufferStorage.ImplementsMetricsStoragePort")
 class TestRingBufferMetricsStorageSync:
     """Tests for synchronous methods on RingBufferMetricsStorage."""
 

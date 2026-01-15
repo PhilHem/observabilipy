@@ -11,6 +11,51 @@ from observabilipy.core.models import LogEntry
 
 
 @dataclass
+class StructuredLogger:
+    """Fluent logger for structured logging with fields."""
+
+    _module_name: str
+    _fields: dict[str, str | int | float | bool] = field(default_factory=dict)
+
+    def with_fields(self, **fields: str | int | float | bool) -> "StructuredLogger":
+        """Add structured fields to the next log call.
+
+        Args:
+            **fields: Field names and values
+
+        Returns:
+            New logger instance with fields set
+        """
+        return StructuredLogger(
+            _module_name=self._module_name,
+            _fields={**self._fields, **fields},
+        )
+
+    def info(self, message: str) -> LogEntry:
+        """Log an INFO message with accumulated fields."""
+        return info(message, **self._fields)
+
+    def debug(self, message: str) -> LogEntry:
+        """Log a DEBUG message with accumulated fields."""
+        return debug(message, **self._fields)
+
+    def error(self, message: str) -> LogEntry:
+        """Log an ERROR message with accumulated fields."""
+        return error(message, **self._fields)
+
+    def warn(self, message: str) -> LogEntry:
+        """Log a WARN message with accumulated fields."""
+        return warn(message, **self._fields)
+
+    def exception(self, message: str | None = None) -> LogEntry:
+        """Log an exception with accumulated fields.
+
+        Must be called from within an exception handler (except block).
+        """
+        return log_exception(message, **self._fields)
+
+
+@dataclass
 class TimedLogResult:
     """Result object for timed_log context manager."""
 
@@ -213,3 +258,23 @@ def log_exception(
             **attributes,
         },
     )
+
+
+def get_logger(module_name: str) -> StructuredLogger:
+    """Create a structured logger for a module.
+
+    Args:
+        module_name: Name of the module (typically __name__)
+
+    Returns:
+        StructuredLogger instance for fluent logging with fields
+
+    Example:
+        >>> logger = get_logger("my_module")
+        >>> entry = logger.with_fields(user_id=123).info("User logged in")
+        >>> entry.level
+        'INFO'
+        >>> entry.attributes['user_id']
+        123
+    """
+    return StructuredLogger(_module_name=module_name)

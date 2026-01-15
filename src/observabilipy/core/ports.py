@@ -10,6 +10,8 @@ from typing import Protocol, runtime_checkable
 from observabilipy.core.models import LogEntry, MetricSample
 
 
+# @tra: Port.LogStoragePort.DefinesContract
+# DECISION(abstract): 3 impls (InMemory, SQLite, RingBuffer) + test isolation
 @runtime_checkable
 class LogStoragePort(Protocol):
     """Port for log storage operations.
@@ -91,6 +93,8 @@ class LogStoragePort(Protocol):
         ...
 
 
+# @tra: Port.MetricsStoragePort.DefinesContract
+# DECISION(abstract): 3 impls (InMemory, SQLite, RingBuffer) + test isolation
 @runtime_checkable
 class MetricsStoragePort(Protocol):
     """Port for metrics storage operations.

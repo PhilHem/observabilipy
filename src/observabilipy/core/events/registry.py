@@ -103,7 +103,7 @@ class MappingRegistry:
             try:
                 outputs = mapper(test_event)
                 for output in outputs:
-                    if not isinstance(output, (LogEntry, MetricSample)):
+                    if not isinstance(output, LogEntry | MetricSample):
                         errors.append(
                             f"'{event_class}' mapper returned invalid output "
                             f"type: {type(output).__name__}. "

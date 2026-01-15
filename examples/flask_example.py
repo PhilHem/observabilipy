@@ -23,6 +23,8 @@ import time
 from collections.abc import Iterable
 from typing import Any
 
+import flask
+
 from observabilipy.adapters.frameworks.wsgi import create_wsgi_app
 from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
@@ -30,7 +32,8 @@ from observabilipy.adapters.storage.in_memory import (
 )
 from observabilipy.core.models import LogEntry, MetricSample
 
-from flask import Flask
+# Create Flask app
+app = flask.Flask(__name__)
 
 # Create storage instances (shared across the app)
 log_storage = InMemoryLogStorage()
@@ -40,10 +43,6 @@ metrics_storage = InMemoryMetricsStorage()
 def _run_async(coro: Any) -> Any:
     """Run async coroutine from sync context."""
     return asyncio.run(coro)
-
-
-# Create Flask app
-app = Flask(__name__)
 
 
 @app.route("/")
@@ -95,14 +94,12 @@ observability_app = create_wsgi_app(log_storage, metrics_storage)
 _original_wsgi_app = app.wsgi_app
 
 
-def _dispatcher(
-    environ: dict[str, Any], start_response: Any
-) -> Iterable[bytes]:
+def _dispatcher(environ: dict[str, Any], start_response: Any) -> Iterable[bytes]:
     """Dispatch requests to observability app or Flask based on path."""
     path = environ.get("PATH_INFO", "")
     if path.startswith("/observability"):
         # Strip the prefix and dispatch to observability app
-        environ["PATH_INFO"] = path[len("/observability"):] or "/"
+        environ["PATH_INFO"] = path[len("/observability") :] or "/"
         environ["SCRIPT_NAME"] = environ.get("SCRIPT_NAME", "") + "/observability"
         return observability_app(environ, start_response)
     # Fall through to Flask
@@ -132,4 +129,4 @@ if __name__ == "__main__":
     print("  http://localhost:5000/api/users - Example API")
     print("  http://localhost:5000/observability/metrics - Prometheus metrics")
     print("  http://localhost:5000/observability/logs - NDJSON logs")
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)  # noqa: S104, S201

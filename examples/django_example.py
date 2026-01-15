@@ -17,12 +17,11 @@ Instrumentation:
     `@instrument_view` decorator for Django async views.
 
 Logging Integration:
-    Structured logging via observabilipy provides searchable fields,
-    correlation support, and JSON output for log aggregation.
+    Structured logging is used with info(), error(), and log_exception()
+    to provide searchable fields and machine-parseable logs.
 """
 
 import asyncio
-import os
 
 import django
 from django.conf import settings
@@ -30,18 +29,17 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 
 # Configure Django settings
 if not settings.configured:
-    secret_key = os.environ.get("DJANGO_SECRET_KEY", "example-key-not-for-production")
     settings.configure(
         DEBUG=True,
         ROOT_URLCONF=__name__,
         ALLOWED_HOSTS=["*"],
-        SECRET_KEY=secret_key,
+        SECRET_KEY="example-secret-key-not-for-production",  # noqa: S106
     )
     django.setup()
 
 from django.urls import path
 
-from observabilipy import get_logger
+from observabilipy import info, log_exception
 from observabilipy.adapters.frameworks.django import (
     create_observability_urlpatterns,
     instrument_view,
@@ -55,8 +53,8 @@ from observabilipy.adapters.storage.in_memory import (
 log_storage = InMemoryLogStorage()
 metrics_storage = InMemoryMetricsStorage()
 
-# Application logger
-logger = get_logger("django_example")
+# Log app initialization
+info("Django application initialized")
 
 
 @instrument_view(metrics_storage, name="root")
@@ -67,7 +65,7 @@ async def root(_request: HttpRequest) -> HttpResponse:
     - root_total counter (incremented on each request, with method and status labels)
     - root_duration_seconds histogram (request timing)
     """
-    await logger.with_fields(endpoint="root").info("Root endpoint called")
+    info("Root endpoint called")
     # Simulate some work
     await asyncio.sleep(0.01)
     return HttpResponse("Hello! Check /metrics and /logs endpoints.")
@@ -80,7 +78,7 @@ async def users_list(_request: HttpRequest) -> JsonResponse:
     The decorator adds the HTTP method automatically. Custom labels like
     'version' are included in all metrics for this view.
     """
-    await logger.with_fields(endpoint="users").info("Fetching users")
+    info("Fetching users", endpoint="users")
     # Simulate database fetch
     await asyncio.sleep(0.05)
     return JsonResponse(
@@ -99,13 +97,12 @@ async def error_demo(_request: HttpRequest) -> HttpResponse:
 
     When the view name is not specified, the function name is used.
     When an exception occurs, the counter records status=error.
+    The exception is also captured in the logs via log_exception().
     """
     try:
         raise ValueError("Intentional error for demonstration")
     except ValueError:
-        await logger.with_fields(endpoint="error_demo").error(
-            "Error in error_demo endpoint"
-        )
+        log_exception("Error in error_demo endpoint")
         raise
 
 

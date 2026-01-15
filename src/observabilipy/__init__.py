@@ -60,6 +60,7 @@ from observabilipy.core.logs import (
     TimedLogResult,
     debug,
     error,
+    get_logger,
     info,
     log,
     log_exception,
@@ -92,6 +93,7 @@ __all__ = [
     # Log helpers
     "debug",
     "error",
+    "get_logger",
     "info",
     "log",
     "log_exception",

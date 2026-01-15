@@ -88,7 +88,9 @@ async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     # Start cleanup task
     cleanup_task = asyncio.create_task(runtime.cleanup_loop())
 
-    await logger.info("Dashboard started - collecting system metrics")
+    await logger.with_fields(event="startup").info(
+        "Dashboard started - collecting system metrics"
+    )
 
     yield
 

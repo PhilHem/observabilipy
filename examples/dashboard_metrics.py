@@ -3,8 +3,11 @@
 import asyncio
 import time
 
+from observabilipy import get_logger
 from observabilipy.adapters.storage.in_memory import InMemoryMetricsStorage
 from observabilipy.core.models import MetricSample
+
+logger = get_logger(__name__)
 
 try:
     import psutil
@@ -132,7 +135,7 @@ async def collect_system_metrics(metrics_storage: InMemoryMetricsStorage) -> Non
                     labels={},
                 )
             )
-        except Exception:
-            pass
+        except Exception as e:
+            logger.with_fields(error=str(e)).debug("Metrics unavailable")
 
         await asyncio.sleep(1)

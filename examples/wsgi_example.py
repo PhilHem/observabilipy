@@ -64,5 +64,5 @@ if __name__ == "__main__":
     demo_data()
     print("Starting WSGI server on http://localhost:8000")
     print("Visit http://localhost:8000/metrics or http://localhost:8000/logs")
-    server = make_server("0.0.0.0", 8000, app)
+    server = make_server("0.0.0.0", 8000, app)  # noqa: S104
     server.serve_forever()

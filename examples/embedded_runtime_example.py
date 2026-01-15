@@ -44,7 +44,7 @@ runtime = EmbeddedRuntime(
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     """Start runtime on startup, stop on shutdown."""
     await runtime.start()
     yield

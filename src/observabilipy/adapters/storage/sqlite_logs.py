@@ -57,6 +57,7 @@ SELECT COUNT(*) FROM logs WHERE level = ?
 """
 
 
+# @tra: Adapter.SQLiteStorage.ImplementsLogStoragePort
 class SQLiteLogStorage:
     """SQLite implementation of LogStoragePort.
 
@@ -88,6 +89,7 @@ class SQLiteLogStorage:
             self._init_lock = asyncio.Lock()
         return self._init_lock
 
+    # @tra: Adapter.SQLiteStorage.PersistsAcrossInstances
     async def _ensure_initialized(self) -> None:
         """Initialize database schema once."""
         if self._initialized:

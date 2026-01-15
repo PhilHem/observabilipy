@@ -40,6 +40,8 @@ DELETE FROM metrics WHERE timestamp < ?
 """
 
 
+# @tra: Adapter.SQLiteStorage.ImplementsMetricsStoragePort
+# @tra: Adapter.SQLiteStorage.PersistsAcrossInstances
 class SQLiteMetricsStorage:
     """SQLite implementation of MetricsStoragePort.
 

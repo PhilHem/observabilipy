@@ -72,7 +72,10 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
         ):
             logger.info("Request started")
             response = await call_next(request)
-            logger.info("Request completed", extra={"status_code": response.status_code})
+            logger.info(
+                "Request completed",
+                extra={"status_code": response.status_code},
+            )
             return response
 
 
@@ -128,4 +131,4 @@ async def error_endpoint():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8000)  # noqa: S104

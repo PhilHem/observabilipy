@@ -25,11 +25,11 @@ test-integration:
 
 # Run linting
 lint:
-	uv run ruff check src/ tests/
+	uv run ruff check src/ tests/ examples/
 
 # Fix linting errors automatically
 lint-fix:
-	uv run ruff check --fix src/ tests/
+	uv run ruff check --fix src/ tests/ examples/
 
 # Run type checking
 typecheck:

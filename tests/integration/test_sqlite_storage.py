@@ -9,6 +9,9 @@ from observabilipy.adapters.storage.sqlite import SQLiteLogStorage, SQLiteMetric
 from observabilipy.core.models import LogEntry, MetricSample
 from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
+# All tests in this module are tier 2 (integration tests with file I/O)
+pytestmark = pytest.mark.tier(2)
+
 
 @pytest.fixture
 def log_db_path(tmp_path: Path) -> str:
@@ -38,6 +41,7 @@ async def memory_metrics_storage() -> AsyncGenerator[SQLiteMetricsStorage]:
     await storage.close()
 
 
+@pytest.mark.tra("Adapter.SQLiteStorage.ImplementsLogStoragePort")
 class TestSQLiteLogStorage:
     """Tests for SQLiteLogStorage adapter."""
 
@@ -414,6 +418,7 @@ class TestSQLiteLogStorage:
         assert result == []
 
 
+@pytest.mark.tra("Adapter.SQLiteStorage.ImplementsMetricsStoragePort")
 class TestSQLiteMetricsStorage:
     """Tests for SQLiteMetricsStorage adapter."""
 
@@ -666,6 +671,7 @@ class TestSQLiteMetricsStorage:
         assert results[1].timestamp == 300.0
 
 
+@pytest.mark.tra("Adapter.SQLiteStorage.PersistsAcrossInstances")
 class TestSQLitePersistence:
     """Tests for data persistence across storage instances."""
 

@@ -7,7 +7,11 @@ import pytest
 from observabilipy.core.models import LogEntry, MetricSample
 from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
+# Unit tests - no I/O, pure protocol verification
+pytestmark = pytest.mark.tier(1)
 
+
+@pytest.mark.tra("Port.LogStoragePort.DefinesContract")
 class TestLogStoragePort:
     """Tests for LogStoragePort protocol."""
 
@@ -60,6 +64,7 @@ class TestLogStoragePort:
         assert isinstance(storage, LogStoragePort)
 
 
+@pytest.mark.tra("Port.MetricsStoragePort.DefinesContract")
 class TestMetricsStoragePort:
     """Tests for MetricsStoragePort protocol."""
 

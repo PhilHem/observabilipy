@@ -9,10 +9,10 @@ Then visit:
 """
 
 import asyncio
-import random
 import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from itertools import cycle
 
 from fastapi import FastAPI
 
@@ -31,22 +31,40 @@ async def generate_dummy_data() -> None:
     """Generate dummy metrics and logs every second."""
     endpoints = ["/api/users", "/api/orders", "/api/products", "/health"]
     methods = ["GET", "POST", "PUT", "DELETE"]
-    levels = ["DEBUG", "INFO", "INFO", "INFO", "WARN", "ERROR"]  # weighted towards INFO
+    levels = ["DEBUG", "INFO", "INFO", "INFO", "WARN", "ERROR"]
+    statuses = ["200", "200", "200", "404", "500"]
+
+    # Use cycle to generate deterministic sequences
+    endpoint_cycle = cycle(endpoints)
+    method_cycle = cycle(methods)
+    status_cycle = cycle(statuses)
+    level_cycle = cycle(levels)
+
+    # Deterministic metric values
+    response_times = [0.05, 0.12, 0.08, 0.25, 0.10]
+    cpu_values = [15.5, 22.3, 18.7, 35.2, 28.9]
+    memory_values = [125.5, 185.3, 156.2, 245.8, 195.4]
+    request_ids = [1001, 2002, 3003, 4004, 5005]
+
+    response_time_cycle = cycle(response_times)
+    cpu_cycle = cycle(cpu_values)
+    memory_cycle = cycle(memory_values)
+    request_id_cycle = cycle(request_ids)
 
     while True:
         now = time.time()
 
-        # Record HTTP request metrics
-        for _ in range(random.randint(1, 5)):
+        # Record HTTP request metrics (fixed count of 3 per iteration)
+        for _ in range(3):
             await metrics_storage.write(
                 MetricSample(
                     name="http_requests_total",
                     timestamp=now,
                     value=1.0,
                     labels={
-                        "method": random.choice(methods),
-                        "path": random.choice(endpoints),
-                        "status": random.choice(["200", "200", "200", "404", "500"]),
+                        "method": next(method_cycle),
+                        "path": next(endpoint_cycle),
+                        "status": next(status_cycle),
                     },
                 )
             )
@@ -56,8 +74,8 @@ async def generate_dummy_data() -> None:
             MetricSample(
                 name="http_request_duration_seconds",
                 timestamp=now,
-                value=random.uniform(0.01, 0.5),
-                labels={"path": random.choice(endpoints)},
+                value=next(response_time_cycle),
+                labels={"path": next(endpoint_cycle)},
             )
         )
 
@@ -66,7 +84,7 @@ async def generate_dummy_data() -> None:
             MetricSample(
                 name="process_cpu_percent",
                 timestamp=now,
-                value=random.uniform(5, 80),
+                value=next(cpu_cycle),
                 labels={},
             )
         )
@@ -74,13 +92,13 @@ async def generate_dummy_data() -> None:
             MetricSample(
                 name="process_memory_mb",
                 timestamp=now,
-                value=random.uniform(100, 500),
+                value=next(memory_cycle),
                 labels={},
             )
         )
 
         # Record a log entry
-        level = random.choice(levels)
+        level = next(level_cycle)
         messages = {
             "DEBUG": "Cache lookup for key user:123",
             "INFO": "Request processed successfully",
@@ -93,7 +111,7 @@ async def generate_dummy_data() -> None:
                 level=level,
                 message=messages[level],
                 attributes={
-                    "request_id": f"req-{random.randint(1000, 9999)}",
+                    "request_id": f"req-{next(request_id_cycle)}",
                     "service": "api",
                 },
             )
@@ -103,10 +121,11 @@ async def generate_dummy_data() -> None:
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
+async def lifespan(_app: FastAPI) -> AsyncGenerator[None]:
     """Start background data generation on startup."""
-    asyncio.create_task(generate_dummy_data())
+    task = asyncio.create_task(generate_dummy_data())
     yield
+    task.cancel()
 
 
 app = FastAPI(title="Minimal Observability Example", lifespan=lifespan)

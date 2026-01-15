@@ -12,6 +12,7 @@ from observabilipy.core.exceptions import ConfigurationError
 from observabilipy.core.models import LogEntry, MetricSample
 
 
+# @tra: Adapter.RingBufferStorage.ImplementsLogStoragePort
 class RingBufferLogStorage:
     """Ring buffer implementation of LogStoragePort.
 
@@ -100,6 +101,7 @@ class RingBufferLogStorage:
         return sum(1 for e in self._buffer if e.level == level)
 
 
+# @tra: Adapter.RingBufferStorage.ImplementsMetricsStoragePort
 class RingBufferMetricsStorage:
     """Ring buffer implementation of MetricsStoragePort.
 

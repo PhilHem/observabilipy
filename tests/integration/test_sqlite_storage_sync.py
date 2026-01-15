@@ -7,6 +7,9 @@ import pytest
 from observabilipy.adapters.storage.sqlite import SQLiteLogStorage, SQLiteMetricsStorage
 from observabilipy.core.models import LogEntry, MetricSample
 
+# All tests in this module are tier 2 (integration tests with file I/O)
+pytestmark = pytest.mark.tier(2)
+
 
 @pytest.fixture
 def log_db_path(tmp_path: Path) -> str:
@@ -20,6 +23,7 @@ def metrics_db_path(tmp_path: Path) -> str:
     return str(tmp_path / "metrics.db")
 
 
+@pytest.mark.tra("Adapter.SQLiteStorage.ImplementsLogStoragePort")
 class TestSQLiteLogStorageSync:
     """Tests for synchronous methods on SQLiteLogStorage."""
 
@@ -74,10 +78,8 @@ class TestSQLiteLogStorageSync:
         assert entries == []
 
     @pytest.mark.storage
-    def test_sync_and_async_share_same_file_db(self, log_db_path: str) -> None:
+    async def test_sync_and_async_share_same_file_db(self, log_db_path: str) -> None:
         """Sync and async methods share data for file-based databases."""
-        import asyncio
-
         storage = SQLiteLogStorage(log_db_path)
         entry_sync = LogEntry(timestamp=1000.0, level="INFO", message="sync entry")
         entry_async = LogEntry(timestamp=1001.0, level="DEBUG", message="async entry")
@@ -86,7 +88,7 @@ class TestSQLiteLogStorageSync:
         storage.write_sync(entry_sync)
 
         # Write async
-        asyncio.run(storage.write(entry_async))
+        await storage.write(entry_async)
 
         # Read sync - should see both
         entries = storage.read_sync()
@@ -95,6 +97,7 @@ class TestSQLiteLogStorageSync:
         assert entry_async in entries
 
 
+@pytest.mark.tra("Adapter.SQLiteStorage.ImplementsMetricsStoragePort")
 class TestSQLiteMetricsStorageSync:
     """Tests for synchronous methods on SQLiteMetricsStorage."""
 
@@ -149,10 +152,10 @@ class TestSQLiteMetricsStorageSync:
         assert samples == []
 
     @pytest.mark.storage
-    def test_sync_and_async_share_same_file_db(self, metrics_db_path: str) -> None:
+    async def test_sync_and_async_share_same_file_db(
+        self, metrics_db_path: str
+    ) -> None:
         """Sync and async methods share data for file-based databases."""
-        import asyncio
-
         storage = SQLiteMetricsStorage(metrics_db_path)
         sample_sync = MetricSample(name="sync_metric", timestamp=1000.0, value=1.0)
         sample_async = MetricSample(name="async_metric", timestamp=1001.0, value=2.0)
@@ -161,7 +164,7 @@ class TestSQLiteMetricsStorageSync:
         storage.write_sync(sample_sync)
 
         # Write async
-        asyncio.run(storage.write(sample_async))
+        await storage.write(sample_async)
 
         # Read sync - should see both
         samples = storage.read_sync()
