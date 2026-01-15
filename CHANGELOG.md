@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.3.1] - 2026-01-15
+
+### Fixed
+- Added `sync` parameter to `EventObservability` for race-free testing
+
 ## [1.3.0] - 2026-01-11
 
 ### Added
