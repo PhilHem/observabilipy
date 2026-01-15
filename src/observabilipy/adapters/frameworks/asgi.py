@@ -120,6 +120,10 @@ def create_asgi_app(
 
         path = scope["path"]
 
+        # @tra: Adapter.ASGI.MetricsEndpointHTTPStatus
+        # @tra: Adapter.ASGI.MetricsEndpointContentType
+        # @tra: Adapter.ASGI.MetricsEndpointNDJSON
+        # @tra: Adapter.ASGI.MetricsEndpointSinceFilter
         if path == "/metrics":
             headers = [(b"content-type", b"application/x-ndjson")]
             query_string = scope.get("query_string", b"").decode()
@@ -130,6 +134,10 @@ def create_asgi_app(
                 {"type": "http.response.start", "status": 200, "headers": headers}
             )
             await send({"type": "http.response.body", "body": body.encode()})
+        # @tra: Adapter.ASGI.PrometheusEndpointHTTPStatus
+        # @tra: Adapter.ASGI.PrometheusEndpointContentType
+        # @tra: Adapter.ASGI.PrometheusEndpointFormat
+        # @tra: Adapter.ASGI.PrometheusEndpointCurrent
         elif path == "/metrics/prometheus":
             headers = [(b"content-type", b"text/plain; version=0.0.4; charset=utf-8")]
             body = await encode_current(metrics_storage.read())
@@ -137,6 +145,11 @@ def create_asgi_app(
                 {"type": "http.response.start", "status": 200, "headers": headers}
             )
             await send({"type": "http.response.body", "body": body.encode()})
+        # @tra: Adapter.ASGI.LogsEndpointHTTPStatus
+        # @tra: Adapter.ASGI.LogsEndpointContentType
+        # @tra: Adapter.ASGI.LogsEndpointNDJSON
+        # @tra: Adapter.ASGI.LogsEndpointSinceFilter
+        # @tra: Adapter.ASGI.LogsEndpointLevelFilter
         elif path == "/logs":
             headers = [(b"content-type", b"application/x-ndjson")]
             query_string = scope.get("query_string", b"").decode()
@@ -148,6 +161,7 @@ def create_asgi_app(
                 {"type": "http.response.start", "status": 200, "headers": headers}
             )
             await send({"type": "http.response.body", "body": body.encode()})
+        # @tra: Adapter.ASGI.RoutingUnknownPath
         else:
             await send({"type": "http.response.start", "status": 404, "headers": []})
             await send({"type": "http.response.body", "body": b"Not Found"})

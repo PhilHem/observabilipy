@@ -16,6 +16,8 @@ from observabilipy.core.models import LogEntry, MetricSample
 class TestASGIMetricsEndpoint:
     """Tests for the /metrics endpoint."""
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.MetricsEndpointHTTPStatus")
     @pytest.mark.asgi
     async def test_metrics_endpoint_returns_200(self) -> None:
         """Test that /metrics returns HTTP 200."""
@@ -30,6 +32,8 @@ class TestASGIMetricsEndpoint:
 
         assert response.status_code == 200
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.MetricsEndpointContentType")
     @pytest.mark.asgi
     async def test_metrics_endpoint_has_ndjson_content_type(self) -> None:
         """Test that /metrics returns correct Content-Type header."""
@@ -44,6 +48,8 @@ class TestASGIMetricsEndpoint:
 
         assert response.headers["content-type"] == "application/x-ndjson"
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.MetricsEndpointNDJSON")
     @pytest.mark.asgi
     async def test_metrics_endpoint_returns_ndjson_format(self) -> None:
         """Test that /metrics returns data in NDJSON format."""
@@ -69,6 +75,8 @@ class TestASGIMetricsEndpoint:
         assert parsed["value"] == 42.0
         assert parsed["labels"] == {"method": "GET", "status": "200"}
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.MetricsEndpointSinceFilter")
     @pytest.mark.asgi
     async def test_metrics_endpoint_filters_by_since(self) -> None:
         """Test that /metrics?since=X filters samples by timestamp."""
@@ -96,6 +104,8 @@ class TestASGIMetricsEndpoint:
 class TestASGIMetricsPrometheusEndpoint:
     """Tests for the /metrics/prometheus endpoint."""
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.PrometheusEndpointHTTPStatus")
     @pytest.mark.asgi
     async def test_metrics_prometheus_endpoint_returns_200(self) -> None:
         """Test that /metrics/prometheus returns HTTP 200."""
@@ -110,6 +120,8 @@ class TestASGIMetricsPrometheusEndpoint:
 
         assert response.status_code == 200
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.PrometheusEndpointContentType")
     @pytest.mark.asgi
     async def test_metrics_prometheus_has_correct_content_type(self) -> None:
         """Test that /metrics/prometheus returns correct Content-Type header."""
@@ -125,6 +137,8 @@ class TestASGIMetricsPrometheusEndpoint:
         expected_content_type = "text/plain; version=0.0.4; charset=utf-8"
         assert response.headers["content-type"] == expected_content_type
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.PrometheusEndpointFormat")
     @pytest.mark.asgi
     async def test_metrics_prometheus_returns_prometheus_format(self) -> None:
         """Test that /metrics/prometheus returns data in Prometheus format."""
@@ -148,6 +162,8 @@ class TestASGIMetricsPrometheusEndpoint:
         assert "http_requests_total" in response.text
         assert "42" in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.PrometheusEndpointCurrent")
     @pytest.mark.asgi
     async def test_metrics_prometheus_uses_encode_current(self) -> None:
         """Test that /metrics/prometheus keeps only latest sample per metric."""
@@ -170,6 +186,8 @@ class TestASGIMetricsPrometheusEndpoint:
         assert len(lines) == 1  # Only latest sample
         assert "5.0" in lines[0]
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.PrometheusEndpointHTTPStatus")
     @pytest.mark.asgi
     async def test_metrics_prometheus_empty_storage_returns_empty_body(self) -> None:
         """Test that /metrics/prometheus returns empty body when storage is empty."""
@@ -189,6 +207,8 @@ class TestASGIMetricsPrometheusEndpoint:
 class TestASGILogsEndpoint:
     """Tests for the /logs endpoint."""
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.LogsEndpointHTTPStatus")
     @pytest.mark.asgi
     async def test_logs_endpoint_returns_200(self) -> None:
         """Test that /logs returns HTTP 200."""
@@ -203,6 +223,8 @@ class TestASGILogsEndpoint:
 
         assert response.status_code == 200
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.LogsEndpointContentType")
     @pytest.mark.asgi
     async def test_logs_endpoint_has_ndjson_content_type(self) -> None:
         """Test that /logs returns correct Content-Type header."""
@@ -217,6 +239,8 @@ class TestASGILogsEndpoint:
 
         assert response.headers["content-type"] == "application/x-ndjson"
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.LogsEndpointNDJSON")
     @pytest.mark.asgi
     async def test_logs_endpoint_returns_ndjson_format(self) -> None:
         """Test that /logs returns data in NDJSON format."""
@@ -240,6 +264,8 @@ class TestASGILogsEndpoint:
         assert "Test message" in response.text
         assert "INFO" in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.LogsEndpointSinceFilter")
     @pytest.mark.asgi
     async def test_logs_endpoint_filters_by_since(self) -> None:
         """Test that /logs?since=X filters entries by timestamp."""
@@ -271,6 +297,8 @@ class TestASGILogsEndpoint:
         assert "New message" in response.text
         assert "Old message" not in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.LogsEndpointLevelFilter")
     @pytest.mark.asgi
     async def test_logs_endpoint_filters_by_level(self) -> None:
         """Test that /logs?level=X filters entries by level."""
@@ -302,6 +330,8 @@ class TestASGILogsEndpoint:
         assert "Error message" in response.text
         assert "Info message" not in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.LogsEndpointLevelFilter")
     @pytest.mark.asgi
     async def test_logs_endpoint_level_filter_is_case_insensitive(self) -> None:
         """Test that /logs?level=X is case-insensitive."""
@@ -333,6 +363,8 @@ class TestASGILogsEndpoint:
         assert "Error message" in response.text
         assert "Info message" not in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.LogsEndpointSinceFilter")
     @pytest.mark.asgi
     async def test_logs_endpoint_combines_since_and_level(self) -> None:
         """Test that /logs combines since and level filters."""
@@ -373,6 +405,8 @@ class TestASGILogsEndpoint:
         assert "Old error" not in response.text
         assert "New info" not in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.LogsEndpointLevelFilter")
     @pytest.mark.asgi
     async def test_logs_endpoint_level_returns_empty_for_nonexistent(self) -> None:
         """Test that /logs treats invalid level as None (shows all)."""
@@ -396,6 +430,8 @@ class TestASGILogsEndpoint:
         assert response.status_code == 200
         assert "Info message" in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.MetricsEndpointSinceFilter")
     @pytest.mark.asgi
     async def test_metrics_endpoint_handles_invalid_since_param(self) -> None:
         """Test that /metrics handles invalid since param gracefully."""
@@ -415,6 +451,8 @@ class TestASGILogsEndpoint:
         parsed = json.loads(response.text.strip())
         assert parsed["value"] == 1.0
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.LogsEndpointSinceFilter")
     @pytest.mark.asgi
     async def test_logs_endpoint_handles_invalid_since_param(self) -> None:
         """Test that /logs handles invalid since param gracefully."""
@@ -438,6 +476,8 @@ class TestASGILogsEndpoint:
         assert response.status_code == 200
         assert "Test message" in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.LogsEndpointLevelFilter")
     @pytest.mark.asgi
     async def test_logs_endpoint_validates_level_whitelist(self) -> None:
         """Test that /logs validates level parameter against whitelist."""
@@ -474,6 +514,8 @@ class TestASGILogsEndpoint:
 class TestASGIRouting:
     """Tests for routing and error handling."""
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.RoutingUnknownPath")
     @pytest.mark.asgi
     async def test_unknown_path_returns_404(self) -> None:
         """Test that unknown paths return HTTP 404."""
@@ -492,6 +534,8 @@ class TestASGIRouting:
 class TestASGIEmptyStorage:
     """Tests for edge cases with empty storage."""
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.MetricsEndpointHTTPStatus")
     @pytest.mark.asgi
     async def test_metrics_empty_storage_returns_empty_body(self) -> None:
         """Test that /metrics returns empty body when storage is empty."""
@@ -507,6 +551,8 @@ class TestASGIEmptyStorage:
         assert response.status_code == 200
         assert response.text == ""
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.LogsEndpointHTTPStatus")
     @pytest.mark.asgi
     async def test_logs_empty_storage_returns_empty_body(self) -> None:
         """Test that /logs returns empty body when storage is empty."""
