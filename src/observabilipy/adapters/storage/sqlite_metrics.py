@@ -117,11 +117,3 @@ class SQLiteMetricsStorage(SQLiteStorageGeneric):
     def read_sync(self, since: float = 0) -> list[MetricSample]:
         """Synchronous read for non-async contexts (testing, WSGI)."""
         return self._read_sync(since)
-
-    async def clear(self) -> None:
-        """Clear all samples from storage."""
-        await self._clear()
-
-    def clear_sync(self) -> None:
-        """Synchronous clear for non-async contexts (testing, WSGI)."""
-        self._clear_sync()

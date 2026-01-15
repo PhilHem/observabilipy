@@ -64,6 +64,15 @@ class SQLiteStorageBase:
             self._init_lock = asyncio.Lock()
         return self._init_lock
 
+    @property
+    def _should_close_connection(self) -> bool:
+        """Return True if connections should be closed after use.
+
+        File-based databases get new connections each time.
+        :memory: databases keep persistent connections.
+        """
+        return self._db_path != ":memory:"
+
     async def _ensure_initialized(self) -> None:
         """Initialize database schema once."""
         if self._initialized:
@@ -136,7 +145,7 @@ class SQLiteStorageBase:
         try:
             yield db
         finally:
-            if self._db_path != ":memory:":
+            if self._should_close_connection:
                 await db.close()
 
     @contextmanager
@@ -150,7 +159,7 @@ class SQLiteStorageBase:
         try:
             yield conn
         finally:
-            if self._db_path != ":memory:":
+            if self._should_close_connection:
                 conn.close()
 
 
@@ -221,6 +230,10 @@ class SQLiteStorageGeneric(SQLiteStorageBase):
             await db.execute(self._clear_query)
             await db.commit()
 
+    async def clear(self) -> None:
+        """Clear all items from storage."""
+        await self._clear()
+
     # --- Sync methods ---
 
     def _write_sync(self, item: Any) -> None:
@@ -240,3 +253,7 @@ class SQLiteStorageGeneric(SQLiteStorageBase):
         with self.sync_connection() as conn:
             conn.execute(self._clear_query)
             conn.commit()
+
+    def clear_sync(self) -> None:
+        """Synchronous clear for non-async contexts (testing, WSGI)."""
+        self._clear_sync()

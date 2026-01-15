@@ -171,11 +171,3 @@ class SQLiteLogStorage(SQLiteStorageGeneric):
                 return [self._from_row(row) for row in cursor]
         else:
             return self._read_sync(since)
-
-    async def clear(self) -> None:
-        """Clear all entries from storage."""
-        await self._clear()
-
-    def clear_sync(self) -> None:
-        """Synchronous clear for non-async contexts (testing, WSGI)."""
-        self._clear_sync()
