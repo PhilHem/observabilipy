@@ -9,8 +9,11 @@ import pytest
 fastapi = pytest.importorskip("fastapi", reason="fastapi not installed")
 from fastapi.testclient import TestClient
 
+pytestmark = pytest.mark.tier(2)
+
 
 @pytest.mark.examples
+@pytest.mark.tra("Examples.FastAPI")
 class TestFastAPIExample:
     """Tests for fastapi_example.py."""
 
@@ -47,6 +50,7 @@ class TestFastAPIExample:
 
 
 @pytest.mark.examples
+@pytest.mark.tra("Examples.Minimal")
 class TestMinimalExample:
     """Tests for minimal_example.py."""
 
@@ -62,6 +66,7 @@ class TestMinimalExample:
 
 
 @pytest.mark.examples
+@pytest.mark.tra("Examples.Cgroups")
 class TestCgroupsExample:
     """Tests for cgroups_example.py."""
 
@@ -88,6 +93,7 @@ class TestCgroupsExample:
 
 
 @pytest.mark.examples
+@pytest.mark.tra("Examples.SQLite")
 class TestSqliteExample:
     """Tests for sqlite_example.py."""
 
@@ -107,6 +113,7 @@ class TestSqliteExample:
 
 
 @pytest.mark.examples
+@pytest.mark.tra("Examples.RingBuffer")
 class TestRingBufferExample:
     """Tests for ring_buffer_example.py."""
 
@@ -129,6 +136,7 @@ class TestRingBufferExample:
 
 
 @pytest.mark.examples
+@pytest.mark.tra("Examples.ASGI")
 class TestAsgiExample:
     """Tests for asgi_example.py."""
 
@@ -157,6 +165,7 @@ class TestAsgiExample:
 
 
 @pytest.mark.examples
+@pytest.mark.tra("Examples.EmbeddedRuntime")
 class TestEmbeddedRuntimeExample:
     """Tests for embedded_runtime_example.py."""
 
@@ -191,6 +200,7 @@ class TestEmbeddedRuntimeExample:
 
 
 @pytest.mark.examples
+@pytest.mark.tra("Examples.WSGI")
 class TestWsgiExample:
     """Tests for wsgi_example.py."""
 
@@ -217,6 +227,7 @@ class TestWsgiExample:
 
 
 @pytest.mark.examples
+@pytest.mark.tra("Examples.Flask")
 class TestFlaskExample:
     """Tests for flask_example.py."""
 
