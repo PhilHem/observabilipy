@@ -17,12 +17,12 @@ Instrumentation:
     `@instrument_view` decorator for Django async views.
 
 Logging Integration:
-    Python's standard logging is bridged to observabilipy using
-    ObservabilipyHandler, so all logs appear in /logs endpoint.
+    Structured logging via observabilipy provides searchable fields,
+    correlation support, and JSON output for log aggregation.
 """
 
 import asyncio
-import logging
+import os
 
 import django
 from django.conf import settings
@@ -30,17 +30,18 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 
 # Configure Django settings
 if not settings.configured:
+    secret_key = os.environ.get("DJANGO_SECRET_KEY", "example-key-not-for-production")
     settings.configure(
         DEBUG=True,
         ROOT_URLCONF=__name__,
         ALLOWED_HOSTS=["*"],
-        SECRET_KEY="example-secret-key-not-for-production",
+        SECRET_KEY=secret_key,
     )
     django.setup()
 
 from django.urls import path
 
-from observabilipy import ObservabilipyHandler
+from observabilipy import get_logger
 from observabilipy.adapters.frameworks.django import (
     create_observability_urlpatterns,
     instrument_view,
@@ -54,60 +55,57 @@ from observabilipy.adapters.storage.in_memory import (
 log_storage = InMemoryLogStorage()
 metrics_storage = InMemoryMetricsStorage()
 
-# Bridge Python logging to observabilipy
-logging.basicConfig(level=logging.INFO)
-handler = ObservabilipyHandler(log_storage)
-logging.getLogger().addHandler(handler)
-
 # Application logger
-logger = logging.getLogger("django_example")
-logger.info("Django application initialized")
+logger = get_logger("django_example")
 
 
 @instrument_view(metrics_storage, name="root")
-async def root(request: HttpRequest) -> HttpResponse:
+async def root(_request: HttpRequest) -> HttpResponse:
     """Root endpoint with automatic metrics instrumentation.
 
     The @instrument_view decorator automatically records:
     - root_total counter (incremented on each request, with method and status labels)
     - root_duration_seconds histogram (request timing)
     """
-    logger.info("Root endpoint called")
+    await logger.with_fields(endpoint="root").info("Root endpoint called")
     # Simulate some work
     await asyncio.sleep(0.01)
     return HttpResponse("Hello! Check /metrics and /logs endpoints.")
 
 
 @instrument_view(metrics_storage, name="users_api", labels={"version": "v1"})
-async def users_list(request: HttpRequest) -> JsonResponse:
+async def users_list(_request: HttpRequest) -> JsonResponse:
     """Users endpoint demonstrating instrumentation with custom labels.
 
     The decorator adds the HTTP method automatically. Custom labels like
     'version' are included in all metrics for this view.
     """
-    logger.info("Fetching users", extra={"endpoint": "users"})
+    await logger.with_fields(endpoint="users").info("Fetching users")
     # Simulate database fetch
     await asyncio.sleep(0.05)
-    return JsonResponse({
-        "users": [
-            {"id": "1", "name": "Alice"},
-            {"id": "2", "name": "Bob"},
-        ]
-    })
+    return JsonResponse(
+        {
+            "users": [
+                {"id": "1", "name": "Alice"},
+                {"id": "2", "name": "Bob"},
+            ]
+        }
+    )
 
 
 @instrument_view(metrics_storage)
-async def error_demo(request: HttpRequest) -> HttpResponse:
+async def error_demo(_request: HttpRequest) -> HttpResponse:
     """Error endpoint demonstrating error status in metrics.
 
     When the view name is not specified, the function name is used.
     When an exception occurs, the counter records status=error.
-    The exception is also captured in the logs via logger.exception().
     """
     try:
         raise ValueError("Intentional error for demonstration")
     except ValueError:
-        logger.exception("Error in error_demo endpoint")
+        await logger.with_fields(endpoint="error_demo").error(
+            "Error in error_demo endpoint"
+        )
         raise
 
 
