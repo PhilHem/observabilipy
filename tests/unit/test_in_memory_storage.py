@@ -9,6 +9,11 @@ from observabilipy.adapters.storage.in_memory import (
 from observabilipy.core.models import LogEntry, MetricSample
 from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
+pytestmark = [
+    pytest.mark.tier(1),
+    pytest.mark.tra("Adapter.InMemoryStorage.ImplementsPortContract"),
+]
+
 
 class TestInMemoryLogStorage:
     """Tests for InMemoryLogStorage adapter."""
