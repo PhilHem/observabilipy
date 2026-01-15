@@ -43,6 +43,8 @@ class EventObservability:
         registry: MappingRegistry,
         log_storage: LogStoragePort,
         metrics_storage: MetricsStoragePort,
+        *,
+        sync: bool = False,
     ) -> None:
         """Initialize the event observability adapter.
 
@@ -50,10 +52,14 @@ class EventObservability:
             registry: Registry containing event-to-observability mappings.
             log_storage: Storage backend for log entries.
             metrics_storage: Storage backend for metric samples.
+            sync: If True, writes to storage synchronously bypassing async
+                machinery. Useful for testing and WSGI contexts where
+                fire-and-forget tasks would cause race conditions.
         """
         self._registry = registry
         self._log_storage = log_storage
         self._metrics_storage = metrics_storage
+        self._sync = sync
 
     def record(self, event: Any) -> None:
         """Record a domain event synchronously.
@@ -95,9 +101,20 @@ class EventObservability:
     def _write_outputs(self, outputs: list[LogEntry | MetricSample]) -> None:
         """Write outputs to storage, handling sync/async contexts.
 
-        Detects whether we're inside a running event loop and schedules
-        the write appropriately.
+        When sync=True, writes directly to storage lists bypassing async.
+        Otherwise, detects whether we're inside a running event loop and
+        schedules the write appropriately.
         """
+        if self._sync:
+            # Synchronous write - directly append to storage lists
+            # Only works with InMemoryStorage (intended for testing)
+            for output in outputs:
+                if isinstance(output, LogEntry):
+                    self._log_storage._entries.append(output)  # type: ignore[attr-defined]
+                elif isinstance(output, MetricSample):
+                    self._metrics_storage._samples.append(output)  # type: ignore[attr-defined]
+            return
+
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:

@@ -184,3 +184,41 @@ class TestEventObservabilityMultipleOutputs:
         metric_count = await metrics_storage.count()
         assert log_count == 1
         assert metric_count == 2
+
+
+class TestEventObservabilitySyncMode:
+    """Tests for sync=True mode."""
+
+    @pytest.mark.tra("Events.EventObservability.SyncMode")
+    @pytest.mark.tier(0)
+    @pytest.mark.asyncio
+    async def test_sync_mode_writes_immediately_in_async_context(self) -> None:
+        """sync=True writes complete before record() returns, even in async context."""
+        registry = MappingRegistry()
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+
+        def mapper(event: UserRegistered) -> list[LogEntry]:
+            return [LogEntry(timestamp=1.0, level="INFO", message="test")]
+
+        registry.register("UserRegistered", mapper)
+        adapter = EventObservability(registry, log_storage, metrics_storage, sync=True)
+
+        event = UserRegistered(user_id="u123", email="test@example.com")
+        adapter.record(event)  # Inside async context, but sync=True
+
+        # No sleep needed - write is synchronous
+        count = await log_storage.count()
+        assert count == 1
+
+    @pytest.mark.tra("Events.EventObservability.SyncMode.DefaultFalse")
+    @pytest.mark.tier(0)
+    def test_sync_mode_defaults_to_false(self) -> None:
+        """sync parameter defaults to False (async behavior)."""
+        registry = MappingRegistry()
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+
+        adapter = EventObservability(registry, log_storage, metrics_storage)
+
+        assert adapter._sync is False
