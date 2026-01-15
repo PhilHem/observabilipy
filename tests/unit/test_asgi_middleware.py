@@ -17,6 +17,9 @@ from observabilipy.adapters.storage.in_memory import (
     InMemoryMetricsStorage,
 )
 
+# Import conftest fixtures for testing
+pytest_plugins = ["tests.features.middleware.conftest"]
+
 
 @pytest.mark.tier(1)
 @pytest.mark.tra("Adapter.ASGI.Middleware.Init")
@@ -132,3 +135,57 @@ async def test_middleware_passes_through_to_wrapped_app():
     assert (b"x-custom", b"test") in responses[0]["headers"]
     assert responses[1]["type"] == "http.response.body"
     assert responses[1]["body"] == b"Custom Response"
+
+
+# === Fixture Tests ===
+
+
+@pytest.mark.tier(0)
+@pytest.mark.tra("Adapter.ASGI.Fixtures.BasicApp")
+def test_basic_asgi_app_fixture_returns_callable(basic_asgi_app):
+    """basic_asgi_app fixture should return a callable ASGI application."""
+    # Assert: Fixture should return a callable
+    assert callable(basic_asgi_app)
+
+
+@pytest.mark.tier(0)
+@pytest.mark.tra("Adapter.ASGI.Fixtures.Scope")
+def test_asgi_scope_fixture_returns_valid_scope(asgi_scope):
+    """asgi_scope fixture should return factory creating valid scope dicts."""
+    # Act: Create default scope
+    scope = asgi_scope()
+
+    # Assert: Scope should have required ASGI HTTP fields
+    assert scope["type"] == "http"
+    assert scope["method"] == "GET"
+    assert scope["path"] == "/test"
+    assert scope["query_string"] == b""
+    assert scope["headers"] == []
+
+    # Act: Create custom scope
+    custom_scope = asgi_scope(method="POST", path="/custom")
+
+    # Assert: Custom scope should respect parameters
+    assert custom_scope["type"] == "http"
+    assert custom_scope["method"] == "POST"
+    assert custom_scope["path"] == "/custom"
+
+
+@pytest.mark.tier(0)
+@pytest.mark.tra("Adapter.ASGI.Fixtures.SendCapture")
+@pytest.mark.asyncio
+async def test_asgi_send_capture_records_messages(asgi_send_capture):
+    """asgi_send_capture fixture should record ASGI messages."""
+    # Arrange: Unpack fixture
+    send, responses = asgi_send_capture
+
+    # Act: Send two messages
+    await send({"type": "http.response.start", "status": 200, "headers": []})
+    await send({"type": "http.response.body", "body": b"OK"})
+
+    # Assert: Responses should be recorded
+    assert len(responses) == 2
+    assert responses[0]["type"] == "http.response.start"
+    assert responses[0]["status"] == 200
+    assert responses[1]["type"] == "http.response.body"
+    assert responses[1]["body"] == b"OK"

@@ -375,7 +375,7 @@ class TestASGILogsEndpoint:
 
     @pytest.mark.asgi
     async def test_logs_endpoint_level_returns_empty_for_nonexistent(self) -> None:
-        """Test that /logs returns empty for non-existent level."""
+        """Test that /logs treats invalid level as None (shows all)."""
         log_storage = InMemoryLogStorage()
         metrics_storage = InMemoryMetricsStorage()
         await log_storage.write(
@@ -394,7 +394,81 @@ class TestASGILogsEndpoint:
             response = await client.get("/logs?level=FATAL")
 
         assert response.status_code == 200
-        assert response.text == ""
+        assert "Info message" in response.text
+
+    @pytest.mark.asgi
+    async def test_metrics_endpoint_handles_invalid_since_param(self) -> None:
+        """Test that /metrics handles invalid since param gracefully."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        await metrics_storage.write(
+            MetricSample(name="counter", timestamp=100.0, value=1.0)
+        )
+        app = create_asgi_app(log_storage, metrics_storage)
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get("/metrics?since=invalid")
+
+        assert response.status_code == 200
+        parsed = json.loads(response.text.strip())
+        assert parsed["value"] == 1.0
+
+    @pytest.mark.asgi
+    async def test_logs_endpoint_handles_invalid_since_param(self) -> None:
+        """Test that /logs handles invalid since param gracefully."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        await log_storage.write(
+            LogEntry(
+                timestamp=100.0,
+                level="INFO",
+                message="Test message",
+                attributes={},
+            )
+        )
+        app = create_asgi_app(log_storage, metrics_storage)
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get("/logs?since=invalid")
+
+        assert response.status_code == 200
+        assert "Test message" in response.text
+
+    @pytest.mark.asgi
+    async def test_logs_endpoint_validates_level_whitelist(self) -> None:
+        """Test that /logs validates level parameter against whitelist."""
+        log_storage = InMemoryLogStorage()
+        metrics_storage = InMemoryMetricsStorage()
+        await log_storage.write(
+            LogEntry(
+                timestamp=100.0,
+                level="INFO",
+                message="Info message",
+                attributes={},
+            )
+        )
+        await log_storage.write(
+            LogEntry(
+                timestamp=200.0,
+                level="ERROR",
+                message="Error message",
+                attributes={},
+            )
+        )
+        app = create_asgi_app(log_storage, metrics_storage)
+
+        async with httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        ) as client:
+            response = await client.get("/logs?level=INVALID_LEVEL")
+
+        assert response.status_code == 200
+        assert "Info message" in response.text
+        assert "Error message" in response.text
 
 
 class TestASGIRouting:

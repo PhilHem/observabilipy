@@ -14,10 +14,47 @@ from observabilipy.core.encoding.prometheus import encode_current
 from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
 # ASGI type aliases
+# @tra: Adapter.ASGI.Fixtures.BasicApp
+# @tra: Adapter.ASGI.Fixtures.Scope
+# @tra: Adapter.ASGI.Fixtures.SendCapture
 Scope = dict[str, Any]
 Receive = Callable[[], Coroutine[Any, Any, dict[str, Any]]]
 Send = Callable[[dict[str, Any]], Coroutine[Any, Any, None]]
 ASGIApp = Callable[[Scope, Receive, Send], Coroutine[Any, Any, None]]
+
+# Valid log levels for validation
+VALID_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
+
+
+def _parse_since_param(params: dict[str, list[str]]) -> float:
+    """Parse and validate the 'since' query parameter.
+
+    Args:
+        params: Parsed query string parameters.
+
+    Returns:
+        Timestamp as float, defaulting to 0.0 if invalid or missing.
+    """
+    try:
+        return float(params.get("since", ["0"])[0])
+    except ValueError:
+        return 0.0
+
+
+def _parse_level_param(params: dict[str, list[str]]) -> str | None:
+    """Parse and validate the 'level' query parameter.
+
+    Args:
+        params: Parsed query string parameters.
+
+    Returns:
+        Validated level string (uppercase) or None if invalid/missing.
+    """
+    level_list = params.get("level", [None])
+    level_raw = level_list[0] if level_list else None
+    if level_raw and level_raw.upper() in VALID_LEVELS:
+        return level_raw.upper()
+    return None
 
 
 # @tra: Adapter.ASGI.Middleware.Init
@@ -87,7 +124,7 @@ def create_asgi_app(
             headers = [(b"content-type", b"application/x-ndjson")]
             query_string = scope.get("query_string", b"").decode()
             params = parse_qs(query_string)
-            since = float(params.get("since", ["0"])[0])
+            since = _parse_since_param(params)
             body = await encode_ndjson(metrics_storage.read(since=since))
             await send(
                 {"type": "http.response.start", "status": 200, "headers": headers}
@@ -104,9 +141,8 @@ def create_asgi_app(
             headers = [(b"content-type", b"application/x-ndjson")]
             query_string = scope.get("query_string", b"").decode()
             params = parse_qs(query_string)
-            since = float(params.get("since", ["0"])[0])
-            level_list = params.get("level", [None])
-            level = level_list[0] if level_list else None
+            since = _parse_since_param(params)
+            level = _parse_level_param(params)
             body = await encode_logs(log_storage.read(since=since, level=level))
             await send(
                 {"type": "http.response.start", "status": 200, "headers": headers}
