@@ -109,11 +109,15 @@ class SQLiteLogStorage(SQLiteStorageBase):
                 params = (since,)
             async with db.execute(query, params) as cursor:
                 async for row in cursor:
+                    try:
+                        attributes = json.loads(row[3])
+                    except json.JSONDecodeError:
+                        attributes = {}
                     yield LogEntry(
                         timestamp=row[0],
                         level=row[1],
                         message=row[2],
-                        attributes=json.loads(row[3]),
+                        attributes=attributes,
                     )
         finally:
             if self._db_path != ":memory:":
@@ -196,15 +200,21 @@ class SQLiteLogStorage(SQLiteStorageBase):
                 query = _SELECT_LOGS
                 params = (since,)
             cursor = conn.execute(query, params)
-            return [
-                LogEntry(
-                    timestamp=row[0],
-                    level=row[1],
-                    message=row[2],
-                    attributes=json.loads(row[3]),
+            entries = []
+            for row in cursor:
+                try:
+                    attributes = json.loads(row[3])
+                except json.JSONDecodeError:
+                    attributes = {}
+                entries.append(
+                    LogEntry(
+                        timestamp=row[0],
+                        level=row[1],
+                        message=row[2],
+                        attributes=attributes,
+                    )
                 )
-                for row in cursor
-            ]
+            return entries
         finally:
             if self._db_path != ":memory:":
                 conn.close()

@@ -83,11 +83,15 @@ class SQLiteMetricsStorage(SQLiteStorageBase):
         try:
             async with db.execute(_SELECT_METRICS_SINCE, (since,)) as cursor:
                 async for row in cursor:
+                    try:
+                        labels = json.loads(row[3])
+                    except json.JSONDecodeError:
+                        labels = {}
                     yield MetricSample(
                         name=row[0],
                         timestamp=row[1],
                         value=row[2],
-                        labels=json.loads(row[3]),
+                        labels=labels,
                     )
         finally:
             if self._db_path != ":memory:":
@@ -141,15 +145,21 @@ class SQLiteMetricsStorage(SQLiteStorageBase):
         conn = self._get_sync_connection()
         try:
             cursor = conn.execute(_SELECT_METRICS_SINCE, (since,))
-            return [
-                MetricSample(
-                    name=row[0],
-                    timestamp=row[1],
-                    value=row[2],
-                    labels=json.loads(row[3]),
+            samples = []
+            for row in cursor:
+                try:
+                    labels = json.loads(row[3])
+                except json.JSONDecodeError:
+                    labels = {}
+                samples.append(
+                    MetricSample(
+                        name=row[0],
+                        timestamp=row[1],
+                        value=row[2],
+                        labels=labels,
+                    )
                 )
-                for row in cursor
-            ]
+            return samples
         finally:
             if self._db_path != ":memory:":
                 conn.close()
