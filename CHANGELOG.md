@@ -2,6 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.4.0] - 2026-01-15
+
+### Added
+- `write_sync()` method to in-memory storage adapters for synchronous write operations
+- `clear()` and `clear_sync()` methods to in-memory storage adapters for clearing all entries
+- Storage port interfaces now include `write_sync`, `clear`, and `clear_sync` methods
+- `SQLiteStorageBase` class for shared connection management across SQLite adapters
+- Generic `InMemoryStorage[T]` base class to reduce duplication in in-memory adapters
+
+### Fixed
+- SQLite adapters now use explicit `RuntimeError` instead of `assert` for initialization validation
+- JSON deserialization error handling added to SQLite adapters (returns empty list on corrupted data)
+- Async/await issue in dashboard example resolved
+
+### Changed
+- Refactored test files into smaller, focused modules by storage type and responsibility
+- Extracted common helper functions (`_safe_json_loads`) to reduce code duplication
+- Consolidated e2e test fixtures by concern
+
 ## [1.3.1] - 2026-01-15
 
 ### Fixed
