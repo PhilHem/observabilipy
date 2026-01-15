@@ -29,7 +29,12 @@ class TestLogStoragePort:
             async def write(self, entry: LogEntry) -> None:
                 pass
 
-            async def read(self, since: float = 0) -> AsyncGenerator[LogEntry]:
+            def write_sync(self, entry: LogEntry) -> None:
+                pass
+
+            async def read(
+                self, since: float = 0, level: str | None = None
+            ) -> AsyncGenerator[LogEntry]:
                 return
                 yield  # Make this an async generator
 
@@ -44,6 +49,12 @@ class TestLogStoragePort:
 
             async def count_by_level(self, level: str) -> int:
                 return 0
+
+            async def clear(self) -> None:
+                pass
+
+            def clear_sync(self) -> None:
+                pass
 
         storage: LogStoragePort = FakeLogStorage()
         assert isinstance(storage, LogStoragePort)
@@ -70,6 +81,9 @@ class TestMetricsStoragePort:
             async def write(self, sample: MetricSample) -> None:
                 pass
 
+            def write_sync(self, sample: MetricSample) -> None:
+                pass
+
             async def read(self, since: float = 0) -> AsyncGenerator[MetricSample]:
                 return
                 yield  # Make this an async generator
@@ -79,6 +93,12 @@ class TestMetricsStoragePort:
 
             async def delete_before(self, timestamp: float) -> int:
                 return 0
+
+            async def clear(self) -> None:
+                pass
+
+            def clear_sync(self) -> None:
+                pass
 
         storage: MetricsStoragePort = FakeMetricsStorage()
         assert isinstance(storage, MetricsStoragePort)

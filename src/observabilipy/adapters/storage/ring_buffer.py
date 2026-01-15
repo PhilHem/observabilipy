@@ -44,6 +44,18 @@ class RingBufferLogStorage:
         """Write a log entry to storage."""
         self._buffer.append(entry)
 
+    def write_sync(self, entry: LogEntry) -> None:
+        """Synchronous write for non-async contexts (testing, WSGI)."""
+        self._buffer.append(entry)
+
+    async def clear(self) -> None:
+        """Clear all entries from storage."""
+        self._buffer.clear()
+
+    def clear_sync(self) -> None:
+        """Synchronous clear for non-async contexts (testing, WSGI)."""
+        self._buffer.clear()
+
     async def read(
         self, since: float = 0, level: str | None = None
     ) -> AsyncIterable[LogEntry]:
@@ -119,6 +131,18 @@ class RingBufferMetricsStorage:
     async def write(self, sample: MetricSample) -> None:
         """Write a metric sample to storage."""
         self._buffer.append(sample)
+
+    def write_sync(self, sample: MetricSample) -> None:
+        """Synchronous write for non-async contexts (testing, WSGI)."""
+        self._buffer.append(sample)
+
+    async def clear(self) -> None:
+        """Clear all samples from storage."""
+        self._buffer.clear()
+
+    def clear_sync(self) -> None:
+        """Synchronous clear for non-async contexts (testing, WSGI)."""
+        self._buffer.clear()
 
     async def read(self, since: float = 0) -> AsyncIterable[MetricSample]:
         """Read metric samples since the given timestamp.

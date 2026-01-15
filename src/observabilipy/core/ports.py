@@ -22,6 +22,10 @@ class LogStoragePort(Protocol):
         """Write a log entry to storage."""
         ...
 
+    def write_sync(self, entry: LogEntry) -> None:
+        """Synchronous write for non-async contexts (testing, WSGI)."""
+        ...
+
     def read(
         self, since: float = 0, level: str | None = None
     ) -> AsyncIterable[LogEntry]:
@@ -78,6 +82,14 @@ class LogStoragePort(Protocol):
         """
         ...
 
+    async def clear(self) -> None:
+        """Clear all entries from storage."""
+        ...
+
+    def clear_sync(self) -> None:
+        """Synchronous clear for non-async contexts (testing, WSGI)."""
+        ...
+
 
 @runtime_checkable
 class MetricsStoragePort(Protocol):
@@ -89,6 +101,10 @@ class MetricsStoragePort(Protocol):
 
     async def write(self, sample: MetricSample) -> None:
         """Write a metric sample to storage."""
+        ...
+
+    def write_sync(self, sample: MetricSample) -> None:
+        """Synchronous write for non-async contexts (testing, WSGI)."""
         ...
 
     def read(self, since: float = 0) -> AsyncIterable[MetricSample]:
@@ -117,4 +133,12 @@ class MetricsStoragePort(Protocol):
         Returns:
             Number of samples deleted.
         """
+        ...
+
+    async def clear(self) -> None:
+        """Clear all samples from storage."""
+        ...
+
+    def clear_sync(self) -> None:
+        """Synchronous clear for non-async contexts (testing, WSGI)."""
         ...

@@ -535,3 +535,107 @@ class TestRingBufferMetricsStorage:
 
         assert results[0].timestamp == 100.0
         assert results[1].timestamp == 300.0
+
+
+class TestRingBufferLogStorageSync:
+    """Tests for synchronous methods on RingBufferLogStorage."""
+
+    @pytest.mark.storage
+    def test_write_sync_writes_single_entry(self) -> None:
+        """write_sync() appends a single entry synchronously."""
+        storage = RingBufferLogStorage(max_size=100)
+        entry = LogEntry(timestamp=1000.0, level="INFO", message="test")
+
+        storage.write_sync(entry)
+
+        assert len(storage._buffer) == 1
+        assert storage._buffer[0] == entry
+
+    @pytest.mark.storage
+    def test_write_sync_respects_max_size(self) -> None:
+        """write_sync() evicts oldest entry when buffer is full."""
+        storage = RingBufferLogStorage(max_size=2)
+        entries = [
+            LogEntry(timestamp=float(i), level="INFO", message=f"msg {i}")
+            for i in range(3)
+        ]
+
+        for entry in entries:
+            storage.write_sync(entry)
+
+        assert len(storage._buffer) == 2
+        assert list(storage._buffer) == entries[1:]
+
+    @pytest.mark.storage
+    async def test_clear_removes_all_entries(self) -> None:
+        """clear() removes all entries from storage."""
+        storage = RingBufferLogStorage(max_size=100)
+        await storage.write(LogEntry(timestamp=1000.0, level="INFO", message="first"))
+        await storage.write(LogEntry(timestamp=1001.0, level="DEBUG", message="second"))
+
+        await storage.clear()
+
+        assert await storage.count() == 0
+
+    @pytest.mark.storage
+    def test_clear_sync_removes_all_entries(self) -> None:
+        """clear_sync() removes all entries synchronously."""
+        storage = RingBufferLogStorage(max_size=100)
+        storage.write_sync(LogEntry(timestamp=1000.0, level="INFO", message="first"))
+        storage.write_sync(LogEntry(timestamp=1001.0, level="DEBUG", message="second"))
+
+        storage.clear_sync()
+
+        assert len(storage._buffer) == 0
+
+
+class TestRingBufferMetricsStorageSync:
+    """Tests for synchronous methods on RingBufferMetricsStorage."""
+
+    @pytest.mark.storage
+    def test_write_sync_writes_single_sample(self) -> None:
+        """write_sync() appends a single sample synchronously."""
+        storage = RingBufferMetricsStorage(max_size=100)
+        sample = MetricSample(name="test_metric", timestamp=1000.0, value=42.0)
+
+        storage.write_sync(sample)
+
+        assert len(storage._buffer) == 1
+        assert storage._buffer[0] == sample
+
+    @pytest.mark.storage
+    def test_write_sync_respects_max_size(self) -> None:
+        """write_sync() evicts oldest sample when buffer is full."""
+        storage = RingBufferMetricsStorage(max_size=2)
+        samples = [
+            MetricSample(name=f"m_{i}", timestamp=float(i), value=float(i))
+            for i in range(3)
+        ]
+
+        for sample in samples:
+            storage.write_sync(sample)
+
+        assert len(storage._buffer) == 2
+        assert list(storage._buffer) == samples[1:]
+
+    @pytest.mark.storage
+    async def test_clear_removes_all_samples(self) -> None:
+        """clear() removes all samples from storage."""
+        storage = RingBufferMetricsStorage(max_size=100)
+        await storage.write(MetricSample(name="m1", timestamp=1000.0, value=1.0))
+        await storage.write(MetricSample(name="m2", timestamp=1001.0, value=2.0))
+
+        await storage.clear()
+
+        assert await storage.count() == 0
+
+    @pytest.mark.storage
+    def test_clear_sync_removes_all_samples(self) -> None:
+        """clear_sync() removes all samples synchronously."""
+        storage = RingBufferMetricsStorage(max_size=100)
+        storage.write_sync(MetricSample(name="m1", timestamp=1000.0, value=1.0))
+        storage.write_sync(MetricSample(name="m2", timestamp=1001.0, value=2.0))
+
+        storage.clear_sync()
+
+        assert len(storage._buffer) == 0
