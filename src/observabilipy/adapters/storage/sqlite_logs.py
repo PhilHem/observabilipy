@@ -75,8 +75,7 @@ class SQLiteLogStorage(SQLiteStorageBase):
     # @tra: Adapter.SQLiteStorage.PersistsAcrossInstances
     async def write(self, entry: LogEntry) -> None:
         """Write a log entry to storage."""
-        db = await self._get_connection()
-        try:
+        async with self.async_connection() as db:
             await db.execute(
                 _INSERT_LOG,
                 (
@@ -87,9 +86,6 @@ class SQLiteLogStorage(SQLiteStorageBase):
                 ),
             )
             await db.commit()
-        finally:
-            if self._db_path != ":memory:":
-                await db.close()
 
     async def read(
         self, since: float = 0, level: str | None = None
@@ -99,8 +95,7 @@ class SQLiteLogStorage(SQLiteStorageBase):
         If level is provided, only entries with matching level (case-insensitive)
         are returned.
         """
-        db = await self._get_connection()
-        try:
+        async with self.async_connection() as db:
             if level is not None:
                 query = _SELECT_LOGS_BY_LEVEL
                 params: tuple[float] | tuple[float, str] = (since, level)
@@ -119,62 +114,42 @@ class SQLiteLogStorage(SQLiteStorageBase):
                         message=row[2],
                         attributes=attributes,
                     )
-        finally:
-            if self._db_path != ":memory:":
-                await db.close()
 
     async def count(self) -> int:
         """Return total number of log entries in storage."""
-        db = await self._get_connection()
-        try:
+        async with self.async_connection() as db:
             async with db.execute(_COUNT_LOGS) as cursor:
                 row = await cursor.fetchone()
                 return row[0] if row else 0
-        finally:
-            if self._db_path != ":memory:":
-                await db.close()
 
     async def delete_before(self, timestamp: float) -> int:
         """Delete log entries with timestamp < given value."""
-        db = await self._get_connection()
-        try:
+        async with self.async_connection() as db:
             cursor = await db.execute(_DELETE_LOGS_BEFORE, (timestamp,))
             deleted = cursor.rowcount
             await db.commit()
             return deleted
-        finally:
-            if self._db_path != ":memory:":
-                await db.close()
 
     async def delete_by_level_before(self, level: str, timestamp: float) -> int:
         """Delete log entries matching level with timestamp < given value."""
-        db = await self._get_connection()
-        try:
+        async with self.async_connection() as db:
             cursor = await db.execute(_DELETE_LOGS_BY_LEVEL_BEFORE, (level, timestamp))
             deleted = cursor.rowcount
             await db.commit()
             return deleted
-        finally:
-            if self._db_path != ":memory:":
-                await db.close()
 
     async def count_by_level(self, level: str) -> int:
         """Return number of log entries with the specified level."""
-        db = await self._get_connection()
-        try:
+        async with self.async_connection() as db:
             async with db.execute(_COUNT_LOGS_BY_LEVEL, (level,)) as cursor:
                 row = await cursor.fetchone()
                 return row[0] if row else 0
-        finally:
-            if self._db_path != ":memory:":
-                await db.close()
 
     # --- Sync methods using standard sqlite3 module ---
 
     def write_sync(self, entry: LogEntry) -> None:
         """Synchronous write for non-async contexts (testing, WSGI)."""
-        conn = self._get_sync_connection()
-        try:
+        with self.sync_connection() as conn:
             conn.execute(
                 _INSERT_LOG,
                 (
@@ -185,14 +160,10 @@ class SQLiteLogStorage(SQLiteStorageBase):
                 ),
             )
             conn.commit()
-        finally:
-            if self._db_path != ":memory:":
-                conn.close()
 
     def read_sync(self, since: float = 0, level: str | None = None) -> list[LogEntry]:
         """Synchronous read for non-async contexts (testing, WSGI)."""
-        conn = self._get_sync_connection()
-        try:
+        with self.sync_connection() as conn:
             if level is not None:
                 query = _SELECT_LOGS_BY_LEVEL
                 params: tuple[float] | tuple[float, str] = (since, level)
@@ -215,26 +186,15 @@ class SQLiteLogStorage(SQLiteStorageBase):
                     )
                 )
             return entries
-        finally:
-            if self._db_path != ":memory:":
-                conn.close()
 
     async def clear(self) -> None:
         """Clear all entries from storage."""
-        db = await self._get_connection()
-        try:
+        async with self.async_connection() as db:
             await db.execute("DELETE FROM logs")
             await db.commit()
-        finally:
-            if self._db_path != ":memory:":
-                await db.close()
 
     def clear_sync(self) -> None:
         """Synchronous clear for non-async contexts (testing, WSGI)."""
-        conn = self._get_sync_connection()
-        try:
+        with self.sync_connection() as conn:
             conn.execute("DELETE FROM logs")
             conn.commit()
-        finally:
-            if self._db_path != ":memory:":
-                conn.close()

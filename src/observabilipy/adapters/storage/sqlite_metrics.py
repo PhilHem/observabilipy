@@ -58,8 +58,7 @@ class SQLiteMetricsStorage(SQLiteStorageBase):
 
     async def write(self, sample: MetricSample) -> None:
         """Write a metric sample to storage."""
-        db = await self._get_connection()
-        try:
+        async with self.async_connection() as db:
             await db.execute(
                 _INSERT_METRIC,
                 (
@@ -70,17 +69,13 @@ class SQLiteMetricsStorage(SQLiteStorageBase):
                 ),
             )
             await db.commit()
-        finally:
-            if self._db_path != ":memory:":
-                await db.close()
 
     async def read(self, since: float = 0) -> AsyncIterable[MetricSample]:
         """Read metric samples since the given timestamp.
 
         Returns samples with timestamp > since, ordered by timestamp ascending.
         """
-        db = await self._get_connection()
-        try:
+        async with self.async_connection() as db:
             async with db.execute(_SELECT_METRICS_SINCE, (since,)) as cursor:
                 async for row in cursor:
                     try:
@@ -93,39 +88,27 @@ class SQLiteMetricsStorage(SQLiteStorageBase):
                         value=row[2],
                         labels=labels,
                     )
-        finally:
-            if self._db_path != ":memory:":
-                await db.close()
 
     async def count(self) -> int:
         """Return total number of metric samples in storage."""
-        db = await self._get_connection()
-        try:
+        async with self.async_connection() as db:
             async with db.execute(_COUNT_METRICS) as cursor:
                 row = await cursor.fetchone()
                 return row[0] if row else 0
-        finally:
-            if self._db_path != ":memory:":
-                await db.close()
 
     async def delete_before(self, timestamp: float) -> int:
         """Delete metric samples with timestamp < given value."""
-        db = await self._get_connection()
-        try:
+        async with self.async_connection() as db:
             cursor = await db.execute(_DELETE_METRICS_BEFORE, (timestamp,))
             deleted = cursor.rowcount
             await db.commit()
             return deleted
-        finally:
-            if self._db_path != ":memory:":
-                await db.close()
 
     # --- Sync methods using standard sqlite3 module ---
 
     def write_sync(self, sample: MetricSample) -> None:
         """Synchronous write for non-async contexts (testing, WSGI)."""
-        conn = self._get_sync_connection()
-        try:
+        with self.sync_connection() as conn:
             conn.execute(
                 _INSERT_METRIC,
                 (
@@ -136,14 +119,10 @@ class SQLiteMetricsStorage(SQLiteStorageBase):
                 ),
             )
             conn.commit()
-        finally:
-            if self._db_path != ":memory:":
-                conn.close()
 
     def read_sync(self, since: float = 0) -> list[MetricSample]:
         """Synchronous read for non-async contexts (testing, WSGI)."""
-        conn = self._get_sync_connection()
-        try:
+        with self.sync_connection() as conn:
             cursor = conn.execute(_SELECT_METRICS_SINCE, (since,))
             samples = []
             for row in cursor:
@@ -160,26 +139,15 @@ class SQLiteMetricsStorage(SQLiteStorageBase):
                     )
                 )
             return samples
-        finally:
-            if self._db_path != ":memory:":
-                conn.close()
 
     async def clear(self) -> None:
         """Clear all samples from storage."""
-        db = await self._get_connection()
-        try:
+        async with self.async_connection() as db:
             await db.execute("DELETE FROM metrics")
             await db.commit()
-        finally:
-            if self._db_path != ":memory:":
-                await db.close()
 
     def clear_sync(self) -> None:
         """Synchronous clear for non-async contexts (testing, WSGI)."""
-        conn = self._get_sync_connection()
-        try:
+        with self.sync_connection() as conn:
             conn.execute("DELETE FROM metrics")
             conn.commit()
-        finally:
-            if self._db_path != ":memory:":
-                conn.close()

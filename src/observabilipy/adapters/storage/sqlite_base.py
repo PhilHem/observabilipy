@@ -3,6 +3,8 @@
 import asyncio
 import sqlite3
 import threading
+from collections.abc import AsyncIterator, Iterator
+from contextlib import asynccontextmanager, contextmanager
 
 import aiosqlite
 
@@ -97,3 +99,33 @@ class SQLiteStorageBase:
             assert self._sync_conn is not None
             return self._sync_conn
         return sqlite3.connect(self._db_path)
+
+    # --- Connection context managers ---
+
+    @asynccontextmanager
+    async def async_connection(self) -> AsyncIterator[aiosqlite.Connection]:
+        """Context manager for async database connections.
+
+        Automatically closes connections for file-based databases.
+        For :memory: databases, keeps connections open (they're persistent).
+        """
+        db = await self._get_connection()
+        try:
+            yield db
+        finally:
+            if self._db_path != ":memory:":
+                await db.close()
+
+    @contextmanager
+    def sync_connection(self) -> Iterator[sqlite3.Connection]:
+        """Context manager for sync database connections.
+
+        Automatically closes connections for file-based databases.
+        For :memory: databases, keeps connections open (they're persistent).
+        """
+        conn = self._get_sync_connection()
+        try:
+            yield conn
+        finally:
+            if self._db_path != ":memory:":
+                conn.close()
