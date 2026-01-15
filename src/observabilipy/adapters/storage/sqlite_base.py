@@ -94,7 +94,8 @@ class SQLiteStorageBase:
         """Get a database connection."""
         await self._ensure_initialized()
         if self._db_path == ":memory:":
-            assert self._persistent_conn is not None
+            if self._persistent_conn is None:
+                raise RuntimeError("Memory database connection not initialized")
             return self._persistent_conn
         return await aiosqlite.connect(self._db_path)
 
@@ -128,7 +129,8 @@ class SQLiteStorageBase:
         """Get a sync database connection."""
         self._ensure_initialized_sync()
         if self._db_path == ":memory:":
-            assert self._sync_conn is not None
+            if self._sync_conn is None:
+                raise RuntimeError("Sync memory database connection not initialized")
             return self._sync_conn
         return sqlite3.connect(self._db_path)
 
