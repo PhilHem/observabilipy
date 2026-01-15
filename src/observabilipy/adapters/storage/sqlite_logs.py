@@ -109,6 +109,7 @@ class SQLiteLogStorage(SQLiteStorageGeneric):
         """Write a log entry to storage."""
         await self._write(entry)
 
+    # @tra: Adapter.SQLiteStorage.LevelFiltering
     async def read(
         self, since: float = 0, level: str | None = None
     ) -> AsyncIterable[LogEntry]:
@@ -137,6 +138,7 @@ class SQLiteLogStorage(SQLiteStorageGeneric):
         """Delete log entries with timestamp < given value."""
         return await self._delete_before(timestamp)
 
+    # @tra: Adapter.SQLiteStorage.LevelFiltering
     async def delete_by_level_before(self, level: str, timestamp: float) -> int:
         """Delete log entries matching level with timestamp < given value."""
         async with self.async_connection() as db:
@@ -145,6 +147,7 @@ class SQLiteLogStorage(SQLiteStorageGeneric):
             await db.commit()
             return deleted
 
+    # @tra: Adapter.SQLiteStorage.LevelFiltering
     async def count_by_level(self, level: str) -> int:
         """Return number of log entries with the specified level."""
         async with self.async_connection() as db:
