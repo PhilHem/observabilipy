@@ -313,6 +313,17 @@ class TestInMemoryLogStorage:
 
         assert result == []
 
+    @pytest.mark.storage
+    async def test_clear_removes_all_entries(self) -> None:
+        """clear() removes all entries from storage."""
+        storage = InMemoryLogStorage()
+        await storage.write(LogEntry(timestamp=1000.0, level="INFO", message="first"))
+        await storage.write(LogEntry(timestamp=1001.0, level="DEBUG", message="second"))
+
+        await storage.clear()
+
+        assert await storage.count() == 0
+
 
 class TestInMemoryMetricsStorage:
     """Tests for InMemoryMetricsStorage adapter."""
@@ -493,6 +504,17 @@ class TestInMemoryMetricsStorage:
         assert results[0].timestamp == 100.0
         assert results[1].timestamp == 300.0
 
+    @pytest.mark.storage
+    async def test_clear_removes_all_samples(self) -> None:
+        """clear() removes all samples from storage."""
+        storage = InMemoryMetricsStorage()
+        await storage.write(MetricSample(name="m1", timestamp=1000.0, value=1.0))
+        await storage.write(MetricSample(name="m2", timestamp=1001.0, value=2.0))
+
+        await storage.clear()
+
+        assert await storage.count() == 0
+
 
 class TestInMemoryLogStorageSync:
     """Tests for synchronous write methods on InMemoryLogStorage."""
@@ -520,6 +542,17 @@ class TestInMemoryLogStorageSync:
 
         assert storage._entries == entries
 
+    @pytest.mark.storage
+    def test_clear_sync_removes_all_entries(self) -> None:
+        """clear_sync() removes all entries synchronously."""
+        storage = InMemoryLogStorage()
+        storage.write_sync(LogEntry(timestamp=1000.0, level="INFO", message="first"))
+        storage.write_sync(LogEntry(timestamp=1001.0, level="DEBUG", message="second"))
+
+        storage.clear_sync()
+
+        assert storage._entries == []
+
 
 class TestInMemoryMetricsStorageSync:
     """Tests for synchronous write methods on InMemoryMetricsStorage."""
@@ -546,3 +579,14 @@ class TestInMemoryMetricsStorageSync:
         storage.write_sync_batch(samples)
 
         assert storage._samples == samples
+
+    @pytest.mark.storage
+    def test_clear_sync_removes_all_samples(self) -> None:
+        """clear_sync() removes all samples synchronously."""
+        storage = InMemoryMetricsStorage()
+        storage.write_sync(MetricSample(name="m1", timestamp=1000.0, value=1.0))
+        storage.write_sync(MetricSample(name="m2", timestamp=1001.0, value=2.0))
+
+        storage.clear_sync()
+
+        assert storage._samples == []

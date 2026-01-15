@@ -38,6 +38,14 @@ class InMemoryLogStorage:
         """Synchronous batch write for testing contexts."""
         self._entries.extend(entries)
 
+    async def clear(self) -> None:
+        """Clear all entries from storage."""
+        self._entries.clear()
+
+    def clear_sync(self) -> None:
+        """Synchronous clear for testing contexts."""
+        self._entries.clear()
+
     async def read(
         self, since: float = 0, level: str | None = None
     ) -> AsyncIterable[LogEntry]:
@@ -111,6 +119,14 @@ class InMemoryMetricsStorage:
     def write_sync_batch(self, samples: list[MetricSample]) -> None:
         """Synchronous batch write for testing contexts."""
         self._samples.extend(samples)
+
+    async def clear(self) -> None:
+        """Clear all samples from storage."""
+        self._samples.clear()
+
+    def clear_sync(self) -> None:
+        """Synchronous clear for testing contexts."""
+        self._samples.clear()
 
     async def read(self, since: float = 0) -> AsyncIterable[MetricSample]:
         """Read metric samples since the given timestamp.

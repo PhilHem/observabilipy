@@ -31,7 +31,7 @@ class TestFastAPIExample:
         client = TestClient(app)
 
         # Clear any existing data
-        metrics_storage._samples.clear()
+        metrics_storage.clear_sync()
 
         # Hit root endpoint
         response = client.get("/")
@@ -144,8 +144,8 @@ class TestAsgiExample:
         from examples.asgi_example import demo_data, log_storage, metrics_storage
 
         # Clear any existing data
-        log_storage._entries.clear()
-        metrics_storage._samples.clear()
+        log_storage.clear_sync()
+        metrics_storage.clear_sync()
 
         await demo_data()
 
@@ -206,8 +206,8 @@ class TestWsgiExample:
         from examples.wsgi_example import demo_data, log_storage, metrics_storage
 
         # Clear any existing data
-        log_storage._entries.clear()
-        metrics_storage._samples.clear()
+        log_storage.clear_sync()
+        metrics_storage.clear_sync()
 
         demo_data()
 
@@ -243,8 +243,8 @@ class TestFlaskExample:
         from examples.flask_example import app, log_storage, metrics_storage
 
         # Clear any existing data
-        log_storage._entries.clear()
-        metrics_storage._samples.clear()
+        log_storage.clear_sync()
+        metrics_storage.clear_sync()
 
         with app.test_client() as client:
             # Flask root should work
