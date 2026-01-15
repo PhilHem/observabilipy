@@ -3,7 +3,10 @@
 import json
 from collections.abc import AsyncIterable
 
-from observabilipy.adapters.storage.sqlite_base import SQLiteStorageBase
+from observabilipy.adapters.storage.sqlite_base import (
+    SQLiteStorageBase,
+    _safe_json_loads,
+)
 from observabilipy.core.models import MetricSample
 
 _METRICS_SCHEMA = """
@@ -78,15 +81,11 @@ class SQLiteMetricsStorage(SQLiteStorageBase):
         async with self.async_connection() as db:
             async with db.execute(_SELECT_METRICS_SINCE, (since,)) as cursor:
                 async for row in cursor:
-                    try:
-                        labels = json.loads(row[3])
-                    except json.JSONDecodeError:
-                        labels = {}
                     yield MetricSample(
                         name=row[0],
                         timestamp=row[1],
                         value=row[2],
-                        labels=labels,
+                        labels=_safe_json_loads(row[3]),
                     )
 
     async def count(self) -> int:
@@ -126,16 +125,12 @@ class SQLiteMetricsStorage(SQLiteStorageBase):
             cursor = conn.execute(_SELECT_METRICS_SINCE, (since,))
             samples = []
             for row in cursor:
-                try:
-                    labels = json.loads(row[3])
-                except json.JSONDecodeError:
-                    labels = {}
                 samples.append(
                     MetricSample(
                         name=row[0],
                         timestamp=row[1],
                         value=row[2],
-                        labels=labels,
+                        labels=_safe_json_loads(row[3]),
                     )
                 )
             return samples

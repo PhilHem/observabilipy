@@ -1,12 +1,35 @@
 """Base class for SQLite storage adapters."""
 
 import asyncio
+import json
 import sqlite3
 import threading
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager
+from typing import Any
 
 import aiosqlite
+
+
+def _safe_json_loads(
+    data: str, default: dict[str, Any] | None = None
+) -> dict[str, Any]:
+    """Safely parse JSON data, returning default on decode error.
+
+    Args:
+        data: JSON string to parse.
+        default: Value to return if parsing fails. Defaults to empty dict.
+
+    Returns:
+        Parsed JSON as dict, or default if parsing fails.
+    """
+    if default is None:
+        default = {}
+    try:
+        result: dict[str, Any] = json.loads(data)
+        return result
+    except json.JSONDecodeError:
+        return default
 
 
 class SQLiteStorageBase:

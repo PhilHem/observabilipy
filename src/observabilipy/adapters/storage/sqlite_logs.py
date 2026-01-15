@@ -3,7 +3,10 @@
 import json
 from collections.abc import AsyncIterable
 
-from observabilipy.adapters.storage.sqlite_base import SQLiteStorageBase
+from observabilipy.adapters.storage.sqlite_base import (
+    SQLiteStorageBase,
+    _safe_json_loads,
+)
 from observabilipy.core.models import LogEntry
 
 _LOGS_SCHEMA = """
@@ -104,15 +107,11 @@ class SQLiteLogStorage(SQLiteStorageBase):
                 params = (since,)
             async with db.execute(query, params) as cursor:
                 async for row in cursor:
-                    try:
-                        attributes = json.loads(row[3])
-                    except json.JSONDecodeError:
-                        attributes = {}
                     yield LogEntry(
                         timestamp=row[0],
                         level=row[1],
                         message=row[2],
-                        attributes=attributes,
+                        attributes=_safe_json_loads(row[3]),
                     )
 
     async def count(self) -> int:
@@ -173,16 +172,12 @@ class SQLiteLogStorage(SQLiteStorageBase):
             cursor = conn.execute(query, params)
             entries = []
             for row in cursor:
-                try:
-                    attributes = json.loads(row[3])
-                except json.JSONDecodeError:
-                    attributes = {}
                 entries.append(
                     LogEntry(
                         timestamp=row[0],
                         level=row[1],
                         message=row[2],
-                        attributes=attributes,
+                        attributes=_safe_json_loads(row[3]),
                     )
                 )
             return entries
