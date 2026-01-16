@@ -22,24 +22,19 @@ from observabilipy.adapters.storage.in_memory import (
 
 @pytest.mark.tier(1)
 @pytest.mark.tra("Adapter.ASGI.Middleware.Init")
-def test_middleware_init_accepts_app_and_storage():
+def test_middleware_init_accepts_app_and_storage(basic_asgi_app):
     """ASGIObservabilityMiddleware should accept app and storage adapters."""
-
-    # Arrange: Create a minimal ASGI app
-    async def app(scope: Scope, receive: Receive, send: Send) -> None:
-        await send({"type": "http.response.start", "status": 200, "headers": []})
-        await send({"type": "http.response.body", "body": b"OK"})
 
     log_storage = InMemoryLogStorage()
     metrics_storage = InMemoryMetricsStorage()
 
     # Act: Initialize middleware
     middleware = ASGIObservabilityMiddleware(
-        app=app, log_storage=log_storage, metrics_storage=metrics_storage
+        app=basic_asgi_app, log_storage=log_storage, metrics_storage=metrics_storage
     )
 
     # Assert: Middleware should store references
-    assert middleware.app is app
+    assert middleware.app is basic_asgi_app
     assert middleware.log_storage is log_storage
     assert middleware.metrics_storage is metrics_storage
 
@@ -47,35 +42,23 @@ def test_middleware_init_accepts_app_and_storage():
 @pytest.mark.tier(1)
 @pytest.mark.tra("Adapter.ASGI.Middleware.Interface")
 @pytest.mark.asyncio
-async def test_middleware_is_callable_asgi_interface():
+async def test_middleware_is_callable_asgi_interface(
+    basic_asgi_app, asgi_scope, asgi_send_capture
+):
     """ASGIObservabilityMiddleware should implement ASGI __call__ interface."""
 
-    # Arrange: Create a minimal ASGI app
-    async def app(scope: Scope, receive: Receive, send: Send) -> None:
-        await send({"type": "http.response.start", "status": 200, "headers": []})
-        await send({"type": "http.response.body", "body": b"OK"})
-
     middleware = ASGIObservabilityMiddleware(
-        app=app,
+        app=basic_asgi_app,
         log_storage=InMemoryLogStorage(),
         metrics_storage=InMemoryMetricsStorage(),
     )
 
-    scope: Scope = {
-        "type": "http",
-        "method": "GET",
-        "path": "/test",
-        "query_string": b"",
-        "headers": [],
-    }
+    scope = asgi_scope()
 
     async def receive() -> dict[str, object]:
         return {"type": "http.request", "body": b""}
 
-    responses: list[dict[str, object]] = []
-
-    async def send(message: dict[str, object]) -> None:
-        responses.append(message)
+    send, _responses = asgi_send_capture
 
     # Act: Call middleware as ASGI app
     await middleware(scope, receive, send)
@@ -88,7 +71,7 @@ async def test_middleware_is_callable_asgi_interface():
 @pytest.mark.tier(1)
 @pytest.mark.tra("Adapter.ASGI.Middleware.Passthrough")
 @pytest.mark.asyncio
-async def test_middleware_passes_through_to_wrapped_app():
+async def test_middleware_passes_through_to_wrapped_app(asgi_scope, asgi_send_capture):
     """ASGIObservabilityMiddleware should pass requests through to wrapped app."""
 
     # Arrange: Create an ASGI app that returns specific response
@@ -108,21 +91,12 @@ async def test_middleware_passes_through_to_wrapped_app():
         metrics_storage=InMemoryMetricsStorage(),
     )
 
-    scope: Scope = {
-        "type": "http",
-        "method": "POST",
-        "path": "/custom",
-        "query_string": b"",
-        "headers": [],
-    }
+    scope = asgi_scope(method="POST", path="/custom")
 
     async def receive() -> dict[str, object]:
         return {"type": "http.request", "body": b""}
 
-    responses: list[dict[str, object]] = []
-
-    async def send(message: dict[str, object]) -> None:
-        responses.append(message)
+    send, responses = asgi_send_capture
 
     # Act: Call middleware
     await middleware(scope, receive, send)

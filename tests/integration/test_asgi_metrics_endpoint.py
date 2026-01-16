@@ -14,18 +14,6 @@ from observabilipy.core.models import MetricSample
 
 
 @pytest.fixture
-async def log_storage() -> AsyncGenerator[InMemoryLogStorage]:
-    """Fixture providing an empty log storage."""
-    return InMemoryLogStorage()
-
-
-@pytest.fixture
-async def metrics_storage() -> AsyncGenerator[InMemoryMetricsStorage]:
-    """Fixture providing an empty metrics storage."""
-    return InMemoryMetricsStorage()
-
-
-@pytest.fixture
 async def metrics_storage_with_data() -> AsyncGenerator[InMemoryMetricsStorage]:
     """Fixture providing a metrics storage with sample data."""
     storage = InMemoryMetricsStorage()

@@ -1,5 +1,6 @@
 """Shared test fixtures for all test modules."""
 
+from collections.abc import AsyncGenerator
 from pathlib import Path
 
 import pytest
@@ -115,3 +116,22 @@ def asgi_test_client():
         )
 
     return _get_client
+
+
+# === Shared ASGI Storage Fixtures ===
+
+
+@pytest.fixture
+async def log_storage() -> AsyncGenerator:
+    """Fixture providing an empty log storage for ASGI tests."""
+    from observabilipy.adapters.storage.in_memory import InMemoryLogStorage
+
+    return InMemoryLogStorage()
+
+
+@pytest.fixture
+async def metrics_storage() -> AsyncGenerator:
+    """Fixture providing an empty metrics storage for ASGI tests."""
+    from observabilipy.adapters.storage.in_memory import InMemoryMetricsStorage
+
+    return InMemoryMetricsStorage()

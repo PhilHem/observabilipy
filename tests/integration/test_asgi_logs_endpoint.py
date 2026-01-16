@@ -13,18 +13,6 @@ from observabilipy.core.models import LogEntry
 
 
 @pytest.fixture
-async def log_storage() -> AsyncGenerator[InMemoryLogStorage]:
-    """Fixture providing an empty log storage."""
-    return InMemoryLogStorage()
-
-
-@pytest.fixture
-async def metrics_storage() -> AsyncGenerator[InMemoryMetricsStorage]:
-    """Fixture providing an empty metrics storage."""
-    return InMemoryMetricsStorage()
-
-
-@pytest.fixture
 async def log_storage_with_data() -> AsyncGenerator[InMemoryLogStorage]:
     """Fixture providing a log storage with sample data."""
     storage = InMemoryLogStorage()

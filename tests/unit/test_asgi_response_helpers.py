@@ -14,14 +14,11 @@ from observabilipy.adapters.frameworks.asgi import _send_response
 @pytest.mark.tier(1)
 @pytest.mark.tra("Adapter.ASGI.SendResponse.Headers")
 @pytest.mark.asyncio
-async def test_send_response_sends_correct_headers():
+async def test_send_response_sends_correct_headers(asgi_send_capture):
     """_send_response sends http.response.start with correct status."""
 
-    # Arrange: Create send capture
-    responses: list[dict[str, object]] = []
-
-    async def send(message: dict[str, object]) -> None:
-        responses.append(message)
+    # Arrange: Get send capture fixture
+    send, responses = asgi_send_capture
 
     # Act: Send response with specific status and content type
     await _send_response(send, 201, "text/plain", "test body")
@@ -36,14 +33,11 @@ async def test_send_response_sends_correct_headers():
 @pytest.mark.tier(1)
 @pytest.mark.tra("Adapter.ASGI.SendResponse.Body")
 @pytest.mark.asyncio
-async def test_send_response_sends_body_as_bytes():
+async def test_send_response_sends_body_as_bytes(asgi_send_capture):
     """_send_response should send http.response.body with body encoded as bytes."""
 
-    # Arrange: Create send capture
-    responses: list[dict[str, object]] = []
-
-    async def send(message: dict[str, object]) -> None:
-        responses.append(message)
+    # Arrange: Get send capture fixture
+    send, responses = asgi_send_capture
 
     # Act: Send response with string body
     await _send_response(send, 200, "application/json", "{'key': 'value'}")
