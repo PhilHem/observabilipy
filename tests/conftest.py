@@ -163,3 +163,60 @@ async def asgi_client_with_storage(
     app = create_asgi_app(log_storage, metrics_storage)
     async with asgi_test_client(app) as client:
         yield client, log_storage, metrics_storage
+
+
+# === WSGI Test Fixtures ===
+
+
+@pytest.fixture
+def wsgi_test_client():
+    """Factory fixture that creates an httpx.Client for WSGI testing.
+
+    Returns a callable that accepts a WSGI app and yields a client
+    with WSGITransport configured. This eliminates repeated inline
+    Client setup in tests.
+
+    Usage:
+        def test_something(wsgi_test_client):
+            app = create_wsgi_app(log_storage, metrics_storage)
+            with wsgi_test_client(app) as client:
+                response = client.get("/endpoint")
+    """
+    if httpx is None:
+        pytest.skip("httpx not installed")
+
+    def _get_client(app):
+        """Return a Client context manager for the given app."""
+        return httpx.Client(
+            transport=httpx.WSGITransport(app=app), base_url="http://test"
+        )
+
+    return _get_client
+
+
+@pytest.fixture
+def wsgi_client_with_storage(
+    log_storage,
+    metrics_storage,
+    wsgi_test_client,
+):
+    """Fixture combining storage and WSGI test client.
+
+    Returns a tuple of (client, log_storage, metrics_storage) for convenient
+    access in tests. This reduces boilerplate in test methods that need to
+    create an app and make requests.
+
+    Usage:
+        def test_something(wsgi_client_with_storage):
+            client, log_storage, metrics_storage = wsgi_client_with_storage
+            response = client.get("/endpoint")
+            # log_storage and metrics_storage available if needed for setup
+    """
+    if httpx is None:
+        pytest.skip("httpx not installed")
+
+    from observabilipy.adapters.frameworks.wsgi import create_wsgi_app
+
+    app = create_wsgi_app(log_storage, metrics_storage)
+    with wsgi_test_client(app) as client:
+        yield client, log_storage, metrics_storage
