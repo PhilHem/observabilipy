@@ -1,30 +1,8 @@
 """Integration tests for ASGI /logs endpoint."""
 
-from collections.abc import AsyncGenerator
-
 import pytest
 
-from observabilipy.adapters.frameworks.asgi import create_asgi_app
-from observabilipy.adapters.storage.in_memory import (
-    InMemoryLogStorage,
-    InMemoryMetricsStorage,
-)
 from observabilipy.core.models import LogEntry
-
-
-@pytest.fixture
-async def log_storage_with_data() -> AsyncGenerator[InMemoryLogStorage]:
-    """Fixture providing a log storage with sample data."""
-    storage = InMemoryLogStorage()
-    await storage.write(
-        LogEntry(
-            timestamp=1000.0,
-            level="INFO",
-            message="Test message",
-            attributes={"key": "value"},
-        )
-    )
-    return storage
 
 
 class TestASGILogsEndpoint:
@@ -35,15 +13,12 @@ class TestASGILogsEndpoint:
     @pytest.mark.asgi
     async def test_logs_endpoint_returns_200(
         self,
-        log_storage: InMemoryLogStorage,
-        metrics_storage: InMemoryMetricsStorage,
-        asgi_test_client,
+        asgi_client_with_storage,
     ) -> None:
         """Test that /logs returns HTTP 200."""
-        app = create_asgi_app(log_storage, metrics_storage)
+        client, _, _ = asgi_client_with_storage
 
-        async with asgi_test_client(app) as client:
-            response = await client.get("/logs")
+        response = await client.get("/logs")
 
         assert response.status_code == 200
 
@@ -52,15 +27,12 @@ class TestASGILogsEndpoint:
     @pytest.mark.asgi
     async def test_logs_endpoint_has_ndjson_content_type(
         self,
-        log_storage: InMemoryLogStorage,
-        metrics_storage: InMemoryMetricsStorage,
-        asgi_test_client,
+        asgi_client_with_storage,
     ) -> None:
         """Test that /logs returns correct Content-Type header."""
-        app = create_asgi_app(log_storage, metrics_storage)
+        client, _, _ = asgi_client_with_storage
 
-        async with asgi_test_client(app) as client:
-            response = await client.get("/logs")
+        response = await client.get("/logs")
 
         assert response.headers["content-type"] == "application/x-ndjson"
 
@@ -69,15 +41,20 @@ class TestASGILogsEndpoint:
     @pytest.mark.asgi
     async def test_logs_endpoint_returns_ndjson_format(
         self,
-        log_storage_with_data: InMemoryLogStorage,
-        metrics_storage: InMemoryMetricsStorage,
-        asgi_test_client,
+        asgi_client_with_storage,
     ) -> None:
         """Test that /logs returns data in NDJSON format."""
-        app = create_asgi_app(log_storage_with_data, metrics_storage)
+        client, log_storage, _ = asgi_client_with_storage
+        await log_storage.write(
+            LogEntry(
+                timestamp=1000.0,
+                level="INFO",
+                message="Test message",
+                attributes={"key": "value"},
+            )
+        )
 
-        async with asgi_test_client(app) as client:
-            response = await client.get("/logs")
+        response = await client.get("/logs")
 
         assert "Test message" in response.text
         assert "INFO" in response.text
@@ -87,11 +64,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.asgi
     async def test_logs_endpoint_filters_by_since(
         self,
-        log_storage: InMemoryLogStorage,
-        metrics_storage: InMemoryMetricsStorage,
-        asgi_test_client,
+        asgi_client_with_storage,
     ) -> None:
         """Test that /logs?since=X filters entries by timestamp."""
+        client, log_storage, _ = asgi_client_with_storage
         await log_storage.write(
             LogEntry(
                 timestamp=100.0,
@@ -108,10 +84,8 @@ class TestASGILogsEndpoint:
                 attributes={},
             )
         )
-        app = create_asgi_app(log_storage, metrics_storage)
 
-        async with asgi_test_client(app) as client:
-            response = await client.get("/logs?since=150")
+        response = await client.get("/logs?since=150")
 
         assert "New message" in response.text
         assert "Old message" not in response.text
@@ -121,11 +95,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.asgi
     async def test_logs_endpoint_filters_by_level(
         self,
-        log_storage: InMemoryLogStorage,
-        metrics_storage: InMemoryMetricsStorage,
-        asgi_test_client,
+        asgi_client_with_storage,
     ) -> None:
         """Test that /logs?level=X filters entries by level."""
+        client, log_storage, _ = asgi_client_with_storage
         await log_storage.write(
             LogEntry(
                 timestamp=100.0,
@@ -142,10 +115,8 @@ class TestASGILogsEndpoint:
                 attributes={},
             )
         )
-        app = create_asgi_app(log_storage, metrics_storage)
 
-        async with asgi_test_client(app) as client:
-            response = await client.get("/logs?level=ERROR")
+        response = await client.get("/logs?level=ERROR")
 
         assert "Error message" in response.text
         assert "Info message" not in response.text
@@ -155,11 +126,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.asgi
     async def test_logs_endpoint_level_filter_is_case_insensitive(
         self,
-        log_storage: InMemoryLogStorage,
-        metrics_storage: InMemoryMetricsStorage,
-        asgi_test_client,
+        asgi_client_with_storage,
     ) -> None:
         """Test that /logs?level=X is case-insensitive."""
+        client, log_storage, _ = asgi_client_with_storage
         await log_storage.write(
             LogEntry(
                 timestamp=100.0,
@@ -176,10 +146,8 @@ class TestASGILogsEndpoint:
                 attributes={},
             )
         )
-        app = create_asgi_app(log_storage, metrics_storage)
 
-        async with asgi_test_client(app) as client:
-            response = await client.get("/logs?level=error")
+        response = await client.get("/logs?level=error")
 
         assert "Error message" in response.text
         assert "Info message" not in response.text
@@ -189,11 +157,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.asgi
     async def test_logs_endpoint_combines_since_and_level(
         self,
-        log_storage: InMemoryLogStorage,
-        metrics_storage: InMemoryMetricsStorage,
-        asgi_test_client,
+        asgi_client_with_storage,
     ) -> None:
         """Test that /logs combines since and level filters."""
+        client, log_storage, _ = asgi_client_with_storage
         await log_storage.write(
             LogEntry(
                 timestamp=100.0,
@@ -218,10 +185,8 @@ class TestASGILogsEndpoint:
                 attributes={},
             )
         )
-        app = create_asgi_app(log_storage, metrics_storage)
 
-        async with asgi_test_client(app) as client:
-            response = await client.get("/logs?since=150&level=ERROR")
+        response = await client.get("/logs?since=150&level=ERROR")
 
         assert "New error" in response.text
         assert "Old error" not in response.text
@@ -232,11 +197,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.asgi
     async def test_logs_endpoint_level_returns_empty_for_nonexistent(
         self,
-        log_storage: InMemoryLogStorage,
-        metrics_storage: InMemoryMetricsStorage,
-        asgi_test_client,
+        asgi_client_with_storage,
     ) -> None:
         """Test that /logs treats invalid level as None (shows all)."""
+        client, log_storage, _ = asgi_client_with_storage
         await log_storage.write(
             LogEntry(
                 timestamp=100.0,
@@ -245,10 +209,8 @@ class TestASGILogsEndpoint:
                 attributes={},
             )
         )
-        app = create_asgi_app(log_storage, metrics_storage)
 
-        async with asgi_test_client(app) as client:
-            response = await client.get("/logs?level=FATAL")
+        response = await client.get("/logs?level=FATAL")
 
         assert response.status_code == 200
         assert "Info message" in response.text
@@ -258,11 +220,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.asgi
     async def test_logs_endpoint_handles_invalid_since_param(
         self,
-        log_storage: InMemoryLogStorage,
-        metrics_storage: InMemoryMetricsStorage,
-        asgi_test_client,
+        asgi_client_with_storage,
     ) -> None:
         """Test that /logs handles invalid since param gracefully."""
+        client, log_storage, _ = asgi_client_with_storage
         await log_storage.write(
             LogEntry(
                 timestamp=100.0,
@@ -271,10 +232,8 @@ class TestASGILogsEndpoint:
                 attributes={},
             )
         )
-        app = create_asgi_app(log_storage, metrics_storage)
 
-        async with asgi_test_client(app) as client:
-            response = await client.get("/logs?since=invalid")
+        response = await client.get("/logs?since=invalid")
 
         assert response.status_code == 200
         assert "Test message" in response.text
@@ -284,11 +243,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.asgi
     async def test_logs_endpoint_validates_level_whitelist(
         self,
-        log_storage: InMemoryLogStorage,
-        metrics_storage: InMemoryMetricsStorage,
-        asgi_test_client,
+        asgi_client_with_storage,
     ) -> None:
         """Test that /logs validates level parameter against whitelist."""
+        client, log_storage, _ = asgi_client_with_storage
         await log_storage.write(
             LogEntry(
                 timestamp=100.0,
@@ -305,10 +263,8 @@ class TestASGILogsEndpoint:
                 attributes={},
             )
         )
-        app = create_asgi_app(log_storage, metrics_storage)
 
-        async with asgi_test_client(app) as client:
-            response = await client.get("/logs?level=INVALID_LEVEL")
+        response = await client.get("/logs?level=INVALID_LEVEL")
 
         assert response.status_code == 200
         assert "Info message" in response.text
@@ -319,15 +275,12 @@ class TestASGILogsEndpoint:
     @pytest.mark.asgi
     async def test_logs_empty_storage_returns_empty_body(
         self,
-        log_storage: InMemoryLogStorage,
-        metrics_storage: InMemoryMetricsStorage,
-        asgi_test_client,
+        asgi_client_with_storage,
     ) -> None:
         """Test that /logs returns empty body when storage is empty."""
-        app = create_asgi_app(log_storage, metrics_storage)
+        client, _, _ = asgi_client_with_storage
 
-        async with asgi_test_client(app) as client:
-            response = await client.get("/logs")
+        response = await client.get("/logs")
 
         assert response.status_code == 200
         assert response.text == ""

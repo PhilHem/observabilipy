@@ -13,6 +13,10 @@ from collections.abc import Callable, Iterable
 from typing import Any
 from urllib.parse import parse_qs
 
+from observabilipy.adapters.frameworks.query_params import (
+    _parse_level_param,
+    _parse_since_param,
+)
 from observabilipy.adapters.storage import collect_async_iterable
 from observabilipy.core.encoding.ndjson import encode_logs_sync, encode_ndjson_sync
 from observabilipy.core.encoding.prometheus import encode_current_sync
@@ -44,7 +48,7 @@ def create_wsgi_app(
             headers = [("Content-Type", "application/x-ndjson")]
             query_string = environ.get("QUERY_STRING", "")
             params = parse_qs(query_string)
-            since = float(params.get("since", ["0"])[0])
+            since = _parse_since_param(params)
             samples = collect_async_iterable(metrics_storage.read(since=since))
             body = encode_ndjson_sync(samples)
             start_response("200 OK", headers)
@@ -59,9 +63,8 @@ def create_wsgi_app(
             headers = [("Content-Type", "application/x-ndjson")]
             query_string = environ.get("QUERY_STRING", "")
             params = parse_qs(query_string)
-            since = float(params.get("since", ["0"])[0])
-            level_list = params.get("level", [None])
-            level = level_list[0] if level_list else None
+            since = _parse_since_param(params)
+            level = _parse_level_param(params)
             log_entries = log_storage.read(since=since, level=level)
             entries = collect_async_iterable(log_entries)
             body = encode_logs_sync(entries)

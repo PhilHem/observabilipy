@@ -9,6 +9,10 @@ from collections.abc import Callable, Coroutine
 from typing import Any
 from urllib.parse import parse_qs
 
+from observabilipy.adapters.frameworks.query_params import (
+    _parse_level_param,
+    _parse_since_param,
+)
 from observabilipy.core.encoding.ndjson import encode_logs, encode_ndjson
 from observabilipy.core.encoding.prometheus import encode_current
 from observabilipy.core.logs import log_exception
@@ -22,9 +26,6 @@ Scope = dict[str, Any]
 Receive = Callable[[], Coroutine[Any, Any, dict[str, Any]]]
 Send = Callable[[dict[str, Any]], Coroutine[Any, Any, None]]
 ASGIApp = Callable[[Scope, Receive, Send], Coroutine[Any, Any, None]]
-
-# Valid log levels for validation
-VALID_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
 
 
 def _parse_query_params(scope: Scope) -> dict[str, list[str]]:
@@ -40,39 +41,6 @@ def _parse_query_params(scope: Scope) -> dict[str, list[str]]:
     # @tra: Adapter.ASGI.QueryParameter.Parser
     query_string = scope.get("query_string", b"").decode(errors="replace")
     return parse_qs(query_string)
-
-
-def _parse_since_param(params: dict[str, list[str]]) -> float:
-    """Parse and validate the 'since' query parameter.
-
-    Args:
-        params: Parsed query string parameters.
-
-    Returns:
-        Timestamp as float, defaulting to 0.0 if invalid or missing.
-    """
-    # @tra: Adapter.ASGI.QueryParameter.InvalidUTF8
-    try:
-        return float(params.get("since", ["0"])[0])
-    except ValueError:
-        return 0.0
-
-
-def _parse_level_param(params: dict[str, list[str]]) -> str | None:
-    """Parse and validate the 'level' query parameter.
-
-    Args:
-        params: Parsed query string parameters.
-
-    Returns:
-        Validated level string (uppercase) or None if invalid/missing.
-    """
-    # @tra: Adapter.ASGI.QueryParameter.InvalidUTF8
-    level_list = params.get("level", [None])
-    level_raw = level_list[0] if level_list else None
-    if level_raw and level_raw.upper() in VALID_LEVELS:
-        return level_raw.upper()
-    return None
 
 
 async def _send_response(send: Send, status: int, content_type: str, body: str) -> None:

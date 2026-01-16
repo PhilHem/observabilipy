@@ -135,3 +135,31 @@ async def metrics_storage() -> AsyncGenerator:
     from observabilipy.adapters.storage.in_memory import InMemoryMetricsStorage
 
     return InMemoryMetricsStorage()
+
+
+@pytest.fixture
+async def asgi_client_with_storage(
+    log_storage,
+    metrics_storage,
+    asgi_test_client,
+):
+    """Fixture combining storage and ASGI test client.
+
+    Returns a tuple of (client, log_storage, metrics_storage) for convenient
+    access in tests. This reduces boilerplate in test methods that need to
+    create an app and make requests.
+
+    Usage:
+        async def test_something(asgi_client_with_storage):
+            client, log_storage, metrics_storage = asgi_client_with_storage
+            response = await client.get("/endpoint")
+            # log_storage and metrics_storage available if needed for setup
+    """
+    if httpx is None:
+        pytest.skip("httpx not installed")
+
+    from observabilipy.adapters.frameworks.asgi import create_asgi_app
+
+    app = create_asgi_app(log_storage, metrics_storage)
+    async with asgi_test_client(app) as client:
+        yield client, log_storage, metrics_storage
