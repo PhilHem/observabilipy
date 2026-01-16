@@ -486,3 +486,63 @@ class TestWSGIParameterValidation:
         assert response.status_code == 200
         assert "Info message" in response.text
         assert "Error message" in response.text
+
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.MetricsInvalidSinceParam")
+    @pytest.mark.wsgi
+    def test_wsgi_metrics_since_parameter_validation(
+        self, wsgi_client_with_storage
+    ) -> None:
+        """Test that /metrics validates since parameter (negative, NaN, inf)."""
+        client, _log_storage, metrics_storage = wsgi_client_with_storage
+        _run_async(
+            metrics_storage.write(
+                MetricSample(name="counter", timestamp=100.0, value=1.0)
+            )
+        )
+        # Test negative since value defaults to 0.0 (returns all)
+        response = client.get("/metrics?since=-10")
+        assert response.status_code == 200
+        parsed = json.loads(response.text.strip())
+        assert parsed["value"] == 1.0
+        # Test NaN since value defaults to 0.0 (returns all)
+        response = client.get("/metrics?since=nan")
+        assert response.status_code == 200
+        parsed = json.loads(response.text.strip())
+        assert parsed["value"] == 1.0
+        # Test inf since value defaults to 0.0 (returns all)
+        response = client.get("/metrics?since=inf")
+        assert response.status_code == 200
+        parsed = json.loads(response.text.strip())
+        assert parsed["value"] == 1.0
+
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.LogsInvalidSinceParam")
+    @pytest.mark.wsgi
+    def test_wsgi_logs_since_parameter_validation(
+        self, wsgi_client_with_storage
+    ) -> None:
+        """Test that /logs validates since parameter (negative, NaN, inf)."""
+        client, log_storage, _metrics_storage = wsgi_client_with_storage
+        _run_async(
+            log_storage.write(
+                LogEntry(
+                    timestamp=100.0,
+                    level="INFO",
+                    message="Test message",
+                    attributes={},
+                )
+            )
+        )
+        # Test negative since value defaults to 0.0 (returns all)
+        response = client.get("/logs?since=-10")
+        assert response.status_code == 200
+        assert "Test message" in response.text
+        # Test NaN since value defaults to 0.0 (returns all)
+        response = client.get("/logs?since=nan")
+        assert response.status_code == 200
+        assert "Test message" in response.text
+        # Test inf since value defaults to 0.0 (returns all)
+        response = client.get("/logs?since=inf")
+        assert response.status_code == 200
+        assert "Test message" in response.text

@@ -158,3 +158,55 @@ class TestASGIRouting:
             response = await client.get("/unknown")
 
         assert response.status_code == 404
+
+
+class TestASGIJSONErrorResponses:
+    """Tests for JSON-formatted error responses."""
+
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.MetricsEndpointEncodingError")
+    @pytest.mark.asgi
+    async def test_metrics_endpoint_returns_json_error_on_failure(
+        self,
+        log_storage: InMemoryLogStorage,
+        metrics_storage: InMemoryMetricsStorage,
+        asgi_test_client,
+    ) -> None:
+        """Test that /metrics returns JSON-formatted error on failure."""
+        app = create_asgi_app(log_storage, metrics_storage)
+
+        async def failing_encode(*_args, **_kwargs):
+            raise ValueError("Encoding failed")
+
+        async with mock_encoder("encode_ndjson", failing_encode):
+            async with asgi_test_client(app) as client:
+                response = await client.get("/metrics")
+
+            assert response.status_code == 500
+            assert response.headers["content-type"] == "application/json"
+            data = response.json()
+            assert data == {"error": "Internal Server Error"}
+
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.LogsEndpointEncodingError")
+    @pytest.mark.asgi
+    async def test_logs_endpoint_returns_json_error_on_failure(
+        self,
+        log_storage: InMemoryLogStorage,
+        metrics_storage: InMemoryMetricsStorage,
+        asgi_test_client,
+    ) -> None:
+        """Test that /logs returns JSON-formatted error on failure."""
+        app = create_asgi_app(log_storage, metrics_storage)
+
+        async def failing_encode(*_args, **_kwargs):
+            raise ValueError("Encoding failed")
+
+        async with mock_encoder("encode_logs", failing_encode):
+            async with asgi_test_client(app) as client:
+                response = await client.get("/logs")
+
+            assert response.status_code == 500
+            assert response.headers["content-type"] == "application/json"
+            data = response.json()
+            assert data == {"error": "Internal Server Error"}

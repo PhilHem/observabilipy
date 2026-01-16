@@ -32,31 +32,20 @@ def _safe_json_loads(
         return default
 
 
-class SQLiteStorageBase:
-    """Base class for SQLite storage adapters.
+class AsyncConnectionManager:
+    """Manages async (aiosqlite) database connections.
 
-    Handles connection lifecycle for both async (aiosqlite) and sync (sqlite3) modes.
-    Subclasses provide schema and implement domain-specific read/write methods.
-
-    For :memory: databases, persistent connections are maintained since
-    in-memory databases are connection-scoped in SQLite.
-
-    Sync methods use the standard sqlite3 module for non-async contexts.
-    For file-based databases, sync and async methods share the same file.
-    For :memory: databases, sync and async have separate in-memory DBs.
+    Handles schema initialization and connection lifecycle for async contexts.
+    For :memory: databases, maintains a persistent connection since SQLite
+    in-memory databases are connection-scoped.
     """
 
     def __init__(self, db_path: str, schema: str) -> None:
         self._db_path = db_path
         self._schema = schema
-        # Async state
         self._initialized = False
         self._init_lock: asyncio.Lock | None = None
         self._persistent_conn: aiosqlite.Connection | None = None
-        # Sync state (uses standard sqlite3 module)
-        self._sync_initialized = False
-        self._sync_lock = threading.Lock()
-        self._sync_conn: sqlite3.Connection | None = None
 
     def _get_lock(self) -> asyncio.Lock:
         """Get or create the initialization lock (lazy to avoid event loop issues)."""
@@ -66,11 +55,7 @@ class SQLiteStorageBase:
 
     @property
     def _should_close_connection(self) -> bool:
-        """Return True if connections should be closed after use.
-
-        File-based databases get new connections each time.
-        :memory: databases keep persistent connections.
-        """
+        """Return True if connections should be closed after use."""
         return self._db_path != ":memory:"
 
     async def _ensure_initialized(self) -> None:
@@ -81,7 +66,6 @@ class SQLiteStorageBase:
             if self._initialized:
                 return
             if self._db_path == ":memory:":
-                # For :memory: DBs, keep a persistent connection
                 self._persistent_conn = await aiosqlite.connect(":memory:")
                 await self._persistent_conn.executescript(self._schema)
             else:
@@ -99,45 +83,8 @@ class SQLiteStorageBase:
             return self._persistent_conn
         return await aiosqlite.connect(self._db_path)
 
-    async def close(self) -> None:
-        """Close persistent connection (for :memory: databases)."""
-        if self._persistent_conn is not None:
-            await self._persistent_conn.close()
-            self._persistent_conn = None
-            self._initialized = False
-
-    # --- Sync methods using standard sqlite3 module ---
-
-    def _ensure_initialized_sync(self) -> None:
-        """Initialize database schema synchronously."""
-        if self._sync_initialized:
-            return
-        with self._sync_lock:
-            if self._sync_initialized:
-                return
-            if self._db_path == ":memory:":
-                # For :memory: DBs, keep a persistent connection (separate from async)
-                self._sync_conn = sqlite3.connect(":memory:")
-                self._sync_conn.executescript(self._schema)
-            else:
-                with sqlite3.connect(self._db_path) as db:
-                    db.execute("PRAGMA journal_mode=WAL")
-                    db.executescript(self._schema)
-            self._sync_initialized = True
-
-    def _get_sync_connection(self) -> sqlite3.Connection:
-        """Get a sync database connection."""
-        self._ensure_initialized_sync()
-        if self._db_path == ":memory:":
-            if self._sync_conn is None:
-                raise RuntimeError("Sync memory database connection not initialized")
-            return self._sync_conn
-        return sqlite3.connect(self._db_path)
-
-    # --- Connection context managers ---
-
     @asynccontextmanager
-    async def async_connection(self) -> AsyncIterator[aiosqlite.Connection]:
+    async def connection(self) -> AsyncIterator[aiosqlite.Connection]:
         """Context manager for async database connections.
 
         Automatically closes connections for file-based databases.
@@ -150,19 +97,119 @@ class SQLiteStorageBase:
             if self._should_close_connection:
                 await db.close()
 
+    async def close(self) -> None:
+        """Close persistent connection (for :memory: databases)."""
+        if self._persistent_conn is not None:
+            await self._persistent_conn.close()
+            self._persistent_conn = None
+            self._initialized = False
+
+
+class SyncConnectionManager:
+    """Manages sync (sqlite3) database connections.
+
+    Handles schema initialization and connection lifecycle for sync contexts.
+    For :memory: databases, maintains a persistent connection since SQLite
+    in-memory databases are connection-scoped.
+
+    IMPORTANT: For :memory: databases, this manager maintains a completely
+    separate database instance from AsyncConnectionManager. This is intentional
+    for thread-safety in concurrent scenarios.
+    """
+
+    def __init__(self, db_path: str, schema: str) -> None:
+        self._db_path = db_path
+        self._schema = schema
+        self._initialized = False
+        self._lock = threading.Lock()
+        self._persistent_conn: sqlite3.Connection | None = None
+
+    @property
+    def _should_close_connection(self) -> bool:
+        """Return True if connections should be closed after use."""
+        return self._db_path != ":memory:"
+
+    def _ensure_initialized(self) -> None:
+        """Initialize database schema synchronously."""
+        if self._initialized:
+            return
+        with self._lock:
+            if self._initialized:
+                return
+            if self._db_path == ":memory:":
+                self._persistent_conn = sqlite3.connect(":memory:")
+                self._persistent_conn.executescript(self._schema)
+            else:
+                with sqlite3.connect(self._db_path) as db:
+                    db.execute("PRAGMA journal_mode=WAL")
+                    db.executescript(self._schema)
+            self._initialized = True
+
+    def _get_connection(self) -> sqlite3.Connection:
+        """Get a sync database connection."""
+        self._ensure_initialized()
+        if self._db_path == ":memory:":
+            if self._persistent_conn is None:
+                raise RuntimeError("Sync memory database connection not initialized")
+            return self._persistent_conn
+        return sqlite3.connect(self._db_path)
+
     @contextmanager
-    def sync_connection(self) -> Iterator[sqlite3.Connection]:
+    def connection(self) -> Iterator[sqlite3.Connection]:
         """Context manager for sync database connections.
 
         Automatically closes connections for file-based databases.
         For :memory: databases, keeps connections open (they're persistent).
         """
-        conn = self._get_sync_connection()
+        conn = self._get_connection()
         try:
             yield conn
         finally:
             if self._should_close_connection:
                 conn.close()
+
+
+class SQLiteStorageBase:
+    """Base class for SQLite storage adapters.
+
+    Delegates connection lifecycle to AsyncConnectionManager and SyncConnectionManager.
+    Subclasses provide schema and implement domain-specific read/write methods.
+
+    For :memory: databases, persistent connections are maintained since
+    in-memory databases are connection-scoped in SQLite.
+
+    IMPORTANT - :memory: Database Isolation:
+    When using :memory: databases, the sync (sqlite3) and async (aiosqlite)
+    connections are COMPLETELY SEPARATE and do NOT share data. This is because
+    each manager maintains its own in-memory database instance. This is
+    intentional and required for thread-safety in concurrent test scenarios.
+
+    For testing, use fixtures that isolate sync and async operations.
+    """
+
+    def __init__(self, db_path: str, schema: str) -> None:
+        self._db_path = db_path
+        self._schema = schema
+        self._async_manager = AsyncConnectionManager(db_path, schema)
+        self._sync_manager = SyncConnectionManager(db_path, schema)
+
+    async def close(self) -> None:
+        """Close persistent connection (for :memory: databases)."""
+        await self._async_manager.close()
+
+    # --- Connection context managers (delegate to managers) ---
+
+    @asynccontextmanager
+    async def async_connection(self) -> AsyncIterator[aiosqlite.Connection]:
+        """Context manager for async database connections."""
+        async with self._async_manager.connection() as conn:
+            yield conn
+
+    @contextmanager
+    def sync_connection(self) -> Iterator[sqlite3.Connection]:
+        """Context manager for sync database connections."""
+        with self._sync_manager.connection() as conn:
+            yield conn
 
 
 class SQLiteStorageGeneric(SQLiteStorageBase):

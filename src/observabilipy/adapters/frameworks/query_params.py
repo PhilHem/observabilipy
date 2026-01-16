@@ -16,9 +16,21 @@ def _parse_since_param(params: dict[str, list[str]]) -> float:
 
     Returns:
         Timestamp as float, defaulting to 0.0 if invalid or missing.
+        Rejects negative, NaN, and infinite values, returning 0.0 for these cases.
     """
+    # @tra: Adapter.ASGI.QueryParameter.InvalidUTF8
+    # @tra: Adapter.ASGI.QueryParameter.SinceValidation
     try:
-        return float(params.get("since", ["0"])[0])
+        value = float(params.get("since", ["0"])[0])
+        # Reject negative, NaN, and infinite values
+        if (
+            value < 0
+            or value != value
+            or value == float("inf")
+            or value == float("-inf")
+        ):
+            return 0.0
+        return value
     except ValueError:
         return 0.0
 

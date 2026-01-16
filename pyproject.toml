@@ -85,6 +85,8 @@ markers = [
     "runtime: EmbeddedRuntime orchestrator",
     "examples: Example file validation",
     "e2e: End-to-end tests",
+    "unit: Unit tests",
+    "integration: Integration tests",
     "tra(name): Test Responsibility Architecture marker (Domain.Feature.Behavior)",
     "tier(level): Test tier (0=IDE, 1=pre-commit, 2=CI)",
 ]

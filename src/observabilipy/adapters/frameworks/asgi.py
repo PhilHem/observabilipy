@@ -5,6 +5,7 @@ with any ASGI server (uvicorn, hypercorn, daphne) without requiring FastAPI
 or Django as dependencies.
 """
 
+import json
 from collections.abc import Callable, Coroutine
 from typing import Any
 from urllib.parse import parse_qs
@@ -57,6 +58,29 @@ async def _send_response(send: Send, status: int, content_type: str, body: str) 
     await send({"type": "http.response.start", "status": status, "headers": headers})
     # @tra: Adapter.ASGI.SendResponse.Body
     await send({"type": "http.response.body", "body": body.encode()})
+
+
+async def _handle_endpoint(
+    send: Send,
+    endpoint_func: Callable[[], Coroutine[Any, Any, str]],
+    content_type: str,
+    log_message: str,
+) -> None:
+    """Execute an endpoint function with error handling and send response.
+
+    Args:
+        send: ASGI send callable for writing response.
+        endpoint_func: Async function that returns response body.
+        content_type: Content-Type header for success response.
+        log_message: Message to log on error.
+    """
+    try:
+        body = await endpoint_func()
+        await _send_response(send, 200, content_type, body)
+    except Exception:
+        log_exception(log_message)
+        error_body = json.dumps({"error": "Internal Server Error"})
+        await _send_response(send, 500, "application/json", error_body)
 
 
 # @tra: Adapter.ASGI.Middleware.Init
@@ -130,13 +154,12 @@ def create_asgi_app(
         if path == "/metrics":
             params = _parse_query_params(scope)
             since = _parse_since_param(params)
-            try:
-                body = await encode_ndjson(metrics_storage.read(since=since))
-                await _send_response(send, 200, "application/x-ndjson", body)
-            except Exception:
-                log_exception("Error encoding metrics endpoint")
-                error_body = "Internal Server Error"
-                await _send_response(send, 500, "application/x-ndjson", error_body)
+            await _handle_endpoint(
+                send,
+                lambda: encode_ndjson(metrics_storage.read(since=since)),
+                "application/x-ndjson",
+                "Error encoding metrics endpoint",
+            )
         # @tra: Adapter.ASGI.PrometheusEndpointHTTPStatus
         # @tra: Adapter.ASGI.PrometheusEndpointContentType
         # @tra: Adapter.ASGI.PrometheusEndpointFormat
@@ -156,13 +179,12 @@ def create_asgi_app(
             params = _parse_query_params(scope)
             since = _parse_since_param(params)
             level = _parse_level_param(params)
-            try:
-                body = await encode_logs(log_storage.read(since=since, level=level))
-                await _send_response(send, 200, "application/x-ndjson", body)
-            except Exception:
-                log_exception("Error encoding logs endpoint")
-                error_body = "Internal Server Error"
-                await _send_response(send, 500, "application/x-ndjson", error_body)
+            await _handle_endpoint(
+                send,
+                lambda: encode_logs(log_storage.read(since=since, level=level)),
+                "application/x-ndjson",
+                "Error encoding logs endpoint",
+            )
         # @tra: Adapter.ASGI.RoutingUnknownPath
         else:
             await _send_response(send, 404, "text/plain", "Not Found")

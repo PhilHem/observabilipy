@@ -94,3 +94,63 @@ def test_parse_query_params_handles_missing_query_string():
 
     # Assert: Should return empty dict
     assert result == {}
+
+
+@pytest.mark.tier(1)
+@pytest.mark.tra("Adapter.ASGI.QueryParameter.SinceValidation")
+def test_since_rejects_negative_timestamp():
+    """_parse_since_param should reject negative timestamps and return 0.0."""
+
+    # Arrange: Create params dict with negative since value
+    params = {"since": ["-100.5"]}
+
+    # Act: Parse the 'since' parameter
+    result = _parse_since_param(params)
+
+    # Assert: Should return default value (0.0)
+    assert result == 0.0
+
+
+@pytest.mark.tier(1)
+@pytest.mark.tra("Adapter.ASGI.QueryParameter.SinceValidation")
+def test_since_rejects_nan():
+    """_parse_since_param should reject NaN values and return 0.0."""
+
+    # Arrange: Create params dict with NaN since value
+    params = {"since": ["nan"]}
+
+    # Act: Parse the 'since' parameter
+    result = _parse_since_param(params)
+
+    # Assert: Should return default value (0.0)
+    assert result == 0.0
+
+
+@pytest.mark.tier(1)
+@pytest.mark.tra("Adapter.ASGI.QueryParameter.SinceValidation")
+def test_since_rejects_infinity():
+    """_parse_since_param should reject infinity values and return 0.0."""
+
+    # Arrange: Create params dict with infinity since value
+    params = {"since": ["inf"]}
+
+    # Act: Parse the 'since' parameter
+    result = _parse_since_param(params)
+
+    # Assert: Should return default value (0.0)
+    assert result == 0.0
+
+
+@pytest.mark.tier(1)
+@pytest.mark.tra("Adapter.ASGI.QueryParameter.SinceValidation")
+def test_since_accepts_valid_timestamp():
+    """_parse_since_param should accept valid positive timestamps."""
+
+    # Arrange: Create params dict with valid positive since value
+    params = {"since": ["1234567890.123"]}
+
+    # Act: Parse the 'since' parameter
+    result = _parse_since_param(params)
+
+    # Assert: Should return the parsed float value
+    assert result == 1234567890.123
