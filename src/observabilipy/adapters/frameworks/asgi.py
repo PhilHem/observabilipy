@@ -11,6 +11,7 @@ from urllib.parse import parse_qs
 
 from observabilipy.core.encoding.ndjson import encode_logs, encode_ndjson
 from observabilipy.core.encoding.prometheus import encode_current
+from observabilipy.core.logs import log_exception
 from observabilipy.core.ports import LogStoragePort, MetricsStoragePort
 
 # ASGI type aliases
@@ -164,8 +165,9 @@ def create_asgi_app(
             try:
                 body = await encode_ndjson(metrics_storage.read(since=since))
                 await _send_response(send, 200, "application/x-ndjson", body)
-            except Exception as e:
-                error_body = f"Error encoding metrics: {e!s}"
+            except Exception:
+                log_exception("Error encoding metrics endpoint")
+                error_body = "Internal Server Error"
                 await _send_response(send, 500, "application/x-ndjson", error_body)
         # @tra: Adapter.ASGI.PrometheusEndpointHTTPStatus
         # @tra: Adapter.ASGI.PrometheusEndpointContentType
@@ -189,8 +191,9 @@ def create_asgi_app(
             try:
                 body = await encode_logs(log_storage.read(since=since, level=level))
                 await _send_response(send, 200, "application/x-ndjson", body)
-            except Exception as e:
-                error_body = f"Error encoding logs: {e!s}"
+            except Exception:
+                log_exception("Error encoding logs endpoint")
+                error_body = "Internal Server Error"
                 await _send_response(send, 500, "application/x-ndjson", error_body)
         # @tra: Adapter.ASGI.RoutingUnknownPath
         else:

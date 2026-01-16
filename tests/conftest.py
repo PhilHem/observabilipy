@@ -4,6 +4,11 @@ from pathlib import Path
 
 import pytest
 
+try:
+    import httpx
+except ImportError:
+    httpx = None
+
 
 @pytest.fixture
 def log_db_path(tmp_path: Path) -> str:
@@ -84,3 +89,29 @@ def asgi_send_capture():
         responses.append(message)
 
     return send, responses
+
+
+@pytest.fixture
+def asgi_test_client():
+    """Factory fixture that creates an httpx.AsyncClient for ASGI testing.
+
+    Returns a callable that accepts an ASGI app and yields a client
+    with ASGITransport configured. This eliminates repeated inline
+    AsyncClient setup in tests.
+
+    Usage:
+        async def test_something(asgi_test_client):
+            app = create_asgi_app(log_storage, metrics_storage)
+            async with asgi_test_client(app) as client:
+                response = await client.get("/endpoint")
+    """
+    if httpx is None:
+        pytest.skip("httpx not installed")
+
+    def _get_client(app):
+        """Return an AsyncClient context manager for the given app."""
+        return httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app), base_url="http://test"
+        )
+
+    return _get_client
