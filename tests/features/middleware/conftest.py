@@ -1,9 +1,4 @@
-"""BDD step definitions for middleware observability features.
-
-This conftest.py imports step implementations from modules and
-registers them with pytest-bdd decorators. The implementations
-live in separate files to keep this file under the line limit.
-"""
+"""BDD step definitions for middleware observability features."""
 
 import asyncio
 import uuid
@@ -43,8 +38,20 @@ def ctx() -> MiddlewareScenarioContext:
 def _wrap(ctx: MiddlewareScenarioContext, app: Any) -> None:
     """Wrap app with observability middleware and store in context."""
     ctx.app = ASGIObservabilityMiddleware(
-        app=app, log_storage=ctx.log_storage, metrics_storage=ctx.metrics_storage
+        app=app,
+        log_storage=ctx.log_storage,
+        metrics_storage=ctx.metrics_storage,
+        exclude_paths=ctx.config.exclude_paths if ctx.config.exclude_paths else None,
+        request_id_header=ctx.config.request_id_header,
     )
+    if not ctx.config.log_requests:
+        ctx.app.set_log_requests(False)
+    if not ctx.config.record_metrics:
+        ctx.app.set_record_metrics(False)
+    if ctx.config.request_counter_name != "http_requests_total":
+        ctx.app.set_request_counter_name(ctx.config.request_counter_name)
+    if ctx.config.request_histogram_name != "http_request_duration_seconds":
+        ctx.app.set_request_histogram_name(ctx.config.request_histogram_name)
 
 
 # === Background Steps ===
@@ -315,14 +322,18 @@ def step_unique_labels(ctx: MiddlewareScenarioContext, n: int, m: int) -> None:
 
 
 # === Configuration Steps (Cycle 3) ===
-@given(parsers.parse('middleware configured with exclude_paths=["{p1}", "{p2}"]'))
+@given(
+    parsers.re(
+        r'middleware configured with exclude_paths=\["(?P<p1>[^"]+)", "(?P<p2>[^"]+)"\]'
+    )
+)
 def step_exclude_paths(ctx: MiddlewareScenarioContext, p1: str, p2: str) -> None:
     ctx.config.exclude_paths = [p1, p2]
     test_app = create_test_app(ctx)
     _wrap(ctx, test_app)
 
 
-@given(parsers.parse('middleware configured with exclude_paths=["{pattern}"]'))
+@given(parsers.re(r'middleware configured with exclude_paths=\["(?P<pattern>[^"]+)"\]'))
 def step_exclude_pattern(ctx: MiddlewareScenarioContext, pattern: str) -> None:
     ctx.config.exclude_paths = [pattern]
     test_app = create_test_app(ctx)
@@ -478,7 +489,7 @@ def step_nested_async(ctx: MiddlewareScenarioContext) -> None:
 
 @given("each layer writes a log entry")
 def step_each_layer_logs(ctx: MiddlewareScenarioContext) -> None:
-    pass
+    pass  # Context already set up in step_nested_async
 
 
 @given(parsers.parse('an endpoint that calls update_log_context(user_id="{user_id}")'))
@@ -570,8 +581,9 @@ def step_logs_own_id(ctx: MiddlewareScenarioContext) -> None:
 
 
 @then("no cross-contamination should occur")
-def step_no_contamination(ctx: MiddlewareScenarioContext) -> None:
-    pass
+@then("logs and metrics should be written without async errors")
+def step_pass_placeholder(ctx: MiddlewareScenarioContext) -> None:
+    pass  # Verified by other assertions in scenario
 
 
 @then("the second request should have a different request_id")
@@ -612,18 +624,14 @@ def step_next_no_user_id(ctx: MiddlewareScenarioContext) -> None:
 
 # === WSGI Steps (Cycle 5) ===
 @given("a WSGI app with observability middleware")
-def step_wsgi_app(ctx: MiddlewareScenarioContext) -> None:
-    pytest.xfail("WSGI middleware not yet implemented")
-
-
 @given("a Flask endpoint that writes an application log")
-def step_flask_endpoint(ctx: MiddlewareScenarioContext) -> None:
+def step_wsgi_app(ctx: MiddlewareScenarioContext) -> None:
     pytest.xfail("WSGI middleware not yet implemented")
 
 
 @given("sync-only storage adapters")
 def step_sync_storage(ctx: MiddlewareScenarioContext) -> None:
-    pass
+    pass  # In-memory storage already sync-compatible
 
 
 @given(parsers.parse("a threaded WSGI server with {n:d} worker threads"))
@@ -663,19 +671,10 @@ def step_both_logs_id(ctx: MiddlewareScenarioContext, rid: str) -> None:
     assert all(log.attributes.get("request_id") == rid for log in logs)
 
 
-@then("logs and metrics should be written without async errors")
-def step_no_async_errors(ctx: MiddlewareScenarioContext) -> None:
-    pass
-
-
 @when("concurrent requests hit different threads")
-def step_concurrent_threads(ctx: MiddlewareScenarioContext) -> None:
-    pytest.xfail("WSGI threading not yet implemented")
-
-
 @then("each thread should correctly isolate request context")
-def step_threads_isolate(ctx: MiddlewareScenarioContext) -> None:
-    pytest.xfail("WSGI thread isolation not yet implemented")
+def step_wsgi_threading_xfail(ctx: MiddlewareScenarioContext) -> None:
+    pytest.xfail("WSGI threading not yet implemented")
 
 
 # === Error Handling Steps (Cycle 6) ===
@@ -771,6 +770,7 @@ def step_request_completes(ctx: MiddlewareScenarioContext) -> None:
 
 
 @then("the response should be returned to the client")
+@then("the response should be returned")
 def step_response_returned(ctx: MiddlewareScenarioContext) -> None:
     assert ctx.request_capture.response_body is not None
 
@@ -783,11 +783,6 @@ def step_warning_stderr(ctx: MiddlewareScenarioContext) -> None:
 @then(parsers.parse("the request should complete within {n:d}ms"))
 def step_request_within_time(ctx: MiddlewareScenarioContext, n: int) -> None:
     pytest.xfail("Request timing not implemented")
-
-
-@then("the response should be returned")
-def step_response_is_returned(ctx: MiddlewareScenarioContext) -> None:
-    assert ctx.request_capture.response_body is not None
 
 
 @then("the RuntimeError should be raised to the client")
