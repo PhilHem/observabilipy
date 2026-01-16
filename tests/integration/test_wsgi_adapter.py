@@ -22,6 +22,8 @@ def _run_async(coro):  # type: ignore[no-untyped-def]
 class TestWSGIMetricsEndpoint:
     """Tests for the /metrics endpoint."""
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.MetricsEndpointReturnsStatus")
     @pytest.mark.wsgi
     def test_metrics_endpoint_returns_200(self) -> None:
         """Test that /metrics returns HTTP 200."""
@@ -36,6 +38,8 @@ class TestWSGIMetricsEndpoint:
 
         assert response.status_code == 200
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.MetricsEndpointContentType")
     @pytest.mark.wsgi
     def test_metrics_endpoint_has_ndjson_content_type(self) -> None:
         """Test that /metrics returns correct Content-Type header."""
@@ -50,6 +54,8 @@ class TestWSGIMetricsEndpoint:
 
         assert response.headers["content-type"] == "application/x-ndjson"
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.MetricsEndpointNDJSON")
     @pytest.mark.wsgi
     def test_metrics_endpoint_returns_ndjson_format(self) -> None:
         """Test that /metrics returns data in NDJSON format."""
@@ -77,6 +83,8 @@ class TestWSGIMetricsEndpoint:
         assert parsed["value"] == 42.0
         assert parsed["labels"] == {"method": "GET", "status": "200"}
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.MetricsEndpointSinceFilter")
     @pytest.mark.wsgi
     def test_metrics_endpoint_filters_by_since(self) -> None:
         """Test that /metrics?since=X filters samples by timestamp."""
@@ -108,6 +116,8 @@ class TestWSGIMetricsEndpoint:
 class TestWSGIMetricsPrometheusEndpoint:
     """Tests for the /metrics/prometheus endpoint."""
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.PrometheusEndpointReturnsStatus")
     @pytest.mark.wsgi
     def test_metrics_prometheus_endpoint_returns_200(self) -> None:
         """Test that /metrics/prometheus returns HTTP 200."""
@@ -122,6 +132,8 @@ class TestWSGIMetricsPrometheusEndpoint:
 
         assert response.status_code == 200
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.PrometheusEndpointContentType")
     @pytest.mark.wsgi
     def test_metrics_prometheus_has_correct_content_type(self) -> None:
         """Test that /metrics/prometheus returns correct Content-Type header."""
@@ -137,6 +149,8 @@ class TestWSGIMetricsPrometheusEndpoint:
         expected_content_type = "text/plain; version=0.0.4; charset=utf-8"
         assert response.headers["content-type"] == expected_content_type
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.PrometheusEndpointFormat")
     @pytest.mark.wsgi
     def test_metrics_prometheus_returns_prometheus_format(self) -> None:
         """Test that /metrics/prometheus returns data in Prometheus format."""
@@ -162,6 +176,8 @@ class TestWSGIMetricsPrometheusEndpoint:
         assert "http_requests_total" in response.text
         assert "42" in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.PrometheusEndpointLatestOnly")
     @pytest.mark.wsgi
     def test_metrics_prometheus_uses_encode_current(self) -> None:
         """Test that /metrics/prometheus keeps only latest sample per metric."""
@@ -188,6 +204,8 @@ class TestWSGIMetricsPrometheusEndpoint:
         assert len(lines) == 1  # Only latest sample
         assert "5.0" in lines[0]
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.PrometheusEndpointEmptyStorage")
     @pytest.mark.wsgi
     def test_metrics_prometheus_empty_storage_returns_empty_body(self) -> None:
         """Test that /metrics/prometheus returns empty body when storage is empty."""
@@ -207,6 +225,8 @@ class TestWSGIMetricsPrometheusEndpoint:
 class TestWSGILogsEndpoint:
     """Tests for the /logs endpoint."""
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.LogsEndpointReturnsStatus")
     @pytest.mark.wsgi
     def test_logs_endpoint_returns_200(self) -> None:
         """Test that /logs returns HTTP 200."""
@@ -221,6 +241,8 @@ class TestWSGILogsEndpoint:
 
         assert response.status_code == 200
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.LogsEndpointContentType")
     @pytest.mark.wsgi
     def test_logs_endpoint_has_ndjson_content_type(self) -> None:
         """Test that /logs returns correct Content-Type header."""
@@ -235,6 +257,8 @@ class TestWSGILogsEndpoint:
 
         assert response.headers["content-type"] == "application/x-ndjson"
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.LogsEndpointNDJSON")
     @pytest.mark.wsgi
     def test_logs_endpoint_returns_ndjson_format(self) -> None:
         """Test that /logs returns data in NDJSON format."""
@@ -260,6 +284,8 @@ class TestWSGILogsEndpoint:
         assert "Test message" in response.text
         assert "INFO" in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.LogsEndpointSinceFilter")
     @pytest.mark.wsgi
     def test_logs_endpoint_filters_by_since(self) -> None:
         """Test that /logs?since=X filters entries by timestamp."""
@@ -295,6 +321,8 @@ class TestWSGILogsEndpoint:
         assert "New message" in response.text
         assert "Old message" not in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.LogsEndpointLevelFilter")
     @pytest.mark.wsgi
     def test_logs_endpoint_filters_by_level(self) -> None:
         """Test that /logs?level=X filters entries by level."""
@@ -330,6 +358,8 @@ class TestWSGILogsEndpoint:
         assert "Error message" in response.text
         assert "Info message" not in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.LogsEndpointLevelFilterCaseInsensitive")
     @pytest.mark.wsgi
     def test_logs_endpoint_level_filter_is_case_insensitive(self) -> None:
         """Test that /logs?level=X is case-insensitive."""
@@ -365,6 +395,8 @@ class TestWSGILogsEndpoint:
         assert "Error message" in response.text
         assert "Info message" not in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.LogsEndpointCombinedFilters")
     @pytest.mark.wsgi
     def test_logs_endpoint_combines_since_and_level(self) -> None:
         """Test that /logs combines since and level filters."""
@@ -411,6 +443,8 @@ class TestWSGILogsEndpoint:
         assert "Old error" not in response.text
         assert "New info" not in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.LogsEndpointInvalidLevel")
     @pytest.mark.wsgi
     def test_logs_endpoint_level_returns_empty_for_nonexistent(self) -> None:
         """Test that /logs treats invalid level as None (shows all)."""
@@ -440,6 +474,8 @@ class TestWSGILogsEndpoint:
 class TestWSGIRouting:
     """Tests for routing and error handling."""
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.Routing404NotFound")
     @pytest.mark.wsgi
     def test_unknown_path_returns_404(self) -> None:
         """Test that unknown paths return HTTP 404."""
@@ -458,6 +494,8 @@ class TestWSGIRouting:
 class TestWSGIEmptyStorage:
     """Tests for edge cases with empty storage."""
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.MetricsEmptyStorage")
     @pytest.mark.wsgi
     def test_metrics_empty_storage_returns_empty_body(self) -> None:
         """Test that /metrics returns empty body when storage is empty."""
@@ -473,6 +511,8 @@ class TestWSGIEmptyStorage:
         assert response.status_code == 200
         assert response.text == ""
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.LogsEmptyStorage")
     @pytest.mark.wsgi
     def test_logs_empty_storage_returns_empty_body(self) -> None:
         """Test that /logs returns empty body when storage is empty."""
@@ -492,6 +532,8 @@ class TestWSGIEmptyStorage:
 class TestWSGIParameterValidation:
     """Tests for query parameter validation."""
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.MetricsInvalidSinceParam")
     @pytest.mark.wsgi
     def test_wsgi_metrics_handles_invalid_since_param(self) -> None:
         """Test that /metrics handles invalid since param gracefully."""
@@ -513,6 +555,8 @@ class TestWSGIParameterValidation:
         parsed = json.loads(response.text.strip())
         assert parsed["value"] == 1.0
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.LogsInvalidSinceParam")
     @pytest.mark.wsgi
     def test_wsgi_logs_handles_invalid_since_param(self) -> None:
         """Test that /logs handles invalid since param gracefully."""
@@ -538,6 +582,8 @@ class TestWSGIParameterValidation:
         assert response.status_code == 200
         assert "Test message" in response.text
 
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.WSGI.LogsInvalidLevelParam")
     @pytest.mark.wsgi
     def test_wsgi_logs_validates_level_against_whitelist(self) -> None:
         """Test that /logs validates level parameter against whitelist."""

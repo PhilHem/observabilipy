@@ -45,6 +45,12 @@ def create_wsgi_app(
         path = environ.get("PATH_INFO", "/")
 
         if path == "/metrics":
+            # @tra: Adapter.WSGI.MetricsEndpointReturnsStatus
+            # @tra: Adapter.WSGI.MetricsEndpointContentType
+            # @tra: Adapter.WSGI.MetricsEndpointNDJSON
+            # @tra: Adapter.WSGI.MetricsEndpointSinceFilter
+            # @tra: Adapter.WSGI.MetricsEmptyStorage
+            # @tra: Adapter.WSGI.MetricsInvalidSinceParam
             headers = [("Content-Type", "application/x-ndjson")]
             query_string = environ.get("QUERY_STRING", "")
             params = parse_qs(query_string)
@@ -54,12 +60,28 @@ def create_wsgi_app(
             start_response("200 OK", headers)
             return [body.encode()]
         if path == "/metrics/prometheus":
+            # @tra: Adapter.WSGI.PrometheusEndpointReturnsStatus
+            # @tra: Adapter.WSGI.PrometheusEndpointContentType
+            # @tra: Adapter.WSGI.PrometheusEndpointFormat
+            # @tra: Adapter.WSGI.PrometheusEndpointLatestOnly
+            # @tra: Adapter.WSGI.PrometheusEndpointEmptyStorage
             headers = [("Content-Type", "text/plain; version=0.0.4; charset=utf-8")]
             samples = collect_async_iterable(metrics_storage.read())
             body = encode_current_sync(samples)
             start_response("200 OK", headers)
             return [body.encode()]
         if path == "/logs":
+            # @tra: Adapter.WSGI.LogsEndpointReturnsStatus
+            # @tra: Adapter.WSGI.LogsEndpointContentType
+            # @tra: Adapter.WSGI.LogsEndpointNDJSON
+            # @tra: Adapter.WSGI.LogsEndpointSinceFilter
+            # @tra: Adapter.WSGI.LogsEndpointLevelFilter
+            # @tra: Adapter.WSGI.LogsEndpointLevelFilterCaseInsensitive
+            # @tra: Adapter.WSGI.LogsEndpointCombinedFilters
+            # @tra: Adapter.WSGI.LogsEndpointInvalidLevel
+            # @tra: Adapter.WSGI.LogsEmptyStorage
+            # @tra: Adapter.WSGI.LogsInvalidSinceParam
+            # @tra: Adapter.WSGI.LogsInvalidLevelParam
             headers = [("Content-Type", "application/x-ndjson")]
             query_string = environ.get("QUERY_STRING", "")
             params = parse_qs(query_string)
@@ -70,6 +92,7 @@ def create_wsgi_app(
             body = encode_logs_sync(entries)
             start_response("200 OK", headers)
             return [body.encode()]
+        # @tra: Adapter.WSGI.Routing404NotFound
         start_response("404 Not Found", [])
         return [b"Not Found"]
 
