@@ -300,6 +300,109 @@ async def memory_log_storage() -> AsyncGenerator[SQLiteLogStorage]:
 
 Without proper cleanup, persistent connections remain open and can cause tests to hang.
 
+### Async vs Sync In-Memory Storage Separation
+
+The project maintains **separate async and sync implementations** of in-memory storage adapters. This separation is intentional and critical for both testing and runtime correctness:
+
+#### Why Separation?
+
+- **Sync adapters** (`InMemoryLogStorage`, `InMemoryMetricsStorage`) are used in unit tests and synchronous contexts (fast, deterministic, no event loop requirements)
+- **Async adapters** (`AsyncInMemoryLogStorage`, `AsyncInMemoryMetricsStorage`) are used in async contexts and FastAPI endpoints (proper async/await semantics, integrates with asyncio)
+
+Mixing async and sync implementations causes:
+- Event loop binding issues (lock created in wrong loop context)
+- Pytest-asyncio fixture errors
+- Deadlocks in concurrent test scenarios
+- Runtime failures when async code accidentally calls sync storage
+
+#### When to Use Each Pattern
+
+**Use sync in-memory storage when:**
+- Writing unit tests for core domain logic (models, services)
+- No async/await in the test itself
+- Testing synchronous code paths
+- Speed and determinism are critical
+
+```python
+@pytest.mark.core
+def test_log_entry_validation():
+    storage = InMemoryLogStorage()  # Sync adapter
+    entry = LogEntry(timestamp=time.time(), level="INFO", message="test")
+    storage.write(entry)
+    assert len(list(storage.read())) == 1
+```
+
+**Use async in-memory storage when:**
+- Writing tests for async adapters or framework integration
+- The test itself uses `async def` and `await`
+- Testing async ports or async endpoint handlers
+- Fixtures are async (e.g., with `@pytest.fixture` + `async def`)
+
+```python
+@pytest.mark.fastapi
+@pytest.mark.tier(2)
+async def test_fastapi_logs_endpoint(async_client):
+    storage = AsyncInMemoryLogStorage()  # Async adapter
+    entry = LogEntry(timestamp=time.time(), level="INFO", message="test")
+    await storage.write(entry)
+    response = await async_client.get("/logs")
+    assert response.status_code == 200
+```
+
+#### Implementation Pattern
+
+Each in-memory adapter pair follows this structure:
+
+```python
+# Sync version - used in unit tests and synchronous domain code
+class InMemoryLogStorage:
+    def __init__(self):
+        self._logs: list[LogEntry] = []
+
+    def write(self, entry: LogEntry) -> None:
+        self._logs.append(entry)
+
+    def read(self, since: float = 0) -> Iterable[LogEntry]:
+        return iter(self._logs)
+
+# Async version - used in async tests and framework adapters
+class AsyncInMemoryLogStorage:
+    def __init__(self):
+        self._logs: list[LogEntry] = []
+
+    async def write(self, entry: LogEntry) -> None:
+        self._logs.append(entry)
+
+    async def read(self, since: float = 0) -> AsyncIterable[LogEntry]:
+        for entry in self._logs:
+            yield entry
+```
+
+#### Port Interface Guidance
+
+If a port needs to support both sync and async, define two separate port protocols:
+
+```python
+from typing import Protocol, Iterable, AsyncIterable
+
+class LogStoragePort(Protocol):  # Sync port
+    def write(self, entry: LogEntry) -> None: ...
+    def read(self, since: float = 0) -> Iterable[LogEntry]: ...
+
+class AsyncLogStoragePort(Protocol):  # Async port
+    async def write(self, entry: LogEntry) -> None: ...
+    async def read(self, since: float = 0) -> AsyncIterable[LogEntry]: ...
+```
+
+Do NOT create a single port with both sync and async methods - this creates confusion about when to use which. Separate ports make the async contract explicit.
+
+#### Testing Strategy
+
+- **Unit tests**: Use sync in-memory storage with synchronous test functions
+- **Integration tests**: Use async in-memory storage with async test functions when testing async code paths
+- **SQLite tests**: Use async SQLite storage for async contexts; use fixtures with proper cleanup
+- **Framework tests**: Match the framework's concurrency model (async for FastAPI/ASGI, sync for Django)
+
 ## Extending the System
 
 ### Adding a Storage Backend

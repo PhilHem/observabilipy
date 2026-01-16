@@ -28,3 +28,59 @@ def sqlite_log_db_path(log_db_path: str) -> str:
 def sqlite_metrics_db_path(metrics_db_path: str) -> str:
     """Alias for metrics_db_path (used by e2e tests)."""
     return metrics_db_path
+
+
+# === ASGI Test Fixtures ===
+
+
+@pytest.fixture
+def basic_asgi_app():
+    """Basic ASGI app fixture that returns 200 OK.
+
+    Used in tests to replace repeated inline ASGI app definitions.
+    """
+    from observabilipy.adapters.frameworks.asgi import Receive, Scope, Send
+
+    async def app(scope: Scope, receive: Receive, send: Send) -> None:
+        """Simple ASGI app that returns 200 OK."""
+        await send({"type": "http.response.start", "status": 200, "headers": []})
+        await send({"type": "http.response.body", "body": b"OK"})
+
+    return app
+
+
+@pytest.fixture
+def asgi_scope():
+    """Factory fixture for creating ASGI scope dicts.
+
+    Used in tests to create scope dicts with customizable method/path.
+    """
+    from observabilipy.adapters.frameworks.asgi import Scope
+
+    def _scope(method: str = "GET", path: str = "/test") -> Scope:
+        return {
+            "type": "http",
+            "method": method,
+            "path": path,
+            "query_string": b"",
+            "headers": [],
+        }
+
+    return _scope
+
+
+@pytest.fixture
+def asgi_send_capture():
+    """Fixture that returns a send callable and a responses list for capture.
+
+    Returns a tuple of (send_func, responses_list) for recording ASGI messages.
+    Used in tests to replace repeated inline send/responses implementations.
+    """
+
+    responses: list[dict[str, object]] = []
+
+    async def send(message: dict[str, object]) -> None:
+        """Capture ASGI messages."""
+        responses.append(message)
+
+    return send, responses

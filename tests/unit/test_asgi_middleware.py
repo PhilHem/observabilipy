@@ -4,6 +4,8 @@ This module tests the ASGIObservabilityMiddleware class that wraps ASGI applicat
 to automatically capture request/response metrics and logs.
 """
 
+from __future__ import annotations
+
 import pytest
 
 from observabilipy.adapters.frameworks.asgi import (
@@ -16,9 +18,6 @@ from observabilipy.adapters.storage.in_memory import (
     InMemoryLogStorage,
     InMemoryMetricsStorage,
 )
-
-# Import conftest fixtures for testing
-pytest_plugins = ["tests.features.middleware.conftest"]
 
 
 @pytest.mark.tier(1)
@@ -189,3 +188,138 @@ async def test_asgi_send_capture_records_messages(asgi_send_capture):
     assert responses[0]["status"] == 200
     assert responses[1]["type"] == "http.response.body"
     assert responses[1]["body"] == b"OK"
+
+
+# === Query Parameter Parsing Tests ===
+
+
+@pytest.mark.tier(1)
+@pytest.mark.tra("Adapter.ASGI.QueryParameter.InvalidUTF8")
+def test_parse_since_param_handles_invalid_utf8_bytes():
+    """_parse_since_param should handle invalid UTF-8 bytes in query string."""
+    from observabilipy.adapters.frameworks.asgi import _parse_since_param
+
+    # Arrange: Simulate invalid UTF-8 bytes in query string that would be
+    # decoded with errors='replace' to produce placeholder characters
+    query_string = "since=\ufffd\ufffd".encode()  # Replacement chars
+    params = __import__("urllib.parse", fromlist=["parse_qs"]).parse_qs(
+        query_string.decode("utf-8", errors="replace")
+    )
+
+    # Act: Parse the 'since' parameter
+    result = _parse_since_param(params)
+
+    # Assert: Should return default value (0.0) without raising
+    assert isinstance(result, float)
+    assert result == 0.0
+
+
+@pytest.mark.tier(1)
+@pytest.mark.tra("Adapter.ASGI.QueryParameter.InvalidUTF8")
+def test_parse_level_param_handles_invalid_utf8_bytes():
+    """_parse_level_param should handle invalid UTF-8 bytes in query string."""
+    from observabilipy.adapters.frameworks.asgi import _parse_level_param
+
+    # Arrange: Simulate invalid UTF-8 bytes in query string that would be
+    # decoded with errors='replace' to produce placeholder characters
+    query_string = "level=\ufffd\ufffd".encode()  # Replacement chars
+    params = __import__("urllib.parse", fromlist=["parse_qs"]).parse_qs(
+        query_string.decode("utf-8", errors="replace")
+    )
+
+    # Act: Parse the 'level' parameter
+    result = _parse_level_param(params)
+
+    # Assert: Should return None without raising
+    assert result is None
+
+
+@pytest.mark.tier(1)
+@pytest.mark.tra("Adapter.ASGI.QueryParameter.Parser")
+def test_parse_query_params_extracts_all_params():
+    """_parse_query_params should extract all parameters from scope query_string."""
+    from observabilipy.adapters.frameworks.asgi import _parse_query_params
+
+    # Arrange: Create scope with query string
+    scope: Scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/test",
+        "query_string": b"since=12345.0&level=INFO&other=value",
+        "headers": [],
+    }
+
+    # Act: Parse query parameters
+    result = _parse_query_params(scope)
+
+    # Assert: Should return dict with all parameters
+    assert result == {"since": ["12345.0"], "level": ["INFO"], "other": ["value"]}
+
+
+@pytest.mark.tier(1)
+@pytest.mark.tra("Adapter.ASGI.QueryParameter.Parser")
+def test_parse_query_params_handles_missing_query_string():
+    """_parse_query_params should handle scope without query_string key."""
+    from observabilipy.adapters.frameworks.asgi import _parse_query_params
+
+    # Arrange: Create scope without query_string key
+    scope: Scope = {
+        "type": "http",
+        "method": "GET",
+        "path": "/test",
+        "headers": [],
+    }
+
+    # Act: Parse query parameters
+    result = _parse_query_params(scope)
+
+    # Assert: Should return empty dict
+    assert result == {}
+
+
+# === _send_response Helper Tests ===
+
+
+@pytest.mark.tier(1)
+@pytest.mark.tra("Adapter.ASGI.SendResponse.Headers")
+@pytest.mark.asyncio
+async def test_send_response_sends_correct_headers():
+    """_send_response sends http.response.start with correct status."""
+    from observabilipy.adapters.frameworks.asgi import _send_response
+
+    # Arrange: Create send capture
+    responses: list[dict[str, object]] = []
+
+    async def send(message: dict[str, object]) -> None:
+        responses.append(message)
+
+    # Act: Send response with specific status and content type
+    await _send_response(send, 201, "text/plain", "test body")
+
+    # Assert: Should send http.response.start with correct headers
+    assert len(responses) == 2
+    assert responses[0]["type"] == "http.response.start"
+    assert responses[0]["status"] == 201
+    assert responses[0]["headers"] == [(b"content-type", b"text/plain")]
+
+
+@pytest.mark.tier(1)
+@pytest.mark.tra("Adapter.ASGI.SendResponse.Body")
+@pytest.mark.asyncio
+async def test_send_response_sends_body_as_bytes():
+    """_send_response should send http.response.body with body encoded as bytes."""
+    from observabilipy.adapters.frameworks.asgi import _send_response
+
+    # Arrange: Create send capture
+    responses: list[dict[str, object]] = []
+
+    async def send(message: dict[str, object]) -> None:
+        responses.append(message)
+
+    # Act: Send response with string body
+    await _send_response(send, 200, "application/json", "{'key': 'value'}")
+
+    # Assert: Should send http.response.body with encoded body
+    assert len(responses) == 2
+    assert responses[1]["type"] == "http.response.body"
+    assert responses[1]["body"] == b"{'key': 'value'}"

@@ -1,6 +1,7 @@
 """Integration tests for ASGI generic adapter."""
 
 import json
+from collections.abc import AsyncGenerator
 
 import httpx
 import pytest
@@ -13,16 +14,58 @@ from observabilipy.adapters.storage.in_memory import (
 from observabilipy.core.models import LogEntry, MetricSample
 
 
+@pytest.fixture
+async def log_storage() -> AsyncGenerator[InMemoryLogStorage]:
+    """Fixture providing an empty log storage."""
+    return InMemoryLogStorage()
+
+
+@pytest.fixture
+async def metrics_storage() -> AsyncGenerator[InMemoryMetricsStorage]:
+    """Fixture providing an empty metrics storage."""
+    return InMemoryMetricsStorage()
+
+
+@pytest.fixture
+async def log_storage_with_data() -> AsyncGenerator[InMemoryLogStorage]:
+    """Fixture providing a log storage with sample data."""
+    storage = InMemoryLogStorage()
+    await storage.write(
+        LogEntry(
+            timestamp=1000.0,
+            level="INFO",
+            message="Test message",
+            attributes={"key": "value"},
+        )
+    )
+    return storage
+
+
+@pytest.fixture
+async def metrics_storage_with_data() -> AsyncGenerator[InMemoryMetricsStorage]:
+    """Fixture providing a metrics storage with sample data."""
+    storage = InMemoryMetricsStorage()
+    await storage.write(
+        MetricSample(
+            name="http_requests_total",
+            value=42.0,
+            timestamp=1000.0,
+            labels={"method": "GET", "status": "200"},
+        )
+    )
+    return storage
+
+
 class TestASGIMetricsEndpoint:
     """Tests for the /metrics endpoint."""
 
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.MetricsEndpointHTTPStatus")
     @pytest.mark.asgi
-    async def test_metrics_endpoint_returns_200(self) -> None:
+    async def test_metrics_endpoint_returns_200(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /metrics returns HTTP 200."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         app = create_asgi_app(log_storage, metrics_storage)
 
         async with httpx.AsyncClient(
@@ -35,10 +78,10 @@ class TestASGIMetricsEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.MetricsEndpointContentType")
     @pytest.mark.asgi
-    async def test_metrics_endpoint_has_ndjson_content_type(self) -> None:
+    async def test_metrics_endpoint_has_ndjson_content_type(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /metrics returns correct Content-Type header."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         app = create_asgi_app(log_storage, metrics_storage)
 
         async with httpx.AsyncClient(
@@ -51,19 +94,13 @@ class TestASGIMetricsEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.MetricsEndpointNDJSON")
     @pytest.mark.asgi
-    async def test_metrics_endpoint_returns_ndjson_format(self) -> None:
+    async def test_metrics_endpoint_returns_ndjson_format(
+        self,
+        log_storage: InMemoryLogStorage,
+        metrics_storage_with_data: InMemoryMetricsStorage,
+    ) -> None:
         """Test that /metrics returns data in NDJSON format."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
-        await metrics_storage.write(
-            MetricSample(
-                name="http_requests_total",
-                value=42.0,
-                timestamp=1000.0,
-                labels={"method": "GET", "status": "200"},
-            )
-        )
-        app = create_asgi_app(log_storage, metrics_storage)
+        app = create_asgi_app(log_storage, metrics_storage_with_data)
 
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -78,10 +115,10 @@ class TestASGIMetricsEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.MetricsEndpointSinceFilter")
     @pytest.mark.asgi
-    async def test_metrics_endpoint_filters_by_since(self) -> None:
+    async def test_metrics_endpoint_filters_by_since(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /metrics?since=X filters samples by timestamp."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         await metrics_storage.write(
             MetricSample(name="counter", timestamp=100.0, value=1.0)
         )
@@ -107,10 +144,10 @@ class TestASGIMetricsPrometheusEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.PrometheusEndpointHTTPStatus")
     @pytest.mark.asgi
-    async def test_metrics_prometheus_endpoint_returns_200(self) -> None:
+    async def test_metrics_prometheus_endpoint_returns_200(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /metrics/prometheus returns HTTP 200."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         app = create_asgi_app(log_storage, metrics_storage)
 
         async with httpx.AsyncClient(
@@ -123,10 +160,10 @@ class TestASGIMetricsPrometheusEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.PrometheusEndpointContentType")
     @pytest.mark.asgi
-    async def test_metrics_prometheus_has_correct_content_type(self) -> None:
+    async def test_metrics_prometheus_has_correct_content_type(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /metrics/prometheus returns correct Content-Type header."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         app = create_asgi_app(log_storage, metrics_storage)
 
         async with httpx.AsyncClient(
@@ -140,19 +177,13 @@ class TestASGIMetricsPrometheusEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.PrometheusEndpointFormat")
     @pytest.mark.asgi
-    async def test_metrics_prometheus_returns_prometheus_format(self) -> None:
+    async def test_metrics_prometheus_returns_prometheus_format(
+        self,
+        log_storage: InMemoryLogStorage,
+        metrics_storage_with_data: InMemoryMetricsStorage,
+    ) -> None:
         """Test that /metrics/prometheus returns data in Prometheus format."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
-        await metrics_storage.write(
-            MetricSample(
-                name="http_requests_total",
-                value=42.0,
-                timestamp=1000.0,
-                labels={"method": "GET", "status": "200"},
-            )
-        )
-        app = create_asgi_app(log_storage, metrics_storage)
+        app = create_asgi_app(log_storage, metrics_storage_with_data)
 
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -165,10 +196,10 @@ class TestASGIMetricsPrometheusEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.PrometheusEndpointCurrent")
     @pytest.mark.asgi
-    async def test_metrics_prometheus_uses_encode_current(self) -> None:
+    async def test_metrics_prometheus_uses_encode_current(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /metrics/prometheus keeps only latest sample per metric."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         await metrics_storage.write(
             MetricSample(name="counter", timestamp=100.0, value=1.0, labels={})
         )
@@ -189,10 +220,10 @@ class TestASGIMetricsPrometheusEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.PrometheusEndpointHTTPStatus")
     @pytest.mark.asgi
-    async def test_metrics_prometheus_empty_storage_returns_empty_body(self) -> None:
+    async def test_metrics_prometheus_empty_storage_returns_empty_body(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /metrics/prometheus returns empty body when storage is empty."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         app = create_asgi_app(log_storage, metrics_storage)
 
         async with httpx.AsyncClient(
@@ -210,10 +241,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.LogsEndpointHTTPStatus")
     @pytest.mark.asgi
-    async def test_logs_endpoint_returns_200(self) -> None:
+    async def test_logs_endpoint_returns_200(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /logs returns HTTP 200."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         app = create_asgi_app(log_storage, metrics_storage)
 
         async with httpx.AsyncClient(
@@ -226,10 +257,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.LogsEndpointContentType")
     @pytest.mark.asgi
-    async def test_logs_endpoint_has_ndjson_content_type(self) -> None:
+    async def test_logs_endpoint_has_ndjson_content_type(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /logs returns correct Content-Type header."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         app = create_asgi_app(log_storage, metrics_storage)
 
         async with httpx.AsyncClient(
@@ -242,19 +273,13 @@ class TestASGILogsEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.LogsEndpointNDJSON")
     @pytest.mark.asgi
-    async def test_logs_endpoint_returns_ndjson_format(self) -> None:
+    async def test_logs_endpoint_returns_ndjson_format(
+        self,
+        log_storage_with_data: InMemoryLogStorage,
+        metrics_storage: InMemoryMetricsStorage,
+    ) -> None:
         """Test that /logs returns data in NDJSON format."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
-        await log_storage.write(
-            LogEntry(
-                timestamp=1000.0,
-                level="INFO",
-                message="Test message",
-                attributes={"key": "value"},
-            )
-        )
-        app = create_asgi_app(log_storage, metrics_storage)
+        app = create_asgi_app(log_storage_with_data, metrics_storage)
 
         async with httpx.AsyncClient(
             transport=httpx.ASGITransport(app=app), base_url="http://test"
@@ -267,10 +292,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.LogsEndpointSinceFilter")
     @pytest.mark.asgi
-    async def test_logs_endpoint_filters_by_since(self) -> None:
+    async def test_logs_endpoint_filters_by_since(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /logs?since=X filters entries by timestamp."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         await log_storage.write(
             LogEntry(
                 timestamp=100.0,
@@ -300,10 +325,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.LogsEndpointLevelFilter")
     @pytest.mark.asgi
-    async def test_logs_endpoint_filters_by_level(self) -> None:
+    async def test_logs_endpoint_filters_by_level(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /logs?level=X filters entries by level."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         await log_storage.write(
             LogEntry(
                 timestamp=100.0,
@@ -333,10 +358,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.LogsEndpointLevelFilter")
     @pytest.mark.asgi
-    async def test_logs_endpoint_level_filter_is_case_insensitive(self) -> None:
+    async def test_logs_endpoint_level_filter_is_case_insensitive(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /logs?level=X is case-insensitive."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         await log_storage.write(
             LogEntry(
                 timestamp=100.0,
@@ -366,10 +391,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.LogsEndpointSinceFilter")
     @pytest.mark.asgi
-    async def test_logs_endpoint_combines_since_and_level(self) -> None:
+    async def test_logs_endpoint_combines_since_and_level(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /logs combines since and level filters."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         await log_storage.write(
             LogEntry(
                 timestamp=100.0,
@@ -408,10 +433,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.LogsEndpointLevelFilter")
     @pytest.mark.asgi
-    async def test_logs_endpoint_level_returns_empty_for_nonexistent(self) -> None:
+    async def test_logs_endpoint_level_returns_empty_for_nonexistent(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /logs treats invalid level as None (shows all)."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         await log_storage.write(
             LogEntry(
                 timestamp=100.0,
@@ -433,10 +458,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.MetricsEndpointSinceFilter")
     @pytest.mark.asgi
-    async def test_metrics_endpoint_handles_invalid_since_param(self) -> None:
+    async def test_metrics_endpoint_handles_invalid_since_param(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /metrics handles invalid since param gracefully."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         await metrics_storage.write(
             MetricSample(name="counter", timestamp=100.0, value=1.0)
         )
@@ -454,10 +479,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.LogsEndpointSinceFilter")
     @pytest.mark.asgi
-    async def test_logs_endpoint_handles_invalid_since_param(self) -> None:
+    async def test_logs_endpoint_handles_invalid_since_param(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /logs handles invalid since param gracefully."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         await log_storage.write(
             LogEntry(
                 timestamp=100.0,
@@ -479,10 +504,10 @@ class TestASGILogsEndpoint:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.LogsEndpointLevelFilter")
     @pytest.mark.asgi
-    async def test_logs_endpoint_validates_level_whitelist(self) -> None:
+    async def test_logs_endpoint_validates_level_whitelist(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /logs validates level parameter against whitelist."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         await log_storage.write(
             LogEntry(
                 timestamp=100.0,
@@ -511,16 +536,80 @@ class TestASGILogsEndpoint:
         assert "Error message" in response.text
 
 
+class TestASGIErrorHandling:
+    """Tests for error handling in endpoints."""
+
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.MetricsEndpointEncodingError")
+    @pytest.mark.asgi
+    async def test_metrics_endpoint_handles_encoding_error_gracefully(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
+        """Test that /metrics handles encoding errors gracefully with 500."""
+        app = create_asgi_app(log_storage, metrics_storage)
+
+        # Mock the encode_ndjson to raise an exception
+        import observabilipy.adapters.frameworks.asgi as asgi_module
+
+        original_encode = asgi_module.encode_ndjson
+
+        async def failing_encode(*args, **kwargs):
+            raise ValueError("Encoding failed")
+
+        asgi_module.encode_ndjson = failing_encode
+
+        try:
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.get("/metrics")
+
+            assert response.status_code == 500
+            assert "error" in response.text.lower()
+        finally:
+            asgi_module.encode_ndjson = original_encode
+
+    @pytest.mark.tier(2)
+    @pytest.mark.tra("Adapter.ASGI.LogsEndpointEncodingError")
+    @pytest.mark.asgi
+    async def test_logs_endpoint_handles_encoding_error_gracefully(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
+        """Test that /logs handles encoding errors gracefully with 500."""
+        app = create_asgi_app(log_storage, metrics_storage)
+
+        # Mock the encode_logs to raise an exception
+        import observabilipy.adapters.frameworks.asgi as asgi_module
+
+        original_encode = asgi_module.encode_logs
+
+        async def failing_encode(*args, **kwargs):
+            raise ValueError("Encoding failed")
+
+        asgi_module.encode_logs = failing_encode
+
+        try:
+            async with httpx.AsyncClient(
+                transport=httpx.ASGITransport(app=app), base_url="http://test"
+            ) as client:
+                response = await client.get("/logs")
+
+            assert response.status_code == 500
+            assert "error" in response.text.lower()
+        finally:
+            asgi_module.encode_logs = original_encode
+
+
 class TestASGIRouting:
     """Tests for routing and error handling."""
 
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.RoutingUnknownPath")
     @pytest.mark.asgi
-    async def test_unknown_path_returns_404(self) -> None:
+    async def test_unknown_path_returns_404(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that unknown paths return HTTP 404."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         app = create_asgi_app(log_storage, metrics_storage)
 
         async with httpx.AsyncClient(
@@ -537,10 +626,10 @@ class TestASGIEmptyStorage:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.MetricsEndpointHTTPStatus")
     @pytest.mark.asgi
-    async def test_metrics_empty_storage_returns_empty_body(self) -> None:
+    async def test_metrics_empty_storage_returns_empty_body(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /metrics returns empty body when storage is empty."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         app = create_asgi_app(log_storage, metrics_storage)
 
         async with httpx.AsyncClient(
@@ -554,10 +643,10 @@ class TestASGIEmptyStorage:
     @pytest.mark.tier(2)
     @pytest.mark.tra("Adapter.ASGI.LogsEndpointHTTPStatus")
     @pytest.mark.asgi
-    async def test_logs_empty_storage_returns_empty_body(self) -> None:
+    async def test_logs_empty_storage_returns_empty_body(
+        self, log_storage: InMemoryLogStorage, metrics_storage: InMemoryMetricsStorage
+    ) -> None:
         """Test that /logs returns empty body when storage is empty."""
-        log_storage = InMemoryLogStorage()
-        metrics_storage = InMemoryMetricsStorage()
         app = create_asgi_app(log_storage, metrics_storage)
 
         async with httpx.AsyncClient(

@@ -26,6 +26,21 @@ ASGIApp = Callable[[Scope, Receive, Send], Coroutine[Any, Any, None]]
 VALID_LEVELS = {"DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"}
 
 
+def _parse_query_params(scope: Scope) -> dict[str, list[str]]:
+    """Parse query string from ASGI scope into parameter dictionary.
+
+    Args:
+        scope: ASGI scope dictionary containing request metadata.
+
+    Returns:
+        Dictionary mapping parameter names to lists of values.
+        Returns empty dict if query_string is missing or empty.
+    """
+    # @tra: Adapter.ASGI.QueryParameter.Parser
+    query_string = scope.get("query_string", b"").decode(errors="replace")
+    return parse_qs(query_string)
+
+
 def _parse_since_param(params: dict[str, list[str]]) -> float:
     """Parse and validate the 'since' query parameter.
 
@@ -35,6 +50,7 @@ def _parse_since_param(params: dict[str, list[str]]) -> float:
     Returns:
         Timestamp as float, defaulting to 0.0 if invalid or missing.
     """
+    # @tra: Adapter.ASGI.QueryParameter.InvalidUTF8
     try:
         return float(params.get("since", ["0"])[0])
     except ValueError:
@@ -50,11 +66,28 @@ def _parse_level_param(params: dict[str, list[str]]) -> str | None:
     Returns:
         Validated level string (uppercase) or None if invalid/missing.
     """
+    # @tra: Adapter.ASGI.QueryParameter.InvalidUTF8
     level_list = params.get("level", [None])
     level_raw = level_list[0] if level_list else None
     if level_raw and level_raw.upper() in VALID_LEVELS:
         return level_raw.upper()
     return None
+
+
+async def _send_response(send: Send, status: int, content_type: str, body: str) -> None:
+    """Send an HTTP response with headers and body.
+
+    Args:
+        send: ASGI send callable for writing response.
+        status: HTTP status code.
+        content_type: Content-Type header value.
+        body: Response body as string (will be encoded to bytes).
+    """
+    # @tra: Adapter.ASGI.SendResponse.Headers
+    headers = [(b"content-type", content_type.encode())]
+    await send({"type": "http.response.start", "status": status, "headers": headers})
+    # @tra: Adapter.ASGI.SendResponse.Body
+    await send({"type": "http.response.body", "body": body.encode()})
 
 
 # @tra: Adapter.ASGI.Middleware.Init
@@ -124,46 +157,43 @@ def create_asgi_app(
         # @tra: Adapter.ASGI.MetricsEndpointContentType
         # @tra: Adapter.ASGI.MetricsEndpointNDJSON
         # @tra: Adapter.ASGI.MetricsEndpointSinceFilter
+        # @tra: Adapter.ASGI.MetricsEndpointEncodingError
         if path == "/metrics":
-            headers = [(b"content-type", b"application/x-ndjson")]
-            query_string = scope.get("query_string", b"").decode()
-            params = parse_qs(query_string)
+            params = _parse_query_params(scope)
             since = _parse_since_param(params)
-            body = await encode_ndjson(metrics_storage.read(since=since))
-            await send(
-                {"type": "http.response.start", "status": 200, "headers": headers}
-            )
-            await send({"type": "http.response.body", "body": body.encode()})
+            try:
+                body = await encode_ndjson(metrics_storage.read(since=since))
+                await _send_response(send, 200, "application/x-ndjson", body)
+            except Exception as e:
+                error_body = f"Error encoding metrics: {e!s}"
+                await _send_response(send, 500, "application/x-ndjson", error_body)
         # @tra: Adapter.ASGI.PrometheusEndpointHTTPStatus
         # @tra: Adapter.ASGI.PrometheusEndpointContentType
         # @tra: Adapter.ASGI.PrometheusEndpointFormat
         # @tra: Adapter.ASGI.PrometheusEndpointCurrent
         elif path == "/metrics/prometheus":
-            headers = [(b"content-type", b"text/plain; version=0.0.4; charset=utf-8")]
             body = await encode_current(metrics_storage.read())
-            await send(
-                {"type": "http.response.start", "status": 200, "headers": headers}
+            await _send_response(
+                send, 200, "text/plain; version=0.0.4; charset=utf-8", body
             )
-            await send({"type": "http.response.body", "body": body.encode()})
         # @tra: Adapter.ASGI.LogsEndpointHTTPStatus
         # @tra: Adapter.ASGI.LogsEndpointContentType
         # @tra: Adapter.ASGI.LogsEndpointNDJSON
         # @tra: Adapter.ASGI.LogsEndpointSinceFilter
         # @tra: Adapter.ASGI.LogsEndpointLevelFilter
+        # @tra: Adapter.ASGI.LogsEndpointEncodingError
         elif path == "/logs":
-            headers = [(b"content-type", b"application/x-ndjson")]
-            query_string = scope.get("query_string", b"").decode()
-            params = parse_qs(query_string)
+            params = _parse_query_params(scope)
             since = _parse_since_param(params)
             level = _parse_level_param(params)
-            body = await encode_logs(log_storage.read(since=since, level=level))
-            await send(
-                {"type": "http.response.start", "status": 200, "headers": headers}
-            )
-            await send({"type": "http.response.body", "body": body.encode()})
+            try:
+                body = await encode_logs(log_storage.read(since=since, level=level))
+                await _send_response(send, 200, "application/x-ndjson", body)
+            except Exception as e:
+                error_body = f"Error encoding logs: {e!s}"
+                await _send_response(send, 500, "application/x-ndjson", error_body)
         # @tra: Adapter.ASGI.RoutingUnknownPath
         else:
-            await send({"type": "http.response.start", "status": 404, "headers": []})
-            await send({"type": "http.response.body", "body": b"Not Found"})
+            await _send_response(send, 404, "text/plain", "Not Found")
 
     return app
