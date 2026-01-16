@@ -4,11 +4,13 @@ Tests that ASGIObservabilityMiddleware can skip logging and metrics for
 specified paths using exact matching and wildcard patterns.
 """
 
-from unittest.mock import AsyncMock
-
 import pytest
 
 from observabilipy.adapters.frameworks.asgi import ASGIObservabilityMiddleware
+from observabilipy.adapters.storage.in_memory import (
+    InMemoryLogStorage,
+    InMemoryMetricsStorage,
+)
 
 pytestmark = [
     pytest.mark.integration,
@@ -17,15 +19,41 @@ pytestmark = [
 ]
 
 
+async def _basic_app(scope, receive, send):
+    """Basic ASGI app that returns 200 OK."""
+    await send({"type": "http.response.start", "status": 200, "headers": []})
+    await send({"type": "http.response.body", "body": b"OK"})
+
+
+async def _make_scope(path: str) -> dict:
+    """Create ASGI scope for testing."""
+    return {
+        "type": "http",
+        "method": "GET",
+        "path": path,
+        "headers": [],
+    }
+
+
+async def _receive():
+    """Async receive stub."""
+    return {"type": "http.request", "body": b""}
+
+
+async def _send(message):
+    """Async send stub."""
+    pass
+
+
 # @tra: Adapter.ASGI.Middleware.ExcludePaths.DefaultEmpty
+@pytest.mark.asyncio
 async def test_middleware_exclude_paths_default_empty():
     """Test that exclude_paths defaults to empty list when not provided."""
-    app = AsyncMock()
-    log_storage = AsyncMock()
-    metrics_storage = AsyncMock()
+    log_storage = InMemoryLogStorage()
+    metrics_storage = InMemoryMetricsStorage()
 
     middleware = ASGIObservabilityMiddleware(
-        app=app,
+        app=_basic_app,
         log_storage=log_storage,
         metrics_storage=metrics_storage,
     )
@@ -34,108 +62,92 @@ async def test_middleware_exclude_paths_default_empty():
 
 
 # @tra: Adapter.ASGI.Middleware.ExcludePaths.ExactMatch
+@pytest.mark.asyncio
 async def test_middleware_skips_excluded_paths():
     """Test that middleware skips logging/metrics for exact path matches."""
-    app = AsyncMock()
-    log_storage = AsyncMock()
-    metrics_storage = AsyncMock()
+    log_storage = InMemoryLogStorage()
+    metrics_storage = InMemoryMetricsStorage()
 
     middleware = ASGIObservabilityMiddleware(
-        app=app,
+        app=_basic_app,
         log_storage=log_storage,
         metrics_storage=metrics_storage,
         exclude_paths=["/health", "/readiness"],
     )
 
-    scope = {
-        "type": "http",
-        "method": "GET",
-        "path": "/health",
-        "headers": [],
-    }
-    receive = AsyncMock()
-    send = AsyncMock()
+    scope = await _make_scope("/health")
+    await middleware(scope, _receive, _send)
 
-    await middleware(scope, receive, send)
+    # No logs or metrics should be written for excluded path
+    logs = [log async for log in log_storage.read()]
+    metrics = [m async for m in metrics_storage.read()]
 
-    # App should still be called
-    app.assert_called_once()
-
-    # But no logs or metrics should be written
-    log_storage.write.assert_not_called()
-    metrics_storage.write.assert_not_called()
+    assert len(logs) == 0, "Expected no logs for excluded /health path"
+    assert len(metrics) == 0, "Expected no metrics for excluded /health path"
 
 
 # @tra: Adapter.ASGI.Middleware.ExcludePaths.WildcardMatch
+@pytest.mark.asyncio
 async def test_middleware_skips_wildcard_paths():
     """Test that middleware skips paths matching wildcard patterns."""
-    app = AsyncMock()
-    log_storage = AsyncMock()
-    metrics_storage = AsyncMock()
+    log_storage = InMemoryLogStorage()
+    metrics_storage = InMemoryMetricsStorage()
 
     middleware = ASGIObservabilityMiddleware(
-        app=app,
+        app=_basic_app,
         log_storage=log_storage,
         metrics_storage=metrics_storage,
         exclude_paths=["/internal/*", "/admin/*"],
     )
 
     # Test /internal/* wildcard
-    scope = {
-        "type": "http",
-        "method": "GET",
-        "path": "/internal/debug",
-        "headers": [],
-    }
-    receive = AsyncMock()
-    send = AsyncMock()
+    scope = await _make_scope("/internal/debug")
+    await middleware(scope, _receive, _send)
 
-    await middleware(scope, receive, send)
+    logs = [log async for log in log_storage.read()]
+    metrics = [m async for m in metrics_storage.read()]
 
-    app.assert_called_once()
-    log_storage.write.assert_not_called()
-    metrics_storage.write.assert_not_called()
+    assert len(logs) == 0, "Expected no logs for excluded /internal/* path"
+    assert len(metrics) == 0, "Expected no metrics for excluded /internal/* path"
 
-    # Reset mocks and test /admin/* wildcard
-    app.reset_mock()
-    scope["path"] = "/admin/metrics"
-    await middleware(scope, receive, send)
+    # Test /admin/* wildcard
+    scope = await _make_scope("/admin/metrics")
+    await middleware(scope, _receive, _send)
 
-    app.assert_called_once()
-    log_storage.write.assert_not_called()
-    metrics_storage.write.assert_not_called()
+    logs = [log async for log in log_storage.read()]
+    metrics = [m async for m in metrics_storage.read()]
+
+    assert len(logs) == 0, "Expected no logs for excluded /admin/* path"
+    assert len(metrics) == 0, "Expected no metrics for excluded /admin/* path"
 
 
 # @tra: Adapter.ASGI.Middleware.ExcludePaths.NonMatch
+@pytest.mark.asyncio
 async def test_middleware_logs_non_excluded_paths():
     """Test that middleware logs/metrics for paths NOT in exclude list."""
-    log_storage = AsyncMock()
-    metrics_storage = AsyncMock()
-
-    # Mock app that sends proper ASGI response
-    async def mock_app(scope, receive, send):
-        await send({"type": "http.response.start", "status": 200})
-        await send({"type": "http.response.body", "body": b"OK"})
+    log_storage = InMemoryLogStorage()
+    metrics_storage = InMemoryMetricsStorage()
 
     middleware = ASGIObservabilityMiddleware(
-        app=mock_app,
+        app=_basic_app,
         log_storage=log_storage,
         metrics_storage=metrics_storage,
         exclude_paths=["/health"],
     )
 
-    scope = {
-        "type": "http",
-        "method": "GET",
-        "path": "/api/users",
-        "headers": [],
-    }
-    receive = AsyncMock()
-    send = AsyncMock()
-
-    await middleware(scope, receive, send)
+    scope = await _make_scope("/api/users")
+    await middleware(scope, _receive, _send)
 
     # Logs and metrics SHOULD be written for non-excluded path
-    log_storage.write.assert_called_once()
-    # Metrics should be written twice: counter + histogram
-    assert metrics_storage.write.call_count == 2
+    logs = [log async for log in log_storage.read()]
+    metrics = [m async for m in metrics_storage.read()]
+
+    assert len(logs) == 1, "Expected 1 log entry for non-excluded path"
+    assert logs[0].attributes["path"] == "/api/users"
+
+    # Metrics should include counter + histogram
+    assert len(metrics) == 2, "Expected counter + histogram metrics"
+    counter = [m for m in metrics if m.name == "http_requests_total"]
+    histogram = [m for m in metrics if m.name == "http_request_duration_seconds"]
+    assert len(counter) == 1, "Expected 1 counter metric"
+    assert len(histogram) == 1, "Expected 1 histogram metric"
